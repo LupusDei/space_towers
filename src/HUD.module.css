@@ -1,0 +1,99 @@
+/* HUD Styling - Neon/Holographic Theme */
+
+.container {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 8px 16px;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 10, 26, 0.85) 0%,
+    rgba(10, 10, 26, 0.7) 100%
+  );
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 4px;
+  box-shadow:
+    0 0 10px rgba(0, 255, 255, 0.1),
+    inset 0 0 20px rgba(0, 255, 255, 0.05);
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 16px;
+  backdrop-filter: blur(4px);
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Credits - Gold with glow */
+.creditsLabel {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.creditsValue {
+  color: #ffcc00;
+  font-weight: 700;
+  text-shadow:
+    0 0 8px rgba(255, 204, 0, 0.6),
+    0 0 16px rgba(255, 204, 0, 0.3);
+}
+
+/* Lives - Red with glow */
+.livesLabel {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.livesValue {
+  color: #ff3366;
+  font-weight: 700;
+  text-shadow:
+    0 0 8px rgba(255, 51, 102, 0.6),
+    0 0 16px rgba(255, 51, 102, 0.3);
+}
+
+/* Wave - Cyan with glow */
+.waveLabel {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.waveValue {
+  color: #00ffff;
+  font-weight: 700;
+  text-shadow:
+    0 0 8px rgba(0, 255, 255, 0.6),
+    0 0 16px rgba(0, 255, 255, 0.3);
+}
+
+/* Phase Indicator - Holographic panel */
+.phaseIndicator {
+  margin-left: auto;
+  padding: 4px 8px;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 255, 255, 0.15) 0%,
+    rgba(0, 255, 255, 0.05) 100%
+  );
+  border: 1px solid rgba(0, 255, 255, 0.5);
+  border-radius: 4px;
+  color: #00ffff;
+  font-weight: 500;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  box-shadow:
+    0 0 8px rgba(0, 255, 255, 0.2),
+    inset 0 0 12px rgba(0, 255, 255, 0.1);
+  animation: holoPulse 2s ease-in-out infinite;
+}
+
+@keyframes holoPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 8px rgba(0, 255, 255, 0.2),
+      inset 0 0 12px rgba(0, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 12px rgba(0, 255, 255, 0.3),
+      inset 0 0 16px rgba(0, 255, 255, 0.15);
+  }
+}

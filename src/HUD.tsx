@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { eventBus } from './events';
 import { GamePhase } from './types';
 import { GAME_CONFIG } from './config';
-import { colors, spacing, typography } from './theme';
+import styles from './HUD.module.css';
 
 interface HUDState {
   credits: number;
@@ -64,70 +64,22 @@ export default function HUD() {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.stat}>
-        <span style={styles.creditsLabel}>Credits:</span>
-        <span style={styles.creditsValue}>{state.credits}</span>
+    <div className={styles.container}>
+      <div className={styles.stat}>
+        <span className={styles.creditsLabel}>Credits:</span>
+        <span className={styles.creditsValue}>{state.credits}</span>
       </div>
-      <div style={styles.stat}>
-        <span style={styles.livesLabel}>Lives:</span>
-        <span style={styles.livesValue}>{state.lives}</span>
+      <div className={styles.stat}>
+        <span className={styles.livesLabel}>Lives:</span>
+        <span className={styles.livesValue}>{state.lives}</span>
       </div>
-      <div style={styles.stat}>
-        <span style={styles.waveLabel}>Wave:</span>
-        <span style={styles.waveValue}>{state.wave}</span>
+      <div className={styles.stat}>
+        <span className={styles.waveLabel}>Wave:</span>
+        <span className={styles.waveValue}>{state.wave}</span>
       </div>
-      <div style={styles.phaseIndicator}>
+      <div className={styles.phaseIndicator}>
         {getPhaseDisplay()}
       </div>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacing.lg,
-    padding: `${spacing.sm} ${spacing.md}`,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: '4px',
-    fontFamily: typography.fontFamily.mono,
-    fontSize: typography.fontSize.md,
-  },
-  stat: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  creditsLabel: {
-    color: colors.text.secondary,
-  },
-  creditsValue: {
-    color: colors.credits,
-    fontWeight: typography.fontWeight.bold,
-  },
-  livesLabel: {
-    color: colors.text.secondary,
-  },
-  livesValue: {
-    color: colors.danger,
-    fontWeight: typography.fontWeight.bold,
-  },
-  waveLabel: {
-    color: colors.text.secondary,
-  },
-  waveValue: {
-    color: colors.accent,
-    fontWeight: typography.fontWeight.bold,
-  },
-  phaseIndicator: {
-    marginLeft: 'auto',
-    padding: `${spacing.xs} ${spacing.sm}`,
-    backgroundColor: 'rgba(0, 255, 255, 0.15)',
-    border: `1px solid ${colors.accent}`,
-    borderRadius: '4px',
-    color: colors.accent,
-    fontWeight: typography.fontWeight.medium,
-  },
-};
