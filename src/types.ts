@@ -13,38 +13,46 @@ export interface Point {
 // Enums
 // ============================================================================
 
-export enum GamePhase {
-  MENU = 'menu',
-  PLANNING = 'planning',
-  COMBAT = 'combat',
-  PAUSED = 'paused',
-  VICTORY = 'victory',
-  DEFEAT = 'defeat',
-}
+export const GamePhase = {
+  MENU: 'menu',
+  PLANNING: 'planning',
+  COMBAT: 'combat',
+  PAUSED: 'paused',
+  VICTORY: 'victory',
+  DEFEAT: 'defeat',
+} as const;
 
-export enum CellState {
-  EMPTY = 'empty',
-  PATH = 'path',
-  BLOCKED = 'blocked',
-  TOWER = 'tower',
-  SPAWN = 'spawn',
-  EXIT = 'exit',
-}
+export type GamePhase = (typeof GamePhase)[keyof typeof GamePhase];
 
-export enum TowerType {
-  LASER = 'laser',
-  MISSILE = 'missile',
-  TESLA = 'tesla',
-  CANNON = 'cannon',
-}
+export const CellState = {
+  EMPTY: 'empty',
+  PATH: 'path',
+  BLOCKED: 'blocked',
+  TOWER: 'tower',
+  SPAWN: 'spawn',
+  EXIT: 'exit',
+} as const;
 
-export enum EnemyType {
-  SCOUT = 'scout',
-  FIGHTER = 'fighter',
-  TANK = 'tank',
-  SWARM = 'swarm',
-  BOSS = 'boss',
-}
+export type CellState = (typeof CellState)[keyof typeof CellState];
+
+export const TowerType = {
+  LASER: 'laser',
+  MISSILE: 'missile',
+  TESLA: 'tesla',
+  CANNON: 'cannon',
+} as const;
+
+export type TowerType = (typeof TowerType)[keyof typeof TowerType];
+
+export const EnemyType = {
+  SCOUT: 'scout',
+  FIGHTER: 'fighter',
+  TANK: 'tank',
+  SWARM: 'swarm',
+  BOSS: 'boss',
+} as const;
+
+export type EnemyType = (typeof EnemyType)[keyof typeof EnemyType];
 
 // ============================================================================
 // Game Entities
