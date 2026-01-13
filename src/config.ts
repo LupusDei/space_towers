@@ -1,6 +1,6 @@
 // Game Config & Constants for Space Towers
 
-import { TowerType, EnemyType, TowerStats, EnemyStats } from './types';
+import { TowerType, EnemyType, type TowerStats, type EnemyStats } from './types';
 
 // ============================================================================
 // Game Configuration
