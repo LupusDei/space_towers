@@ -12,6 +12,7 @@ import type {
   TowerType,
   EnemyType,
   CommandInterface,
+  QueryInterface,
 } from './types';
 import { GamePhase as Phase, CellState as CS } from './types';
 import { GAME_CONFIG, CANVAS_WIDTH, CANVAS_HEIGHT, TOWER_STATS, ENEMY_STATS } from './config';
@@ -25,6 +26,7 @@ import {
 import { findPath, wouldBlockPath } from './grid/Pathfinding';
 import { TowerFactory } from './towers/TowerFactory';
 import { createWaveController, type WaveController } from './enemies/Wave';
+import { combatModule } from './combat/CombatModule';
 
 // ============================================================================
 // Constants
@@ -219,6 +221,9 @@ class GameEngine {
     this.recalculatePath();
     this.waveController.reset();
 
+    // Initialize combat module with query and command interfaces
+    combatModule.init(this.getQueryInterface(), this.getCommandInterface());
+
     this.eventBus.emit(createEvent('GAME_START', { wave: 1 }));
     this.notifySubscribers();
     this.start();
@@ -346,6 +351,9 @@ class GameEngine {
   private updateCombat(dt: number): void {
     // Update wave spawning
     this.waveController.update(dt);
+
+    // Update combat module (tower targeting and firing)
+    combatModule.update(dt);
 
     // Update enemies
     for (const enemy of this.state.enemies.values()) {
@@ -669,6 +677,24 @@ class GameEngine {
       removeEnemy: (enemyId) => this.removeEnemy(enemyId),
       addCredits: (amount) => this.addCredits(amount),
       getTime: () => this.getTime(),
+    };
+  }
+
+  /**
+   * Get a QueryInterface for modules that need read-only access to game state.
+   */
+  getQueryInterface(): QueryInterface {
+    return {
+      getTowers: () => this.getTowers(),
+      getEnemies: () => this.getEnemies(),
+      getProjectiles: () => this.getProjectiles(),
+      getTowerById: (id) => this.getTowerById(id),
+      getEnemyById: (id) => this.getEnemyById(id),
+      getEnemiesInRange: (position, range) => this.getEnemiesInRange(position, range),
+      getEnemiesAlongPath: () => this.getEnemiesAlongPath(),
+      getPath: () => this.getPath(),
+      getCell: (position) => this.getCell(position),
+      getTowerAt: (position) => this.getTowerAt(position),
     };
   }
 
