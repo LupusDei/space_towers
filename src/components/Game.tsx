@@ -42,6 +42,7 @@ export default function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoveredCell, setHoveredCell] = useState<Point | null>(null);
   const [selectedTowerType, setSelectedTowerType] = useState<TowerType | null>(TowerType.LASER);
+  const [gamePhase, setGamePhase] = useState<GamePhase>(GamePhase.MENU);
   const timeRef = useRef(0);
 
   // Use refs for values that the render loop needs without causing effect re-runs
@@ -51,6 +52,14 @@ export default function Game() {
   // Keep refs in sync with state
   hoveredCellRef.current = hoveredCell;
   selectedTowerTypeRef.current = selectedTowerType;
+
+  // Subscribe to engine state changes for phase updates
+  useEffect(() => {
+    const unsubscribe = engine.subscribe(() => {
+      setGamePhase(engine.getPhase());
+    });
+    return unsubscribe;
+  }, []);
 
   // Convert mouse position to grid cell
   const getGridCell = useCallback((e: React.MouseEvent<HTMLCanvasElement>): Point | null => {
@@ -208,17 +217,20 @@ export default function Game() {
           </button>
         ))}
         <button
-          onClick={() => engine.startWave()}
+          onClick={() => gamePhase === GamePhase.PLANNING && engine.startWave()}
+          disabled={gamePhase !== GamePhase.PLANNING}
           style={{
             padding: '8px 16px',
-            backgroundColor: '#2a4a2a',
-            color: '#fff',
-            border: '2px solid #4a6a4a',
+            backgroundColor: gamePhase === GamePhase.PLANNING ? '#2a4a2a' : '#333344',
+            color: gamePhase === GamePhase.PLANNING ? '#fff' : '#888',
+            border: gamePhase === GamePhase.PLANNING ? '2px solid #4a6a4a' : '2px solid #444',
             borderRadius: '4px',
-            cursor: 'pointer',
+            cursor: gamePhase === GamePhase.PLANNING ? 'pointer' : 'not-allowed',
+            opacity: gamePhase === GamePhase.PLANNING ? 1 : 0.5,
+            transition: 'all 0.2s ease',
           }}
         >
-          Start Wave
+          {gamePhase === GamePhase.COMBAT ? 'Battle Commencing' : 'Start Wave'}
         </button>
       </div>
     </div>

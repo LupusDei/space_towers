@@ -6,7 +6,7 @@ interface EngageButtonProps {
   onEngage: () => void;
 }
 
-const buttonStyle: React.CSSProperties = {
+const baseButtonStyle: React.CSSProperties = {
   position: 'absolute',
   bottom: spacing.lg,
   left: '50%',
@@ -15,36 +15,63 @@ const buttonStyle: React.CSSProperties = {
   fontSize: typography.fontSize.lg,
   fontFamily: typography.fontFamily.base,
   fontWeight: typography.fontWeight.bold,
-  color: colors.background,
-  backgroundColor: colors.accent,
   border: 'none',
   borderRadius: spacing.sm,
-  cursor: 'pointer',
   textTransform: 'uppercase',
   letterSpacing: '2px',
-  boxShadow: `0 0 20px ${colors.accent}40`,
   transition: 'all 0.2s ease',
 };
 
+const enabledStyle: React.CSSProperties = {
+  ...baseButtonStyle,
+  color: colors.background,
+  backgroundColor: colors.accent,
+  cursor: 'pointer',
+  boxShadow: `0 0 20px ${colors.accent}40`,
+  opacity: 1,
+};
+
+const disabledStyle: React.CSSProperties = {
+  ...baseButtonStyle,
+  color: colors.text.muted,
+  backgroundColor: '#444466',
+  cursor: 'not-allowed',
+  boxShadow: 'none',
+  opacity: 0.5,
+  pointerEvents: 'none',
+};
+
 export default function EngageButton({ phase, onEngage }: EngageButtonProps) {
-  if (phase !== GamePhase.PLANNING) {
+  const isPlanning = phase === GamePhase.PLANNING;
+  const isCombat = phase === GamePhase.COMBAT;
+
+  // Only show during planning or combat phases
+  if (!isPlanning && !isCombat) {
     return null;
   }
 
+  const buttonText = isCombat ? 'Battle Commencing' : 'Start Wave';
+  const style = isPlanning ? enabledStyle : disabledStyle;
+
   return (
     <button
-      style={buttonStyle}
-      onClick={onEngage}
+      style={style}
+      onClick={isPlanning ? onEngage : undefined}
+      disabled={!isPlanning}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = '#33ffff';
-        e.currentTarget.style.boxShadow = `0 0 30px ${colors.accent}80`;
+        if (isPlanning) {
+          e.currentTarget.style.backgroundColor = '#33ffff';
+          e.currentTarget.style.boxShadow = `0 0 30px ${colors.accent}80`;
+        }
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = colors.accent;
-        e.currentTarget.style.boxShadow = `0 0 20px ${colors.accent}40`;
+        if (isPlanning) {
+          e.currentTarget.style.backgroundColor = colors.accent;
+          e.currentTarget.style.boxShadow = `0 0 20px ${colors.accent}40`;
+        }
       }}
     >
-      Start Wave
+      {buttonText}
     </button>
   );
 }
