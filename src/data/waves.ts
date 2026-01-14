@@ -1,8 +1,8 @@
 // Wave Definitions for Space Towers
 
-import type { WaveDefinition, WaveSpawn } from '../types';
-import { EnemyType } from '../types';
-import { ENEMY_STATS, GAME_CONFIG } from '../config';
+import type { WaveDefinition, WaveSpawn } from '../game/types';
+import { EnemyType } from '../game/types';
+import { ENEMY_STATS, GAME_CONFIG } from '../game/config';
 
 // ============================================================================
 // Wave Definitions (Waves 1-10+)
@@ -12,18 +12,14 @@ export const WAVE_DEFINITIONS: WaveDefinition[] = [
   // Wave 1: Introduction - small scout group
   {
     waveNumber: 1,
-    spawns: [
-      { enemyType: EnemyType.SCOUT, count: 5, delay: 0, spawnInterval: 1000 },
-    ],
+    spawns: [{ enemyType: EnemyType.SCOUT, count: 5, delay: 0, spawnInterval: 1000 }],
     reward: 25,
   },
 
   // Wave 2: More scouts
   {
     waveNumber: 2,
-    spawns: [
-      { enemyType: EnemyType.SCOUT, count: 8, delay: 0, spawnInterval: 900 },
-    ],
+    spawns: [{ enemyType: EnemyType.SCOUT, count: 8, delay: 0, spawnInterval: 900 }],
     reward: 30,
   },
 
@@ -136,8 +132,7 @@ export function getWaveDefinition(waveNumber: number): WaveDefinition {
   }
 
   // Generate waves beyond wave 10
-  const isBossWave =
-    waveNumber % GAME_CONFIG.BOSS_WAVE_INTERVAL === 0;
+  const isBossWave = waveNumber % GAME_CONFIG.BOSS_WAVE_INTERVAL === 0;
   const scaleFactor = 1 + (waveNumber - 10) * 0.15;
 
   const spawns: WaveSpawn[] = [];
@@ -187,9 +182,7 @@ export function getWaveDefinition(waveNumber: number): WaveDefinition {
   return {
     waveNumber,
     spawns,
-    reward: isBossWave
-      ? Math.floor(200 * scaleFactor)
-      : Math.floor(90 * scaleFactor),
+    reward: isBossWave ? Math.floor(200 * scaleFactor) : Math.floor(90 * scaleFactor),
   };
 }
 
@@ -226,8 +219,7 @@ export function getWaveDuration(wave: WaveDefinition): number {
   let maxEndTime = 0;
 
   for (const spawn of wave.spawns) {
-    const spawnEndTime =
-      spawn.delay + spawn.count * spawn.spawnInterval;
+    const spawnEndTime = spawn.delay + spawn.count * spawn.spawnInterval;
     maxEndTime = Math.max(maxEndTime, spawnEndTime);
   }
 

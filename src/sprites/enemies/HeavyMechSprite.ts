@@ -1,6 +1,6 @@
 // Heavy Mech Sprite - Large armored walker with stomping animation
 
-import type { Enemy } from '../../types';
+import type { Enemy } from '../../game/types';
 import type { EnemySprite, SpriteRenderContext } from '../types';
 
 // Track health for damage flash detection
@@ -99,21 +99,11 @@ export const HeavyMechSprite: EnemySprite = {
 
     // Draw cockpit/head (small rectangle on top)
     ctx.fillStyle = metalColor;
-    ctx.fillRect(
-      centerX - bodyWidth / 6,
-      centerY - bodyHeight / 2 - 8,
-      bodyWidth / 3,
-      10
-    );
+    ctx.fillRect(centerX - bodyWidth / 6, centerY - bodyHeight / 2 - 8, bodyWidth / 3, 10);
 
     // Cockpit visor (glowing red eye)
     ctx.fillStyle = isFlashing ? '#FFFFFF' : '#FF0000';
-    ctx.fillRect(
-      centerX - bodyWidth / 8,
-      centerY - bodyHeight / 2 - 6,
-      bodyWidth / 4,
-      4
-    );
+    ctx.fillRect(centerX - bodyWidth / 8, centerY - bodyHeight / 2 - 6, bodyWidth / 4, 4);
 
     // Draw shoulder armor
     ctx.fillStyle = accentColor;
@@ -137,7 +127,8 @@ export const HeavyMechSprite: EnemySprite = {
     ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
 
     // Health bar fill (red to dark red based on health)
-    const healthColor = healthPercent > 0.5 ? '#FF4444' : healthPercent > 0.25 ? '#FF8800' : '#FF0000';
+    const healthColor =
+      healthPercent > 0.5 ? '#FF4444' : healthPercent > 0.25 ? '#FF8800' : '#FF0000';
     ctx.fillStyle = healthColor;
     ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthPercent, healthBarHeight);
 

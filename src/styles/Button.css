@@ -1,0 +1,156 @@
+/* Button Styling - Glowing border effect with hover/active/disabled states */
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 5px var(--btn-color),
+      0 0 10px var(--btn-color-dim),
+      inset 0 0 5px var(--btn-color-dim);
+  }
+  50% {
+    box-shadow:
+      0 0 10px var(--btn-color),
+      0 0 20px var(--btn-color-dim),
+      0 0 30px var(--btn-color-faint),
+      inset 0 0 8px var(--btn-color-dim);
+  }
+}
+
+.game-button {
+  position: relative;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-family:
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  border: 2px solid var(--btn-color);
+  border-radius: 8px;
+  background: linear-gradient(
+    180deg,
+    var(--btn-bg-light) 0%,
+    var(--btn-bg) 50%,
+    var(--btn-bg-dark) 100%
+  );
+  color: var(--btn-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  animation: glow-pulse 2s ease-in-out infinite;
+
+  /* CSS Variables - Primary (Accent Cyan) by default */
+  --btn-color: #00ffff;
+  --btn-color-dim: rgba(0, 255, 255, 0.4);
+  --btn-color-faint: rgba(0, 255, 255, 0.15);
+  --btn-bg: #0a1a1a;
+  --btn-bg-light: #0d2525;
+  --btn-bg-dark: #061212;
+  --btn-text: #00ffff;
+}
+
+/* Hover State */
+.game-button:hover:not(:disabled) {
+  border-color: var(--btn-color);
+  background: linear-gradient(
+    180deg,
+    var(--btn-bg-light) 0%,
+    var(--btn-hover-bg) 50%,
+    var(--btn-bg) 100%
+  );
+  animation: none;
+  box-shadow:
+    0 0 15px var(--btn-color),
+    0 0 30px var(--btn-color-dim),
+    0 0 45px var(--btn-color-faint),
+    inset 0 0 10px var(--btn-color-dim);
+  transform: translateY(-1px);
+
+  --btn-hover-bg: #0f2f2f;
+}
+
+/* Active/Pressed State */
+.game-button:active:not(:disabled) {
+  transform: translateY(1px);
+  animation: none;
+  box-shadow:
+    0 0 5px var(--btn-color),
+    0 0 10px var(--btn-color-dim),
+    inset 0 0 15px var(--btn-color-dim);
+  background: linear-gradient(
+    180deg,
+    var(--btn-bg-dark) 0%,
+    var(--btn-bg) 50%,
+    var(--btn-bg-light) 100%
+  );
+}
+
+/* Focus State */
+.game-button:focus-visible {
+  outline: 2px solid var(--btn-color);
+  outline-offset: 3px;
+}
+
+/* Disabled State */
+.game-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  animation: none;
+  box-shadow: none;
+  border-color: rgba(255, 255, 255, 0.2);
+  background: #1a1a1a;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* === Variant: Danger (Red) === */
+.game-button--danger {
+  --btn-color: #ff3366;
+  --btn-color-dim: rgba(255, 51, 102, 0.4);
+  --btn-color-faint: rgba(255, 51, 102, 0.15);
+  --btn-bg: #1a0a0f;
+  --btn-bg-light: #250d15;
+  --btn-bg-dark: #12060a;
+  --btn-text: #ff3366;
+  --btn-hover-bg: #2f0f1a;
+}
+
+/* === Variant: Success (Green) === */
+.game-button--success {
+  --btn-color: #00ff88;
+  --btn-color-dim: rgba(0, 255, 136, 0.4);
+  --btn-color-faint: rgba(0, 255, 136, 0.15);
+  --btn-bg: #0a1a12;
+  --btn-bg-light: #0d2518;
+  --btn-bg-dark: #06120c;
+  --btn-text: #00ff88;
+  --btn-hover-bg: #0f2f1a;
+}
+
+/* === Variant: Gold (Credits) === */
+.game-button--gold {
+  --btn-color: #ffcc00;
+  --btn-color-dim: rgba(255, 204, 0, 0.4);
+  --btn-color-faint: rgba(255, 204, 0, 0.15);
+  --btn-bg: #1a1a0a;
+  --btn-bg-light: #25250d;
+  --btn-bg-dark: #121206;
+  --btn-text: #ffcc00;
+  --btn-hover-bg: #2f2f0f;
+}
+
+/* === Size: Small === */
+.game-button--small {
+  padding: 8px 16px;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+/* === Size: Large === */
+.game-button--large {
+  padding: 16px 32px;
+  font-size: 20px;
+  letter-spacing: 3px;
+}

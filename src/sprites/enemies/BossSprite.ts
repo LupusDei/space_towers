@@ -1,6 +1,6 @@
 // Boss Sprite - Large 2x scaled boss with glowing aura and pulsing animation
 
-import type { Enemy } from '../../types';
+import type { Enemy } from '../../game/types';
 import type { EnemySprite, SpriteRenderContext } from '../types';
 
 // Track health for damage flash detection
@@ -69,14 +69,18 @@ export const BossSprite: EnemySprite = {
     // Outer aura ring
     ctx.beginPath();
     ctx.arc(centerX, centerY + bobOffset, scaledWidth * 0.7, 0, Math.PI * 2);
-    ctx.strokeStyle = isFlashing ? '#FFFFFF' : `rgba(255, 0, 255, ${0.3 + Math.sin(pulseCycle) * 0.2})`;
+    ctx.strokeStyle = isFlashing
+      ? '#FFFFFF'
+      : `rgba(255, 0, 255, ${0.3 + Math.sin(pulseCycle) * 0.2})`;
     ctx.lineWidth = 4;
     ctx.stroke();
 
     // Second aura ring
     ctx.beginPath();
     ctx.arc(centerX, centerY + bobOffset, scaledWidth * 0.6, 0, Math.PI * 2);
-    ctx.strokeStyle = isFlashing ? '#FFFFFF' : `rgba(155, 48, 255, ${0.4 + Math.sin(pulseCycle + Math.PI / 2) * 0.2})`;
+    ctx.strokeStyle = isFlashing
+      ? '#FFFFFF'
+      : `rgba(155, 48, 255, ${0.4 + Math.sin(pulseCycle + Math.PI / 2) * 0.2})`;
     ctx.lineWidth = 3;
     ctx.stroke();
 
@@ -106,14 +110,38 @@ export const BossSprite: EnemySprite = {
     ctx.fillStyle = darkColor;
     ctx.beginPath();
     const innerScale = 0.6;
-    ctx.moveTo(centerX - scaledWidth * innerScale / 2, centerY - scaledHeight * innerScale / 4 + bobOffset);
-    ctx.lineTo(centerX - scaledWidth * innerScale / 3, centerY - scaledHeight * innerScale / 2 + bobOffset);
-    ctx.lineTo(centerX + scaledWidth * innerScale / 3, centerY - scaledHeight * innerScale / 2 + bobOffset);
-    ctx.lineTo(centerX + scaledWidth * innerScale / 2, centerY - scaledHeight * innerScale / 4 + bobOffset);
-    ctx.lineTo(centerX + scaledWidth * innerScale / 2, centerY + scaledHeight * innerScale / 4 + bobOffset);
-    ctx.lineTo(centerX + scaledWidth * innerScale / 3, centerY + scaledHeight * innerScale / 2 + bobOffset);
-    ctx.lineTo(centerX - scaledWidth * innerScale / 3, centerY + scaledHeight * innerScale / 2 + bobOffset);
-    ctx.lineTo(centerX - scaledWidth * innerScale / 2, centerY + scaledHeight * innerScale / 4 + bobOffset);
+    ctx.moveTo(
+      centerX - (scaledWidth * innerScale) / 2,
+      centerY - (scaledHeight * innerScale) / 4 + bobOffset
+    );
+    ctx.lineTo(
+      centerX - (scaledWidth * innerScale) / 3,
+      centerY - (scaledHeight * innerScale) / 2 + bobOffset
+    );
+    ctx.lineTo(
+      centerX + (scaledWidth * innerScale) / 3,
+      centerY - (scaledHeight * innerScale) / 2 + bobOffset
+    );
+    ctx.lineTo(
+      centerX + (scaledWidth * innerScale) / 2,
+      centerY - (scaledHeight * innerScale) / 4 + bobOffset
+    );
+    ctx.lineTo(
+      centerX + (scaledWidth * innerScale) / 2,
+      centerY + (scaledHeight * innerScale) / 4 + bobOffset
+    );
+    ctx.lineTo(
+      centerX + (scaledWidth * innerScale) / 3,
+      centerY + (scaledHeight * innerScale) / 2 + bobOffset
+    );
+    ctx.lineTo(
+      centerX - (scaledWidth * innerScale) / 3,
+      centerY + (scaledHeight * innerScale) / 2 + bobOffset
+    );
+    ctx.lineTo(
+      centerX - (scaledWidth * innerScale) / 2,
+      centerY + (scaledHeight * innerScale) / 4 + bobOffset
+    );
     ctx.closePath();
     ctx.fill();
 
@@ -237,7 +265,12 @@ export const BossSprite: EnemySprite = {
     ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
 
     // Health bar fill with gradient
-    const healthGradient = ctx.createLinearGradient(healthBarX, healthBarY, healthBarX + healthBarWidth * healthPercent, healthBarY);
+    const healthGradient = ctx.createLinearGradient(
+      healthBarX,
+      healthBarY,
+      healthBarX + healthBarWidth * healthPercent,
+      healthBarY
+    );
     if (healthPercent > 0.5) {
       healthGradient.addColorStop(0, '#FF00FF');
       healthGradient.addColorStop(1, '#9B30FF');

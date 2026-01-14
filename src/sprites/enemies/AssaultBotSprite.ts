@@ -1,6 +1,6 @@
 // Assault Bot Sprite - Medium humanoid robot with walking animation
 
-import type { Enemy } from '../../types';
+import type { Enemy } from '../../game/types';
 import type { EnemySprite, SpriteRenderContext } from '../types';
 
 // Track health for damage flash detection
@@ -120,12 +120,7 @@ export const AssaultBotSprite: EnemySprite = {
 
     // Chest plate detail
     ctx.fillStyle = darkColor;
-    ctx.fillRect(
-      centerX - bodyWidth / 4,
-      centerY - bodyHeight / 4,
-      bodyWidth / 2,
-      bodyHeight / 3
-    );
+    ctx.fillRect(centerX - bodyWidth / 4, centerY - bodyHeight / 4, bodyWidth / 2, bodyHeight / 3);
 
     // Draw head
     ctx.fillStyle = bodyColor;
@@ -175,7 +170,8 @@ export const AssaultBotSprite: EnemySprite = {
     ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
 
     // Health bar fill (orange to yellow based on health)
-    const healthColor = healthPercent > 0.5 ? '#FFD700' : healthPercent > 0.25 ? '#FFA500' : '#FF4500';
+    const healthColor =
+      healthPercent > 0.5 ? '#FFD700' : healthPercent > 0.25 ? '#FFA500' : '#FF4500';
     ctx.fillStyle = healthColor;
     ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthPercent, healthBarHeight);
 

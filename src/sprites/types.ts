@@ -1,6 +1,6 @@
 // Sprite Interfaces for Space Towers
 
-import type { Tower, Enemy, Projectile, Point } from '../types';
+import type { Tower, Enemy, Projectile, Point } from '../game/types';
 
 // ============================================================================
 // Render Context
