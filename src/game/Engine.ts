@@ -88,6 +88,9 @@ class GameEngine {
   // Spatial hash for efficient enemy queries
   private spatialHash: SpatialHash;
 
+  // Cached sorted enemies list for getEnemiesAlongPath()
+  private sortedEnemiesCache: Enemy[] | null = null;
+
   // Injected dependencies (use globals if not provided)
   private eventBus: EventBus;
   private enemyPool: ObjectPool<Enemy>;
@@ -193,6 +196,7 @@ class GameEngine {
     this.spawnPoint = { x: 0, y: 0 };
     this.exitPoint = { x: 0, y: 0 };
     this.spatialHash.clear();
+    this.sortedEnemiesCache = null;
     this.waveController.reset();
     this.eventBus.clear();
     this.enemyPool.reset();
@@ -365,6 +369,7 @@ class GameEngine {
 
     if (distance < threshold) {
       enemy.pathIndex++;
+      this.invalidateSortedEnemiesCache();
       if (enemy.pathIndex >= this.path.length) {
         return true;
       }
@@ -376,6 +381,7 @@ class GameEngine {
       enemy.position.x = target.x * GAME_CONFIG.CELL_SIZE;
       enemy.position.y = target.y * GAME_CONFIG.CELL_SIZE;
       enemy.pathIndex++;
+      this.invalidateSortedEnemiesCache();
     } else {
       const ratio = moveDistance / distance;
       enemy.position.x += dx * ratio;
@@ -435,6 +441,7 @@ class GameEngine {
     // Add to engine state and spatial hash
     this.state.enemies.set(enemy.id, enemy);
     this.spatialHash.insert(enemy);
+    this.invalidateSortedEnemiesCache();
     console.log('[Engine] Spawned enemy:', enemy.id, 'type:', enemy.type, 'pos:', enemy.position, 'enemies count:', this.state.enemies.size);
     this.stateNotifier.notify();
 
@@ -444,6 +451,7 @@ class GameEngine {
   private enemyEscaped(enemy: Enemy): void {
     this.state.enemies.delete(enemy.id);
     this.spatialHash.remove(enemy);
+    this.invalidateSortedEnemiesCache();
     this.state.lives--;
 
     this.eventBus.emit(createEvent('ENEMY_ESCAPED', { enemy, livesLost: 1 }));
@@ -479,6 +487,7 @@ class GameEngine {
   private enemyKilled(enemy: Enemy, towerId: string): void {
     this.state.enemies.delete(enemy.id);
     this.spatialHash.remove(enemy);
+    this.invalidateSortedEnemiesCache();
     this.state.credits += enemy.reward;
     this.state.score += enemy.reward;
 
@@ -562,11 +571,23 @@ class GameEngine {
   /**
    * Get all enemies sorted by their progress along the path (furthest first).
    * Enemies with higher pathIndex are closer to escaping.
+   * Uses cached sorted list, invalidated when enemies added/removed/moved.
    * @returns Array of enemies sorted by path progress (descending)
    */
   getEnemiesAlongPath(): Enemy[] {
-    const enemies = Array.from(this.state.enemies.values());
-    return enemies.sort((a, b) => b.pathIndex - a.pathIndex);
+    if (this.sortedEnemiesCache === null) {
+      const enemies = Array.from(this.state.enemies.values());
+      this.sortedEnemiesCache = enemies.sort((a, b) => b.pathIndex - a.pathIndex);
+    }
+    return this.sortedEnemiesCache;
+  }
+
+  /**
+   * Invalidate the sorted enemies cache.
+   * Called when enemies are added, removed, or move along the path.
+   */
+  private invalidateSortedEnemiesCache(): void {
+    this.sortedEnemiesCache = null;
   }
 
   getCell(position: Point): CellState {
@@ -680,6 +701,7 @@ class GameEngine {
   addEnemy(enemy: Enemy): void {
     this.state.enemies.set(enemy.id, enemy);
     this.spatialHash.insert(enemy);
+    this.invalidateSortedEnemiesCache();
     this.stateNotifier.notify();
   }
 
@@ -688,6 +710,7 @@ class GameEngine {
     if (enemy) {
       this.state.enemies.delete(enemyId);
       this.spatialHash.remove(enemy);
+      this.invalidateSortedEnemiesCache();
       this.enemyPool.release(enemy);
       this.stateNotifier.notify();
     }

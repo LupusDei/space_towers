@@ -486,6 +486,44 @@ describe('Engine Integration', () => {
       expect(sorted[2].pathIndex).toBe(2);
     });
 
+    it('getEnemiesAlongPath caches result and invalidates on changes', () => {
+      engine.startWave();
+
+      // Add initial enemies
+      const enemy1 = engine['enemyPool'].acquire();
+      enemy1.pathIndex = 5;
+      engine.addEnemy(enemy1);
+
+      const enemy2 = engine['enemyPool'].acquire();
+      enemy2.pathIndex = 10;
+      engine.addEnemy(enemy2);
+
+      // First call computes and caches
+      const sorted1 = engine.getEnemiesAlongPath();
+      expect(sorted1.length).toBe(2);
+
+      // Second call returns cached array (same reference)
+      const sorted2 = engine.getEnemiesAlongPath();
+      expect(sorted2).toBe(sorted1);
+
+      // Adding enemy invalidates cache - new array returned
+      const enemy3 = engine['enemyPool'].acquire();
+      enemy3.pathIndex = 15;
+      engine.addEnemy(enemy3);
+
+      const sorted3 = engine.getEnemiesAlongPath();
+      expect(sorted3).not.toBe(sorted1);
+      expect(sorted3.length).toBe(3);
+      expect(sorted3[0].pathIndex).toBe(15);
+
+      // Removing enemy invalidates cache - new array returned
+      engine.removeEnemy(enemy3.id);
+
+      const sorted4 = engine.getEnemiesAlongPath();
+      expect(sorted4).not.toBe(sorted3);
+      expect(sorted4.length).toBe(2);
+    });
+
     it('getGameState returns complete state', () => {
       engine.placeTower(TowerType.LASER, { x: 5, y: 5 });
 
