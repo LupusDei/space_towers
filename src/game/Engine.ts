@@ -695,6 +695,7 @@ class GameEngine {
       getPath: () => this.getPath(),
       getCell: (position) => this.getCell(position),
       getTowerAt: (position) => this.getTowerAt(position),
+      getGameState: () => this.getGameState(),
     };
   }
 
