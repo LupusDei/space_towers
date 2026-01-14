@@ -87,6 +87,10 @@ class GameEngine {
   private subscribers = new Set<() => void>();
   private stateVersion = 0;
 
+  // Cached snapshot to avoid allocating new Maps every frame
+  private cachedSnapshot: GameState | null = null;
+  private snapshotVersion = -1; // Version when cache was created (-1 means invalid)
+
   // Factory for creating towers
   private towerFactory = new TowerFactory();
 
@@ -192,6 +196,8 @@ class GameEngine {
     this.projectilePool.reset();
     this.subscribers.clear();
     this.stateVersion = 0;
+    this.cachedSnapshot = null;
+    this.snapshotVersion = -1;
   }
 
   // ==========================================================================
@@ -544,12 +550,19 @@ class GameEngine {
 
   private snapshotLogCounter = 0;
   getSnapshot(): GameState {
+    // Return cached snapshot if state hasn't changed
+    if (this.cachedSnapshot && this.snapshotVersion === this.stateVersion) {
+      return this.cachedSnapshot;
+    }
+
     this.snapshotLogCounter++;
     if (this.snapshotLogCounter % 120 === 0 && this.state.enemies.size > 0) {
       console.log('[Engine.getSnapshot] enemies in state:', this.state.enemies.size,
         Array.from(this.state.enemies.values()).map(e => ({ id: e.id, pos: {...e.position} })));
     }
-    return {
+
+    // Create new snapshot and cache it
+    this.cachedSnapshot = {
       phase: this.state.phase,
       wave: this.state.wave,
       lives: this.state.lives,
@@ -564,6 +577,9 @@ class GameEngine {
       selectedTowerType: this.state.selectedTowerType,
       isPaused: this.state.isPaused,
     };
+    this.snapshotVersion = this.stateVersion;
+
+    return this.cachedSnapshot;
   }
 
   getVersion(): number {
