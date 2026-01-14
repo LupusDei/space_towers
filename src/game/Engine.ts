@@ -12,11 +12,12 @@ import type {
   TowerType,
 } from './types';
 import { GamePhase as Phase, CellState as CS } from './types';
-import { GAME_CONFIG, CANVAS_WIDTH, CANVAS_HEIGHT } from './config';
+import { GAME_CONFIG, CANVAS_WIDTH, CANVAS_HEIGHT, TOWER_STATS } from './config';
 import { createGrid, type Grid } from './grid/Grid';
 import { eventBus, createEvent } from './events';
 import { enemyPool, projectilePool } from './pools';
-import { findPath } from './grid/Pathfinding';
+import { findPath, wouldBlockPath } from './grid/Pathfinding';
+import { TowerFactory } from './towers/TowerFactory';
 import type { SpriteRenderContext } from '../sprites/types';
 
 // ============================================================================
@@ -43,6 +44,7 @@ interface EngineState {
   selectedTowerType: TowerType | null;
   isPaused: boolean;
   time: number;
+  towersPlacedThisRound: Set<string>;
 }
 
 // ============================================================================
@@ -70,6 +72,9 @@ class GameEngine {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
 
+  // Factory for creating towers
+  private towerFactory = new TowerFactory();
+
   constructor() {
     this.grid = createGrid();
     this.state = this.createInitialState();
@@ -93,6 +98,7 @@ class GameEngine {
       selectedTowerType: null,
       isPaused: false,
       time: 0,
+      towersPlacedThisRound: new Set(),
     };
   }
 
@@ -167,6 +173,12 @@ class GameEngine {
 
   startWave(): void {
     if (this.state.phase !== Phase.PLANNING) return;
+
+    // Clear towers placed this round - they no longer get full refund
+    this.state.towersPlacedThisRound.clear();
+
+    // Recalculate path before combat begins
+    this.recalculatePath();
 
     this.setPhase(Phase.COMBAT);
     // Wave spawning will be handled by combat integration layer
@@ -673,6 +685,115 @@ class GameEngine {
 
   canPlaceTower(position: Point): boolean {
     return this.grid.canPlaceTower(position);
+  }
+
+  // ==========================================================================
+  // Build Phase Integration
+  // ==========================================================================
+
+  /**
+   * Check if placing a tower at a position would block the path.
+   * @param position - Grid position to check
+   * @returns true if placement would block path, false otherwise
+   */
+  wouldBlockPath(position: Point): boolean {
+    return wouldBlockPath(this.grid.getCells(), position);
+  }
+
+  /**
+   * Place a tower at a position during the build phase.
+   * Validates: phase, position, path blocking, and credits.
+   * @param type - Tower type to place
+   * @param position - Grid position to place at
+   * @returns The placed tower if successful, null otherwise
+   */
+  placeTower(type: TowerType, position: Point): Tower | null {
+    // Must be in planning phase
+    if (this.state.phase !== Phase.PLANNING) {
+      return null;
+    }
+
+    // Check if position is valid for tower placement
+    if (!this.canPlaceTower(position)) {
+      return null;
+    }
+
+    // Check if placing here would block the path
+    if (this.wouldBlockPath(position)) {
+      return null;
+    }
+
+    // Check if player has enough credits
+    const stats = TOWER_STATS[type];
+    if (this.state.credits < stats.cost) {
+      return null;
+    }
+
+    // Create the tower
+    const tower = this.towerFactory.create(type, position);
+
+    // Spend credits
+    this.spendCredits(stats.cost);
+
+    // Add tower to the game
+    this.state.towers.set(tower.id, tower);
+    this.grid.setCell(position, CS.TOWER);
+    this.recalculatePath();
+
+    // Track that this tower was placed this round (eligible for full refund)
+    this.state.towersPlacedThisRound.add(tower.id);
+
+    // Emit event
+    eventBus.emit(createEvent('TOWER_PLACED', { tower: tower.toData(), cost: stats.cost }));
+    this.notifySubscribers();
+
+    return tower;
+  }
+
+  /**
+   * Sell a tower and receive a refund.
+   * Refund is 100% if tower was placed this round (during planning), 70% otherwise.
+   * @param towerId - ID of the tower to sell
+   * @returns The refund amount, or 0 if tower not found
+   */
+  sellTower(towerId: string): number {
+    const tower = this.state.towers.get(towerId);
+    if (!tower) {
+      return 0;
+    }
+
+    // Calculate refund: 100% if placed this round, 70% otherwise
+    const stats = TOWER_STATS[tower.type];
+    const wasPlacedThisRound = this.state.towersPlacedThisRound.has(towerId);
+    const refundPercent = wasPlacedThisRound ? 1.0 : 0.7;
+    const refund = Math.floor(stats.cost * refundPercent);
+
+    // Remove tower from the game
+    this.state.towers.delete(towerId);
+    this.grid.setCell(tower.position, CS.EMPTY);
+    this.recalculatePath();
+
+    // Remove from this round's tracking if present
+    this.state.towersPlacedThisRound.delete(towerId);
+
+    // Refund credits
+    this.addCredits(refund);
+
+    // Emit event
+    const towerData = tower instanceof Object && 'toData' in tower ? (tower as { toData: () => Tower }).toData() : tower;
+    eventBus.emit(createEvent('TOWER_SOLD', { tower: towerData, refund }));
+    this.notifySubscribers();
+
+    return refund;
+  }
+
+  /**
+   * Check if a tower was placed during the current round.
+   * @param towerId - ID of the tower to check
+   * @returns true if the tower was placed this round
+   */
+  wasTowerPlacedThisRound(towerId: string): boolean {
+    return this.state.towersPlacedThisRound.has(towerId);
   }
 }
 
