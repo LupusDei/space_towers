@@ -1,18 +1,21 @@
 // A* Pathfinding implementation for Space Towers
+// Uses MinHeap for O(log n) node extraction instead of O(n) linear search
 
 import type { Point, CellState } from '../types';
 import { CellState as CS } from '../types';
+import { MinHeap, type HeapNode } from './MinHeap';
 
 // Cells that can be walked through
 const WALKABLE_CELLS: Set<CellState> = new Set([CS.EMPTY, CS.PATH, CS.SPAWN, CS.EXIT]);
 
-interface PathNode {
+interface PathNode extends HeapNode {
   x: number;
   y: number;
   g: number; // Cost from start to this node
   h: number; // Heuristic estimate to end
   f: number; // Total cost (g + h)
   parent: PathNode | null;
+  // key and priority inherited from HeapNode
 }
 
 function heuristic(a: Point, b: Point): number {
@@ -100,44 +103,35 @@ export function findPath(grid: CellState[][], start: Point, end: Point): Point[]
     return [];
   }
 
-  const openSet: Map<string, PathNode> = new Map();
+  // Use MinHeap for O(log n) extraction instead of O(n) linear search
+  const openSet = new MinHeap<PathNode>();
   const closedSet: Set<string> = new Set();
 
+  const startH = heuristic(start, end);
   const startNode: PathNode = {
     x: start.x,
     y: start.y,
     g: 0,
-    h: heuristic(start, end),
-    f: heuristic(start, end),
+    h: startH,
+    f: startH,
     parent: null,
+    key: nodeKey(start),
+    priority: startH,
   };
 
-  openSet.set(nodeKey(start), startNode);
+  openSet.insert(startNode);
 
-  while (openSet.size > 0) {
-    // Find node with lowest f-score
-    let current: PathNode | null = null;
-    let lowestF = Infinity;
-
-    for (const node of openSet.values()) {
-      if (node.f < lowestF) {
-        lowestF = node.f;
-        current = node;
-      }
-    }
-
-    if (current === null) {
-      break;
-    }
+  while (!openSet.isEmpty()) {
+    // Extract node with lowest f-score in O(log n)
+    const current = openSet.extractMin()!;
 
     // Check if we reached the end
     if (current.x === end.x && current.y === end.y) {
       return reconstructPath(current);
     }
 
-    // Move current from open to closed set
-    openSet.delete(nodeKey(current));
-    closedSet.add(nodeKey(current));
+    // Add to closed set
+    closedSet.add(current.key);
 
     // Process neighbors
     for (const neighbor of getNeighbors(grid, current)) {
@@ -155,17 +149,23 @@ export function findPath(grid: CellState[][], start: Point, end: Point): Point[]
           existingNode.g = tentativeG;
           existingNode.f = tentativeG + existingNode.h;
           existingNode.parent = current;
+          // Update priority in heap with O(log n) decreaseKey
+          openSet.decreaseKey(neighborKey, existingNode.f);
         }
       } else {
+        const neighborH = heuristic(neighbor, end);
+        const neighborF = tentativeG + neighborH;
         const newNode: PathNode = {
           x: neighbor.x,
           y: neighbor.y,
           g: tentativeG,
-          h: heuristic(neighbor, end),
-          f: tentativeG + heuristic(neighbor, end),
+          h: neighborH,
+          f: neighborF,
           parent: current,
+          key: neighborKey,
+          priority: neighborF,
         };
-        openSet.set(neighborKey, newNode);
+        openSet.insert(newNode);
       }
     }
   }
