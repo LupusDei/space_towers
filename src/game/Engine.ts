@@ -99,6 +99,14 @@ class GameEngine {
   // Logging throttle
   private snapshotLogCounter = 0;
 
+  // Cached arrays for frequently accessed collections (performance optimization)
+  private towersCache: Tower[] = [];
+  private towersCacheDirty = true;
+  private enemiesCache: Enemy[] = [];
+  private enemiesCacheDirty = true;
+  private projectilesCache: Projectile[] = [];
+  private projectilesCacheDirty = true;
+
   constructor(deps?: Partial<EngineDependencies>) {
     // Use injected dependencies or fall back to globals
     this.eventBus = deps?.eventBus ?? globalEventBus;
@@ -399,6 +407,7 @@ class GameEngine {
     if (!target) {
       // Target no longer exists, remove projectile
       this.state.projectiles.delete(projectile.id);
+      this.projectilesCacheDirty = true;
       this.projectilePool.release(projectile);
       return false;
     }
@@ -440,6 +449,7 @@ class GameEngine {
 
     // Add to engine state and spatial hash
     this.state.enemies.set(enemy.id, enemy);
+    this.enemiesCacheDirty = true;
     this.spatialHash.insert(enemy);
     this.invalidateSortedEnemiesCache();
     console.log('[Engine] Spawned enemy:', enemy.id, 'type:', enemy.type, 'pos:', enemy.position, 'enemies count:', this.state.enemies.size);
@@ -450,6 +460,7 @@ class GameEngine {
 
   private enemyEscaped(enemy: Enemy): void {
     this.state.enemies.delete(enemy.id);
+    this.enemiesCacheDirty = true;
     this.spatialHash.remove(enemy);
     this.invalidateSortedEnemiesCache();
     this.state.lives--;
@@ -481,11 +492,13 @@ class GameEngine {
     }
 
     this.state.projectiles.delete(projectile.id);
+    this.projectilesCacheDirty = true;
     this.projectilePool.release(projectile);
   }
 
   private enemyKilled(enemy: Enemy, towerId: string): void {
     this.state.enemies.delete(enemy.id);
+    this.enemiesCacheDirty = true;
     this.spatialHash.remove(enemy);
     this.invalidateSortedEnemiesCache();
     this.state.credits += enemy.reward;
@@ -540,15 +553,27 @@ class GameEngine {
   // ==========================================================================
 
   getTowers(): Tower[] {
-    return Array.from(this.state.towers.values());
+    if (this.towersCacheDirty) {
+      this.towersCache = Array.from(this.state.towers.values());
+      this.towersCacheDirty = false;
+    }
+    return this.towersCache;
   }
 
   getEnemies(): Enemy[] {
-    return Array.from(this.state.enemies.values());
+    if (this.enemiesCacheDirty) {
+      this.enemiesCache = Array.from(this.state.enemies.values());
+      this.enemiesCacheDirty = false;
+    }
+    return this.enemiesCache;
   }
 
   getProjectiles(): Projectile[] {
-    return Array.from(this.state.projectiles.values());
+    if (this.projectilesCacheDirty) {
+      this.projectilesCache = Array.from(this.state.projectiles.values());
+      this.projectilesCacheDirty = false;
+    }
+    return this.projectilesCache;
   }
 
   getTowerById(id: string): Tower | undefined {
@@ -682,6 +707,7 @@ class GameEngine {
 
   addTower(tower: Tower): void {
     this.state.towers.set(tower.id, tower);
+    this.towersCacheDirty = true;
     this.grid.setCell(tower.position, CS.TOWER);
     this.recalculatePath();
     this.stateNotifier.notify();
@@ -691,6 +717,7 @@ class GameEngine {
     const tower = this.state.towers.get(towerId);
     if (tower) {
       this.state.towers.delete(towerId);
+      this.towersCacheDirty = true;
       this.grid.setCell(tower.position, CS.EMPTY);
       this.recalculatePath();
       this.stateNotifier.notify();
@@ -700,6 +727,7 @@ class GameEngine {
 
   addEnemy(enemy: Enemy): void {
     this.state.enemies.set(enemy.id, enemy);
+    this.enemiesCacheDirty = true;
     this.spatialHash.insert(enemy);
     this.invalidateSortedEnemiesCache();
     this.stateNotifier.notify();
@@ -709,6 +737,7 @@ class GameEngine {
     const enemy = this.state.enemies.get(enemyId);
     if (enemy) {
       this.state.enemies.delete(enemyId);
+      this.enemiesCacheDirty = true;
       this.spatialHash.remove(enemy);
       this.invalidateSortedEnemiesCache();
       this.enemyPool.release(enemy);
@@ -718,6 +747,7 @@ class GameEngine {
 
   addProjectile(projectile: Projectile): void {
     this.state.projectiles.set(projectile.id, projectile);
+    this.projectilesCacheDirty = true;
   }
 
   addCredits(amount: number): void {
@@ -804,6 +834,7 @@ class GameEngine {
 
     // Add tower to the game
     this.state.towers.set(tower.id, tower);
+    this.towersCacheDirty = true;
     this.grid.setCell(position, CS.TOWER);
     this.recalculatePath();
 
@@ -837,6 +868,7 @@ class GameEngine {
 
     // Remove tower from the game
     this.state.towers.delete(towerId);
+    this.towersCacheDirty = true;
     this.grid.setCell(tower.position, CS.EMPTY);
     this.recalculatePath();
 
