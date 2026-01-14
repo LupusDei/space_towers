@@ -5,7 +5,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createEngine } from './Engine';
 import { createEventBus, type EventBus } from './events';
 import { createEnemyPool, createProjectilePool } from './pools';
-import { GamePhase, TowerType, CellState, EnemyType } from './types';
+import { GamePhase, TowerType, CellState, EnemyType, type PhaseChangeEvent } from './types';
 import { GAME_CONFIG, TOWER_STATS, ENEMY_STATS } from './config';
 
 // Type for GameEngine instance (class is not exported directly)
@@ -491,8 +491,8 @@ describe('Engine Integration', () => {
       engine.startWave();
 
       expect(phaseEvent).not.toBeNull();
-      expect((phaseEvent as any).payload.from).toBe(GamePhase.PLANNING);
-      expect((phaseEvent as any).payload.to).toBe(GamePhase.COMBAT);
+      expect((phaseEvent as unknown as PhaseChangeEvent).payload.from).toBe(GamePhase.PLANNING);
+      expect((phaseEvent as unknown as PhaseChangeEvent).payload.to).toBe(GamePhase.COMBAT);
     });
   });
 
