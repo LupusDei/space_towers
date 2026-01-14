@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { engine } from '../game/Engine';
 import { GAME_CONFIG, CANVAS_WIDTH, CANVAS_HEIGHT, TOWER_STATS } from '../game/config';
-import { GamePhase, TowerType, CellState } from '../game/types';
+import { TowerType, CellState } from '../game/types';
 import type { Tower, Enemy, Projectile, Point } from '../game/types';
 import type { SpriteRenderContext } from '../sprites/types';
 
@@ -16,6 +16,9 @@ import { explosionManager } from '../sprites/effects/ExplosionSprite';
 
 // Import combat module for hitscan effects
 import { combatModule } from '../game/combat/CombatModule';
+
+// Import input handler
+import { inputHandler } from '../game/input';
 
 export default function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -32,92 +35,26 @@ export default function Game() {
   hoveredTowerRef.current = hoveredTower;
 
 
-  // Convert mouse position to grid cell
-  const getGridCell = useCallback((e: React.MouseEvent<HTMLCanvasElement>): Point | null => {
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
-
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    const x = Math.floor(((e.clientX - rect.left) * scaleX) / GAME_CONFIG.CELL_SIZE);
-    const y = Math.floor(((e.clientY - rect.top) * scaleY) / GAME_CONFIG.CELL_SIZE);
-
-    if (x >= 0 && x < GAME_CONFIG.GRID_WIDTH && y >= 0 && y < GAME_CONFIG.GRID_HEIGHT) {
-      return { x, y };
-    }
-    return null;
-  }, []);
-
-  // Handle mouse move for hover effect
+  // Handle mouse move for hover effect - delegates to InputHandler
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const cell = getGridCell(e);
-    setHoveredCell(cell);
-
-    // Check if hovering over a tower
-    if (cell) {
-      const tower = engine.getTowerAt(cell);
-      setHoveredTower(tower ?? null);
-    } else {
-      setHoveredTower(null);
-    }
-  }, [getGridCell]);
-
-  // Handle mouse leave
-  const handleMouseLeave = useCallback(() => {
-    setHoveredCell(null);
-    setHoveredTower(null);
+    inputHandler.handleMouseMove(e.clientX, e.clientY);
   }, []);
 
-  // Handle click for tower placement or selection
+  // Handle mouse leave - delegates to InputHandler
+  const handleMouseLeave = useCallback(() => {
+    inputHandler.handleMouseLeave();
+  }, []);
+
+  // Handle click for tower placement or selection - delegates to InputHandler
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const cell = getGridCell(e);
-    if (!cell) return;
+    inputHandler.handleClick(e.clientX, e.clientY);
+  }, []);
 
-    const state = engine.getSnapshot();
-    const towerType = state.selectedTowerType;
-
-    // If we have a tower type selected, try to place it
-    if (towerType) {
-      const phase = engine.getPhase();
-      if (phase !== GamePhase.PLANNING) return;
-
-      // Try to place tower
-      const tower = engine.placeTower(towerType, cell);
-      if (tower) {
-        console.log(`Placed ${towerType} tower at (${cell.x}, ${cell.y})`);
-      }
-      return;
-    }
-
-    // No tower type selected - check if clicking on a tower to select it
-    const clickedTower = engine.getTowerAt(cell);
-    if (clickedTower) {
-      // Toggle selection: deselect if already selected, else select
-      if (state.selectedTower === clickedTower.id) {
-        engine.setSelectedTower(null);
-      } else {
-        engine.setSelectedTower(clickedTower.id);
-      }
-    } else {
-      // Clicked on empty space - deselect any selected tower
-      engine.setSelectedTower(null);
-    }
-  }, [getGridCell]);
-
-  // Handle right-click for tower selling
+  // Handle right-click for tower selling - delegates to InputHandler
   const handleContextMenu = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    const cell = getGridCell(e);
-    if (!cell) return;
-
-    const tower = engine.getTowerAt(cell);
-    if (tower) {
-      const refund = engine.sellTower(tower.id);
-      console.log(`Sold tower for ${refund} credits`);
-    }
-  }, [getGridCell]);
+    inputHandler.handleContextMenu(e.clientX, e.clientY);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -128,6 +65,12 @@ export default function Game() {
 
     // Initialize engine with canvas (only once on mount)
     engine.init(canvas);
+
+    // Initialize input handler with canvas and hover state callbacks
+    inputHandler.init(canvas, {
+      onHoveredCellChange: setHoveredCell,
+      onHoveredTowerChange: setHoveredTower,
+    });
 
     // Start the game automatically for now
     engine.startGame();
