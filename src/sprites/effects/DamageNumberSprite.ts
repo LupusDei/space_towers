@@ -71,15 +71,21 @@ class DamageNumberPool {
   }
 
   update(currentTime: number): void {
-    // Remove expired numbers and return to pool
-    for (let i = this.activeNumbers.length - 1; i >= 0; i--) {
+    // Remove expired numbers using swap-and-pop (O(n) instead of O(n²) splice)
+    let i = 0;
+    while (i < this.activeNumbers.length) {
       const num = this.activeNumbers[i];
       const elapsed = currentTime - num.startTime;
 
       if (elapsed >= DAMAGE_NUMBER_DURATION) {
         num.active = false;
-        this.activeNumbers.splice(i, 1);
+        // Swap with last element and pop (O(1) removal)
+        this.activeNumbers[i] = this.activeNumbers[this.activeNumbers.length - 1];
+        this.activeNumbers.pop();
         this.pool.push(num);
+        // Don't increment i - need to check the swapped element
+      } else {
+        i++;
       }
     }
   }
