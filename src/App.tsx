@@ -6,6 +6,7 @@ import Game from './components/Game';
 import HUD from './components/HUD';
 import TowerPanel from './components/TowerPanel';
 import GameOver from './components/GameOver';
+import EngageButton from './components/EngageButton';
 
 function App() {
   const { state, actions } = useGameEngine();
@@ -63,6 +64,7 @@ function App() {
             onSelectTowerType={handleSelectTowerType}
             onSellTower={handleSellTower}
           />
+          <EngageButton phase={state.phase} onEngage={actions.engage} />
         </div>
       </div>
       <GameOver onPlayAgain={handlePlayAgain} />

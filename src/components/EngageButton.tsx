@@ -7,10 +7,7 @@ interface EngageButtonProps {
 }
 
 const baseButtonStyle: React.CSSProperties = {
-  position: 'absolute',
-  bottom: spacing.lg,
-  left: '50%',
-  transform: 'translateX(-50%)',
+  width: '100%',
   padding: `${spacing.md} ${spacing.xl}`,
   fontSize: typography.fontSize.lg,
   fontFamily: typography.fontFamily.base,
