@@ -1,5 +1,5 @@
 // Engine - Main game orchestrator for Space Towers
-// Manages game loop, phase state machine, module initialization, and React subscriptions
+// Coordinates game modules and provides unified API for game operations
 
 import type {
   GameState,
@@ -28,20 +28,17 @@ import { TowerFactory } from './towers/TowerFactory';
 import { createWaveController, type WaveController } from './enemies/Wave';
 import { combatModule } from './combat/CombatModule';
 import { createSpatialHash, type SpatialHash } from './SpatialHash';
+import {
+  StateNotifier,
+  GameLoopManager,
+  GameStateMachine,
+} from './core';
 
 // ============================================================================
-// Constants
-// ============================================================================
-
-const FIXED_TIMESTEP = 1000 / GAME_CONFIG.TICK_RATE; // ~16.67ms at 60fps
-const MAX_FRAME_TIME = 250; // Prevent spiral of death
-
-// ============================================================================
-// Engine State
+// Engine State (Data Container)
 // ============================================================================
 
 interface EngineState {
-  phase: GamePhase;
   wave: number;
   lives: number;
   credits: number;
@@ -77,15 +74,10 @@ class GameEngine {
   private spawnPoint: Point = { x: 0, y: 0 };
   private exitPoint: Point = { x: 0, y: 0 };
 
-  // Game loop state
-  private running = false;
-  private lastTime = 0;
-  private accumulator = 0;
-  private animationFrameId: number | null = null;
-
-  // Subscribers for React integration
-  private subscribers = new Set<() => void>();
-  private stateVersion = 0;
+  // Core modules
+  private stateNotifier: StateNotifier;
+  private loopManager: GameLoopManager;
+  private stateMachine: GameStateMachine;
 
   // Factory for creating towers
   private towerFactory = new TowerFactory();
@@ -101,12 +93,27 @@ class GameEngine {
   private enemyPool: ObjectPool<Enemy>;
   private projectilePool: ObjectPool<Projectile>;
 
+  // Logging throttle
+  private snapshotLogCounter = 0;
+
   constructor(deps?: Partial<EngineDependencies>) {
     // Use injected dependencies or fall back to globals
     this.eventBus = deps?.eventBus ?? globalEventBus;
     this.enemyPool = deps?.enemyPool ?? globalEnemyPool;
     this.projectilePool = deps?.projectilePool ?? globalProjectilePool;
 
+    // Initialize core modules
+    this.stateNotifier = new StateNotifier();
+    this.loopManager = new GameLoopManager();
+    this.stateMachine = new GameStateMachine({
+      onPhaseChange: this.handlePhaseChange.bind(this),
+    });
+
+    // Configure game loop
+    this.loopManager.setUpdateCallback(this.update.bind(this));
+    this.loopManager.setPausedCheck(() => this.state.isPaused);
+
+    // Initialize game state
     this.grid = createGrid();
     this.state = this.createInitialState();
     this.spatialHash = createSpatialHash();
@@ -121,7 +128,6 @@ class GameEngine {
 
   private createInitialState(): EngineState {
     return {
-      phase: Phase.MENU,
       wave: 0,
       lives: GAME_CONFIG.STARTING_LIVES,
       credits: GAME_CONFIG.STARTING_CREDITS,
@@ -148,7 +154,7 @@ class GameEngine {
     // Calculate initial path
     this.recalculatePath();
 
-    this.notifySubscribers();
+    this.stateNotifier.notify();
   }
 
   private setupDefaultLevel(): void {
@@ -166,12 +172,12 @@ class GameEngine {
   }
 
   destroy(): void {
-    this.stop();
+    this.loopManager.stop();
     this.eventBus.clear();
     this.enemyPool.reset();
     this.projectilePool.reset();
     this.waveController.reset();
-    this.subscribers.clear();
+    this.stateNotifier.clear();
   }
 
   /**
@@ -179,8 +185,9 @@ class GameEngine {
    * Useful for tests that need to reset state between test cases.
    */
   reset(): void {
-    this.stop();
+    this.loopManager.stop();
     this.state = this.createInitialState();
+    this.stateMachine.reset();
     this.grid = createGrid();
     this.path = [];
     this.spawnPoint = { x: 0, y: 0 };
@@ -190,38 +197,30 @@ class GameEngine {
     this.eventBus.clear();
     this.enemyPool.reset();
     this.projectilePool.reset();
-    this.subscribers.clear();
-    this.stateVersion = 0;
+    this.stateNotifier.reset();
   }
 
   // ==========================================================================
-  // Phase State Machine
+  // Phase State Machine (delegated to GameStateMachine)
   // ==========================================================================
 
-  private setPhase(newPhase: GamePhase): void {
-    const oldPhase = this.state.phase;
-    if (oldPhase === newPhase) return;
-
-    this.state.phase = newPhase;
-
-    this.eventBus.emit(createEvent('PHASE_CHANGE', { from: oldPhase, to: newPhase }));
-    this.notifySubscribers();
+  private handlePhaseChange(from: GamePhase, to: GamePhase): void {
+    this.eventBus.emit(createEvent('PHASE_CHANGE', { from, to }));
+    this.stateNotifier.notify();
   }
 
   startGame(): void {
     // Allow starting from MENU, DEFEAT, or VICTORY phases
-    if (this.state.phase !== Phase.MENU &&
-        this.state.phase !== Phase.DEFEAT &&
-        this.state.phase !== Phase.VICTORY) {
+    if (!this.stateMachine.canStartGame()) {
       return;
     }
 
     // Stop any running game loop when restarting
-    this.stop();
+    this.loopManager.stop();
 
     this.state = this.createInitialState();
-    this.state.phase = Phase.PLANNING;
     this.state.wave = 1;
+    this.stateMachine.forcePhase(Phase.PLANNING);
     this.grid.reset();
     this.setupDefaultLevel();
     this.recalculatePath();
@@ -231,12 +230,12 @@ class GameEngine {
     combatModule.init(this.getQueryInterface(), this.getCommandInterface());
 
     this.eventBus.emit(createEvent('GAME_START', { wave: 1 }));
-    this.notifySubscribers();
-    this.start();
+    this.stateNotifier.notify();
+    this.loopManager.start();
   }
 
   startWave(): void {
-    if (this.state.phase !== Phase.PLANNING) return;
+    if (!this.stateMachine.canStartWave()) return;
 
     // Clear towers placed this round - they no longer get full refund
     this.state.towersPlacedThisRound.clear();
@@ -244,12 +243,12 @@ class GameEngine {
     // Recalculate path before combat begins
     this.recalculatePath();
 
-    this.setPhase(Phase.COMBAT);
+    this.stateMachine.transitionTo(Phase.COMBAT);
     this.waveController.startWave(this.state.wave);
   }
 
   endWave(): void {
-    if (this.state.phase !== Phase.COMBAT) return;
+    if (!this.stateMachine.isCombat()) return;
 
     // Award wave completion reward
     const waveReward = this.waveController.reward;
@@ -262,84 +261,48 @@ class GameEngine {
 
     // Advance to next wave
     this.state.wave++;
-    this.setPhase(Phase.PLANNING);
+    this.stateMachine.transitionTo(Phase.PLANNING);
   }
 
   pause(): void {
-    if (this.state.phase === Phase.COMBAT || this.state.phase === Phase.PLANNING) {
+    if (this.stateMachine.canPause()) {
       this.state.isPaused = true;
-      this.setPhase(Phase.PAUSED);
+      this.stateMachine.transitionTo(Phase.PAUSED);
     }
   }
 
   resume(): void {
-    if (this.state.phase === Phase.PAUSED) {
+    if (this.stateMachine.canResume()) {
       this.state.isPaused = false;
       // Return to combat or planning based on enemies
-      this.setPhase(this.state.enemies.size > 0 ? Phase.COMBAT : Phase.PLANNING);
+      const resumePhase = this.state.enemies.size > 0 ? Phase.COMBAT : Phase.PLANNING;
+      this.stateMachine.transitionTo(resumePhase);
     }
   }
 
   victory(): void {
-    this.setPhase(Phase.VICTORY);
-    this.stop();
+    this.stateMachine.forcePhase(Phase.VICTORY);
+    this.loopManager.stop();
     this.eventBus.emit(createEvent('GAME_OVER', { victory: true, score: this.state.score }));
   }
 
   defeat(): void {
-    this.setPhase(Phase.DEFEAT);
-    this.stop();
+    this.stateMachine.forcePhase(Phase.DEFEAT);
+    this.loopManager.stop();
     this.eventBus.emit(createEvent('GAME_OVER', { victory: false, score: this.state.score }));
   }
 
   // ==========================================================================
-  // Game Loop (Fixed Timestep)
+  // Game Loop (delegated to GameLoopManager)
   // ==========================================================================
 
   start(): void {
-    if (this.running) return;
-
-    this.running = true;
-    this.lastTime = performance.now();
-    this.accumulator = 0;
-
-    this.gameLoop(this.lastTime);
+    this.loopManager.start();
   }
 
   stop(): void {
-    this.running = false;
-    if (this.animationFrameId !== null) {
-      cancelAnimationFrame(this.animationFrameId);
-      this.animationFrameId = null;
-    }
+    this.loopManager.stop();
   }
-
-  private gameLoop = (currentTime: number): void => {
-    if (!this.running) return;
-
-    let frameTime = currentTime - this.lastTime;
-    this.lastTime = currentTime;
-
-    // Clamp frame time to prevent spiral of death
-    if (frameTime > MAX_FRAME_TIME) {
-      frameTime = MAX_FRAME_TIME;
-    }
-
-    this.accumulator += frameTime;
-
-    // Fixed timestep updates
-    while (this.accumulator >= FIXED_TIMESTEP) {
-      if (!this.state.isPaused) {
-        this.update(FIXED_TIMESTEP / 1000); // Convert to seconds
-      }
-      this.accumulator -= FIXED_TIMESTEP;
-    }
-
-    // Note: Rendering is handled by Game.tsx component, not here
-    // This allows React to manage the render loop while Engine handles game logic
-
-    this.animationFrameId = requestAnimationFrame(this.gameLoop);
-  };
 
   // ==========================================================================
   // Update Logic
@@ -349,7 +312,7 @@ class GameEngine {
     this.state.time += dt * 1000;
 
     // Update based on phase
-    if (this.state.phase === Phase.COMBAT) {
+    if (this.stateMachine.isCombat()) {
       this.updateCombat(dt);
     }
   }
@@ -473,7 +436,7 @@ class GameEngine {
     this.state.enemies.set(enemy.id, enemy);
     this.spatialHash.insert(enemy);
     console.log('[Engine] Spawned enemy:', enemy.id, 'type:', enemy.type, 'pos:', enemy.position, 'enemies count:', this.state.enemies.size);
-    this.notifySubscribers();
+    this.stateNotifier.notify();
 
     return enemy;
   }
@@ -487,7 +450,7 @@ class GameEngine {
     this.eventBus.emit(createEvent('LIVES_CHANGED', { amount: -1, newTotal: this.state.lives }));
 
     this.enemyPool.release(enemy);
-    this.notifySubscribers();
+    this.stateNotifier.notify();
   }
 
   private projectileHit(projectile: Projectile): void {
@@ -525,24 +488,17 @@ class GameEngine {
     );
 
     this.enemyPool.release(enemy);
-    this.notifySubscribers();
+    this.stateNotifier.notify();
   }
 
   // ==========================================================================
-  // React Subscribe Pattern
+  // React Subscribe Pattern (delegated to StateNotifier)
   // ==========================================================================
 
   subscribe(callback: () => void): () => void {
-    this.subscribers.add(callback);
-    return () => this.subscribers.delete(callback);
+    return this.stateNotifier.subscribe(callback);
   }
 
-  private notifySubscribers(): void {
-    this.stateVersion++;
-    this.subscribers.forEach((cb) => cb());
-  }
-
-  private snapshotLogCounter = 0;
   getSnapshot(): GameState {
     this.snapshotLogCounter++;
     if (this.snapshotLogCounter % 120 === 0 && this.state.enemies.size > 0) {
@@ -550,7 +506,7 @@ class GameEngine {
         Array.from(this.state.enemies.values()).map(e => ({ id: e.id, pos: {...e.position} })));
     }
     return {
-      phase: this.state.phase,
+      phase: this.stateMachine.getPhase(),
       wave: this.state.wave,
       lives: this.state.lives,
       credits: this.state.credits,
@@ -567,7 +523,7 @@ class GameEngine {
   }
 
   getVersion(): number {
-    return this.stateVersion;
+    return this.stateNotifier.getVersion();
   }
 
   // ==========================================================================
@@ -648,7 +604,7 @@ class GameEngine {
   }
 
   getPhase(): GamePhase {
-    return this.state.phase;
+    return this.stateMachine.getPhase();
   }
 
   getCredits(): number {
@@ -707,7 +663,7 @@ class GameEngine {
     this.state.towers.set(tower.id, tower);
     this.grid.setCell(tower.position, CS.TOWER);
     this.recalculatePath();
-    this.notifySubscribers();
+    this.stateNotifier.notify();
   }
 
   removeTower(towerId: string): Tower | undefined {
@@ -716,7 +672,7 @@ class GameEngine {
       this.state.towers.delete(towerId);
       this.grid.setCell(tower.position, CS.EMPTY);
       this.recalculatePath();
-      this.notifySubscribers();
+      this.stateNotifier.notify();
     }
     return tower;
   }
@@ -724,7 +680,7 @@ class GameEngine {
   addEnemy(enemy: Enemy): void {
     this.state.enemies.set(enemy.id, enemy);
     this.spatialHash.insert(enemy);
-    this.notifySubscribers();
+    this.stateNotifier.notify();
   }
 
   removeEnemy(enemyId: string): void {
@@ -733,7 +689,7 @@ class GameEngine {
       this.state.enemies.delete(enemyId);
       this.spatialHash.remove(enemy);
       this.enemyPool.release(enemy);
-      this.notifySubscribers();
+      this.stateNotifier.notify();
     }
   }
 
@@ -744,7 +700,7 @@ class GameEngine {
   addCredits(amount: number): void {
     this.state.credits += amount;
     this.eventBus.emit(createEvent('CREDITS_CHANGED', { amount, newTotal: this.state.credits }));
-    this.notifySubscribers();
+    this.stateNotifier.notify();
   }
 
   spendCredits(amount: number): boolean {
@@ -753,18 +709,18 @@ class GameEngine {
     this.eventBus.emit(
       createEvent('CREDITS_CHANGED', { amount: -amount, newTotal: this.state.credits })
     );
-    this.notifySubscribers();
+    this.stateNotifier.notify();
     return true;
   }
 
   setSelectedTowerType(type: TowerType | null): void {
     this.state.selectedTowerType = type;
-    this.notifySubscribers();
+    this.stateNotifier.notify();
   }
 
   setSelectedTower(towerId: string | null): void {
     this.state.selectedTower = towerId;
-    this.notifySubscribers();
+    this.stateNotifier.notify();
   }
 
   getSpawnPoint(): Point {
@@ -797,7 +753,7 @@ class GameEngine {
    */
   placeTower(type: TowerType, position: Point): Tower | null {
     // Must be in planning phase
-    if (this.state.phase !== Phase.PLANNING) {
+    if (!this.stateMachine.isPlanning()) {
       return null;
     }
 
@@ -833,7 +789,7 @@ class GameEngine {
 
     // Emit event
     this.eventBus.emit(createEvent('TOWER_PLACED', { tower: tower.toData(), cost: stats.cost }));
-    this.notifySubscribers();
+    this.stateNotifier.notify();
 
     return tower;
   }
@@ -870,7 +826,7 @@ class GameEngine {
     // Emit event
     const towerData = tower instanceof Object && 'toData' in tower ? (tower as { toData: () => Tower }).toData() : tower;
     this.eventBus.emit(createEvent('TOWER_SOLD', { tower: towerData, refund }));
-    this.notifySubscribers();
+    this.stateNotifier.notify();
 
     return refund;
   }
