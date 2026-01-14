@@ -159,6 +159,9 @@ export default function Game() {
         PathVisualizationSprite.draw(renderContext, state.path);
       }
 
+      // Render tower preview when placing
+      renderTowerPreview(renderContext, hoveredCellRef.current, selectedTowerTypeRef.current);
+
       // Render towers
       for (const tower of state.towers.values()) {
         renderTower(renderContext, tower, state.selectedTower === tower.id);
@@ -262,6 +265,39 @@ function renderGrid(
       drawCell(context, position, cellState, canPlace);
     }
   }
+}
+
+function renderTowerPreview(
+  context: SpriteRenderContext,
+  hoveredCell: Point | null,
+  selectedTowerType: TowerType | null
+): void {
+  // Only show preview if we have a hovered cell and selected tower type
+  if (!hoveredCell || !selectedTowerType) return;
+
+  // Check if placement is valid
+  if (!engine.canPlaceTower(hoveredCell)) return;
+
+  const sprite = towerSprites[selectedTowerType];
+  if (!sprite) return;
+
+  // Create a preview tower object
+  const previewTower: Tower = {
+    id: 'preview',
+    type: selectedTowerType,
+    position: hoveredCell,
+    level: 1,
+    damage: 0,
+    range: 0,
+    fireRate: 0,
+    lastFired: 0,
+    target: null,
+  };
+
+  // Draw with reduced opacity
+  context.ctx.globalAlpha = 0.4;
+  sprite.draw(context, previewTower);
+  context.ctx.globalAlpha = 1.0;
 }
 
 function renderTower(context: SpriteRenderContext, tower: Tower, isSelected: boolean): void {
