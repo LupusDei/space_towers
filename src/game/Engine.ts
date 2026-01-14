@@ -201,7 +201,15 @@ class GameEngine {
   }
 
   startGame(): void {
-    if (this.state.phase !== Phase.MENU) return;
+    // Allow starting from MENU, DEFEAT, or VICTORY phases
+    if (this.state.phase !== Phase.MENU &&
+        this.state.phase !== Phase.DEFEAT &&
+        this.state.phase !== Phase.VICTORY) {
+      return;
+    }
+
+    // Stop any running game loop when restarting
+    this.stop();
 
     this.state = this.createInitialState();
     this.state.phase = Phase.PLANNING;
