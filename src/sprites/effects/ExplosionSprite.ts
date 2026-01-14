@@ -161,4 +161,77 @@ export function getExplosionForEnemy(enemyType: string): EffectSprite {
   return createExplosionSprite(enemyType);
 }
 
+// ============================================================================
+// Explosion Manager - Track and render active explosions
+// ============================================================================
+
+const EXPLOSION_DURATION = 300; // ms
+
+export interface ActiveExplosion {
+  id: number;
+  position: Point; // In pixels
+  enemyType: string;
+  startTime: number;
+  sprite: EffectSprite;
+}
+
+class ExplosionManager {
+  private explosions: ActiveExplosion[] = [];
+  private nextId = 0;
+
+  /**
+   * Spawn an explosion at a position.
+   * @param position - Position in pixels (not grid coordinates)
+   * @param enemyType - Enemy type for color scheme
+   * @param time - Current game time in ms
+   */
+  spawn(position: Point, enemyType: string, time: number): void {
+    this.explosions.push({
+      id: this.nextId++,
+      position: { x: position.x, y: position.y },
+      enemyType,
+      startTime: time,
+      sprite: createExplosionSprite(enemyType),
+    });
+  }
+
+  /**
+   * Update and draw all active explosions.
+   * Removes expired explosions automatically.
+   */
+  drawAll(context: SpriteRenderContext): void {
+    const currentTime = context.time * 1000; // Convert to ms
+
+    // Remove expired explosions and draw active ones
+    this.explosions = this.explosions.filter((explosion) => {
+      const elapsed = currentTime - explosion.startTime;
+      const progress = elapsed / EXPLOSION_DURATION;
+
+      if (progress >= 1) {
+        return false; // Remove expired
+      }
+
+      // Convert pixel position to grid position for sprite
+      const gridPos: Point = {
+        x: explosion.position.x / context.cellSize,
+        y: explosion.position.y / context.cellSize,
+      };
+
+      explosion.sprite.draw(context, gridPos, progress);
+      return true;
+    });
+  }
+
+  clear(): void {
+    this.explosions = [];
+  }
+
+  getActive(): ActiveExplosion[] {
+    return this.explosions;
+  }
+}
+
+// Singleton instance
+export const explosionManager = new ExplosionManager();
+
 export default createExplosionSprite;

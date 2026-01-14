@@ -17,6 +17,8 @@ import { findTarget, findChainTargets, getEnemiesInSplash } from '../towers/Targ
 import { projectilePool } from '../pools';
 import { eventBus, createEvent } from '../events';
 import { GAME_CONFIG } from '../config';
+import { spawnDamageNumber } from '../../sprites/effects/DamageNumberSprite';
+import { explosionManager } from '../../sprites/effects/ExplosionSprite';
 
 // ============================================================================
 // Combat Constants
@@ -406,15 +408,34 @@ class CombatModuleImpl implements GameModule {
   // Damage Application
   // ==========================================================================
 
-  private applyDamage(enemy: Enemy, damage: number, towerId: string): void {
+  private applyDamage(enemy: Enemy, damage: number, _towerId: string): void {
     enemy.health -= damage;
 
+    // Spawn damage number at enemy position
+    if (damage > 0 && this.commands) {
+      const currentTime = this.commands.getTime();
+      // Enemy position is in pixels, add offset for center
+      const damagePos = {
+        x: enemy.position.x + GAME_CONFIG.CELL_SIZE / 2,
+        y: enemy.position.y + GAME_CONFIG.CELL_SIZE / 2,
+      };
+      spawnDamageNumber(Math.round(damage), damagePos, currentTime);
+    }
+
     if (enemy.health <= 0) {
-      this.handleEnemyKilled(enemy, towerId);
+      this.handleEnemyKilled(enemy, _towerId);
     }
   }
 
   private handleEnemyKilled(enemy: Enemy, towerId: string): void {
+    // Spawn explosion at enemy position
+    const currentTime = this.commands!.getTime();
+    const explosionPos = {
+      x: enemy.position.x + GAME_CONFIG.CELL_SIZE / 2,
+      y: enemy.position.y + GAME_CONFIG.CELL_SIZE / 2,
+    };
+    explosionManager.spawn(explosionPos, enemy.type, currentTime);
+
     // Remove enemy from game
     this.commands!.removeEnemy(enemy.id);
 

@@ -8,6 +8,13 @@ import type { SpriteRenderContext } from '../sprites/types';
 // Import sprites
 import { drawCell } from '../sprites/environment/GridCellSprites';
 import { PathVisualizationSprite } from '../sprites/environment/PathVisualizationSprite';
+
+// Import effects
+import { drawAllDamageNumbers } from '../sprites/effects/DamageNumberSprite';
+import { explosionManager } from '../sprites/effects/ExplosionSprite';
+
+// Import combat module for hitscan effects
+import { combatModule } from '../game/combat/CombatModule';
 import { LaserTurretSprite } from '../sprites/towers/LaserTurretSprite';
 import { MissileBatterySprite } from '../sprites/towers/MissileBatterySprite';
 import { TeslaCoilSprite } from '../sprites/towers/TeslaCoilSprite';
@@ -195,6 +202,15 @@ export default function Game() {
         renderProjectile(renderContext, projectile);
       }
 
+      // Render tower firing effects (hitscan beams)
+      renderHitscanEffects(renderContext, towersArray);
+
+      // Render explosions
+      explosionManager.drawAll(renderContext);
+
+      // Render damage numbers
+      drawAllDamageNumbers(renderContext);
+
       // Render HUD overlay
       renderHUD(ctx!, state);
 
@@ -323,6 +339,63 @@ function renderProjectile(context: SpriteRenderContext, projectile: Projectile):
   ctx.beginPath();
   ctx.arc(x + cellSize / 2, y + cellSize / 2, 8, 0, Math.PI * 2);
   ctx.fill();
+}
+
+function renderHitscanEffects(context: SpriteRenderContext, towers: Tower[]): void {
+  // Get active hitscan effects from combat module
+  const hitscanEffects = combatModule.getHitscanEffects();
+
+  // Create a map of towers by ID for quick lookup
+  const towerMap = new Map<string, Tower>();
+  for (const tower of towers) {
+    towerMap.set(tower.id, tower);
+  }
+
+  // Render each active hitscan effect
+  for (const effect of hitscanEffects) {
+    const tower = towerMap.get(effect.towerId);
+    if (!tower) continue;
+
+    // Get the sprite for this tower type
+    const sprite = towerSprites[tower.type];
+    if (!sprite || !sprite.drawFiring) continue;
+
+    // Convert target position to grid coordinates for drawFiring
+    // Effect target positions are in pixels (enemy positions)
+    const targetGridPos: Point = {
+      x: effect.targetPosition.x / context.cellSize,
+      y: effect.targetPosition.y / context.cellSize,
+    };
+
+    sprite.drawFiring(context, tower, targetGridPos);
+  }
+
+  // Also render chain lightning effects
+  const chainEffects = combatModule.getChainEffects();
+  for (const effect of chainEffects) {
+    const tower = towerMap.get(effect.towerId);
+    if (!tower || tower.type !== TowerType.TESLA) continue;
+
+    const sprite = towerSprites[tower.type];
+    if (!sprite || !sprite.drawFiring) continue;
+
+    // Draw chain to each target in sequence
+    for (let i = 0; i < effect.targets.length; i++) {
+      const targetPos = effect.targets[i];
+      // Chain targets are in pixels
+      const targetGridPos: Point = {
+        x: targetPos.x / context.cellSize,
+        y: targetPos.y / context.cellSize,
+      };
+
+      // For first target, draw from tower
+      if (i === 0) {
+        sprite.drawFiring(context, tower, targetGridPos);
+      }
+      // For subsequent targets, draw chain from previous target
+      // (The TeslaCoilSprite already handles multi-target in some way)
+    }
+  }
 }
 
 function renderHUD(ctx: CanvasRenderingContext2D, state: ReturnType<typeof engine.getSnapshot>): void {
