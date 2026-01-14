@@ -76,9 +76,10 @@ export function createSpatialHash(): SpatialHash {
   }
 
   function query(position: Point, range: number): Enemy[] {
-    // Convert grid position to pixel position for comparison
-    const centerX = position.x * GAME_CONFIG.CELL_SIZE;
-    const centerY = position.y * GAME_CONFIG.CELL_SIZE;
+    // Convert grid position to pixel center for comparison
+    // Tower fires from its cell center, so range check should use center too
+    const centerX = position.x * GAME_CONFIG.CELL_SIZE + GAME_CONFIG.CELL_SIZE / 2;
+    const centerY = position.y * GAME_CONFIG.CELL_SIZE + GAME_CONFIG.CELL_SIZE / 2;
     const rangeSquared = range * range;
 
     // Calculate cell range to check

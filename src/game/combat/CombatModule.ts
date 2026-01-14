@@ -552,6 +552,14 @@ class CombatModuleImpl implements GameModule {
   getAllTowerInstances(): Map<string, TowerClass> {
     return this.state.towerInstances;
   }
+
+  /**
+   * Clean up expired visual effects.
+   * Should be called every frame regardless of game phase to prevent lingering effects.
+   */
+  cleanupVisualEffects(currentTime: number): void {
+    this.cleanupEffects(currentTime);
+  }
 }
 
 // ============================================================================

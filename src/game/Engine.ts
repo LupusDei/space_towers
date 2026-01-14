@@ -327,6 +327,9 @@ class GameEngine {
     if (this.stateMachine.isCombat()) {
       this.updateCombat(dt);
     }
+
+    // Always clean up visual effects to prevent lingering after combat ends
+    combatModule.cleanupVisualEffects(this.state.time);
   }
 
   private updateCombat(dt: number): void {

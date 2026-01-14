@@ -66,6 +66,30 @@ describe('SpatialHash', () => {
       expect(result).toContain(e2);
       expect(result).not.toContain(e3);
     });
+
+    it('should query from cell center, not top-left', () => {
+      // Tower at grid (2, 2) has visual center at pixel:
+      // (2 * CELL_SIZE + CELL_SIZE/2, 2 * CELL_SIZE + CELL_SIZE/2) = (110, 110)
+      const cellSize = GAME_CONFIG.CELL_SIZE;
+      const towerCenterX = 2 * cellSize + cellSize / 2;
+      const towerCenterY = 2 * cellSize + cellSize / 2;
+
+      // Enemy exactly at tower's visual center
+      const enemyAtCenter = createMockEnemy('center', towerCenterX, towerCenterY);
+      spatialHash.insert(enemyAtCenter);
+
+      // Query with very small range should find enemy at exact center
+      const result = spatialHash.query({ x: 2, y: 2 }, 1);
+      expect(result).toContain(enemyAtCenter);
+
+      // Enemy at old top-left position (before fix) should NOT be at distance 0
+      const enemyAtTopLeft = createMockEnemy('topleft', 2 * cellSize, 2 * cellSize);
+      spatialHash.insert(enemyAtTopLeft);
+
+      // Query with range 0 should NOT find enemy at top-left
+      const resultZeroRange = spatialHash.query({ x: 2, y: 2 }, 0);
+      expect(resultZeroRange).not.toContain(enemyAtTopLeft);
+    });
   });
 
   describe('remove', () => {
@@ -175,14 +199,17 @@ describe('SpatialHash', () => {
     });
 
     it('should handle query with zero range', () => {
-      const enemy = createMockEnemy('e1', GAME_CONFIG.CELL_SIZE, GAME_CONFIG.CELL_SIZE);
+      // Enemy must be at the pixel center of grid cell (1,1) to be found with zero range
+      // Grid (1,1) center = (CELL_SIZE + CELL_SIZE/2, CELL_SIZE + CELL_SIZE/2)
+      const centerX = GAME_CONFIG.CELL_SIZE + GAME_CONFIG.CELL_SIZE / 2;
+      const centerY = GAME_CONFIG.CELL_SIZE + GAME_CONFIG.CELL_SIZE / 2;
+      const enemy = createMockEnemy('e1', centerX, centerY);
       spatialHash.insert(enemy);
 
-      // Query at exact position with zero range should only find if exactly at center
+      // Query at grid (1,1) with zero range - only finds enemies exactly at cell center
       const result = spatialHash.query({ x: 1, y: 1 }, 0);
 
-      // The enemy is at pixel position (CELL_SIZE, CELL_SIZE)
-      // Query at grid (1,1) = pixel (CELL_SIZE, CELL_SIZE) with range 0
+      // The enemy is at the exact center of grid cell (1,1)
       // Distance is 0, so it should be found
       expect(result).toContain(enemy);
     });
