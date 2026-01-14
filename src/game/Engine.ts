@@ -454,6 +454,7 @@ class GameEngine {
 
     // Add to engine state
     this.state.enemies.set(enemy.id, enemy);
+    console.log('[Engine] Spawned enemy:', enemy.id, 'type:', enemy.type, 'pos:', enemy.position, 'enemies count:', this.state.enemies.size);
     this.notifySubscribers();
 
     return enemy;
@@ -521,7 +522,13 @@ class GameEngine {
     this.subscribers.forEach((cb) => cb());
   }
 
+  private snapshotLogCounter = 0;
   getSnapshot(): GameState {
+    this.snapshotLogCounter++;
+    if (this.snapshotLogCounter % 120 === 0 && this.state.enemies.size > 0) {
+      console.log('[Engine.getSnapshot] enemies in state:', this.state.enemies.size,
+        Array.from(this.state.enemies.values()).map(e => ({ id: e.id, pos: {...e.position} })));
+    }
     return {
       phase: this.state.phase,
       wave: this.state.wave,

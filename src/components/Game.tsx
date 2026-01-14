@@ -131,7 +131,12 @@ export default function Game() {
     let animationFrameId: number;
     let lastTime = performance.now();
 
+    let frameCount = 0;
     function render(currentTime: number) {
+      frameCount++;
+      if (frameCount % 60 === 0) {
+        console.log('[Game.tsx render] Frame:', frameCount, 'Time:', timeRef.current.toFixed(2));
+      }
       const dt = (currentTime - lastTime) / 1000;
       lastTime = currentTime;
       timeRef.current += dt;
@@ -148,8 +153,8 @@ export default function Game() {
       ctx!.fillStyle = '#0a0a1a';
       ctx!.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-      // Render grid cells (use ref for hovered, get selectedTowerType from state)
-      renderGrid(renderContext, state.grid, hoveredCellRef.current, state.selectedTowerType);
+      // Render grid cells (use refs to get current values without re-running effect)
+      renderGrid(renderContext, state.grid, hoveredCellRef.current, selectedTowerTypeRef.current);
 
       // Render path visualization
       if (state.path.length > 0) {
@@ -160,22 +165,51 @@ export default function Game() {
       renderTowerPreview(renderContext, hoveredCellRef.current, selectedTowerTypeRef.current);
 
       // Render towers
-      for (const tower of state.towers.values()) {
+      const towersArray = Array.from(state.towers.values());
+      if (towersArray.length > 0 && Math.random() < 0.01) { // Log occasionally to reduce spam
+        console.log('Towers to render:', towersArray.length, towersArray.map(t => ({ id: t.id, pos: t.position, type: t.type })));
+      }
+      for (const tower of towersArray) {
         renderTower(renderContext, tower, state.selectedTower === tower.id);
       }
 
       // Render enemies
-      for (const enemy of state.enemies.values()) {
+      const enemiesArray = Array.from(state.enemies.values());
+      if (enemiesArray.length > 0 && frameCount % 60 === 0) {
+        console.log('Enemies to render:', enemiesArray.length, enemiesArray.map(e => ({ id: e.id, pos: e.position, health: e.health })));
+      }
+      for (const enemy of enemiesArray) {
+        // DEBUG: Draw red rectangle at enemy position to verify coordinates
+        // Enemy position is in pixels, add cellSize/2 to get center like sprites do
+        const debugX = enemy.position.x + GAME_CONFIG.CELL_SIZE / 2;
+        const debugY = enemy.position.y + GAME_CONFIG.CELL_SIZE / 2;
+        ctx!.fillStyle = 'red';
+        ctx!.fillRect(debugX - 15, debugY - 15, 30, 30);
+        // Also draw a text label showing enemy id
+        ctx!.fillStyle = 'white';
+        ctx!.font = '10px monospace';
+        ctx!.fillText(enemy.id, debugX - 20, debugY + 25);
+
         renderEnemy(renderContext, enemy);
       }
 
       // Render projectiles
-      for (const projectile of state.projectiles.values()) {
+      const projectilesArray = Array.from(state.projectiles.values());
+      if (projectilesArray.length > 0 && frameCount % 60 === 0) {
+        console.log('Projectiles to render:', projectilesArray.length, projectilesArray.map(p => ({ id: p.id, pos: p.position })));
+      }
+      for (const projectile of projectilesArray) {
         renderProjectile(renderContext, projectile);
       }
 
       // Render HUD overlay
       renderHUD(ctx!, state);
+
+      // DEBUG: Show enemy count prominently
+      ctx!.fillStyle = 'yellow';
+      ctx!.font = 'bold 20px monospace';
+      ctx!.fillText(`DEBUG: ${state.enemies.size} enemies, ${state.towers.size} towers`, 220, 30);
+      ctx!.fillText(`Phase: ${state.phase}, Lives: ${state.lives}, Time: ${timeRef.current.toFixed(1)}s`, 220, 55);
 
       animationFrameId = requestAnimationFrame(render);
     }
