@@ -11,6 +11,7 @@ import type {
   CellState,
   TowerType,
   EnemyType,
+  CommandInterface,
 } from './types';
 import { GamePhase as Phase, CellState as CS } from './types';
 import { GAME_CONFIG, CANVAS_WIDTH, CANVAS_HEIGHT, TOWER_STATS, ENEMY_STATS } from './config';
@@ -731,6 +732,19 @@ class GameEngine {
 
   getScore(): number {
     return this.state.score;
+  }
+
+  /**
+   * Get a CommandInterface for modules that need to mutate game state.
+   * This allows modules like CombatModule to be decoupled from the Engine singleton.
+   */
+  getCommandInterface(): CommandInterface {
+    return {
+      addProjectile: (projectile) => this.addProjectile(projectile),
+      removeEnemy: (enemyId) => this.removeEnemy(enemyId),
+      addCredits: (amount) => this.addCredits(amount),
+      getTime: () => this.getTime(),
+    };
   }
 
   // ==========================================================================

@@ -258,9 +258,16 @@ export interface QueryInterface {
   getGameState(): GameState;
 }
 
+export interface CommandInterface {
+  addProjectile(projectile: Projectile): void;
+  removeEnemy(enemyId: string): void;
+  addCredits(amount: number): void;
+  getTime(): number;
+}
+
 export interface GameModule {
   name: string;
-  init(query: QueryInterface): void;
+  init(query: QueryInterface, commands: CommandInterface): void;
   update(deltaTime: number): void;
   destroy(): void;
 }

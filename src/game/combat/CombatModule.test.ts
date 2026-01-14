@@ -2,7 +2,7 @@
 // Layer 2: Combat Integration Tests
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { Tower, Enemy, QueryInterface, Point } from '../types';
+import type { Tower, Enemy, QueryInterface, CommandInterface, Point } from '../types';
 import { TowerType } from '../types';
 import { combatModule } from './CombatModule';
 import { eventBus } from '../events';
@@ -73,6 +73,15 @@ function createMockQuery(
   };
 }
 
+function createMockCommands(): CommandInterface {
+  return {
+    addProjectile: () => {},
+    removeEnemy: () => {},
+    addCredits: () => {},
+    getTime: () => 0,
+  };
+}
+
 // ============================================================================
 // Tests
 // ============================================================================
@@ -86,12 +95,12 @@ describe('CombatModule', () => {
   describe('initialization', () => {
     it('should initialize with a query interface', () => {
       const query = createMockQuery();
-      expect(() => combatModule.init(query)).not.toThrow();
+      expect(() => combatModule.init(query, createMockCommands())).not.toThrow();
     });
 
     it('should have empty effects after initialization', () => {
       const query = createMockQuery();
-      combatModule.init(query);
+      combatModule.init(query, createMockCommands());
 
       expect(combatModule.getHitscanEffects()).toHaveLength(0);
       expect(combatModule.getChainEffects()).toHaveLength(0);
@@ -104,7 +113,7 @@ describe('CombatModule', () => {
       const tower = createMockTower();
       const query = createMockQuery([tower], []);
 
-      combatModule.init(query);
+      combatModule.init(query, createMockCommands());
       combatModule.update(0.1);
 
       expect(combatModule.getTowerInstance(tower.id)).toBeDefined();
@@ -114,7 +123,7 @@ describe('CombatModule', () => {
       const tower = createMockTower();
       const query = createMockQuery([tower], []);
 
-      combatModule.init(query);
+      combatModule.init(query, createMockCommands());
       combatModule.update(0.1);
 
       expect(combatModule.getTowerInstance(tower.id)).toBeDefined();
@@ -122,7 +131,7 @@ describe('CombatModule', () => {
       // Create new query without the tower
       const emptyQuery = createMockQuery([], []);
       combatModule.destroy();
-      combatModule.init(emptyQuery);
+      combatModule.init(emptyQuery, createMockCommands());
       combatModule.update(0.1);
 
       expect(combatModule.getTowerInstance(tower.id)).toBeUndefined();
@@ -159,7 +168,7 @@ describe('CombatModule', () => {
       const tower2 = createMockTower({ id: 'tower_2', type: TowerType.TESLA });
       const query = createMockQuery([tower1, tower2], []);
 
-      combatModule.init(query);
+      combatModule.init(query, createMockCommands());
       combatModule.update(0.1);
 
       const instances = combatModule.getAllTowerInstances();
@@ -172,7 +181,7 @@ describe('CombatModule', () => {
   describe('cleanup', () => {
     it('should destroy cleanly', () => {
       const query = createMockQuery();
-      combatModule.init(query);
+      combatModule.init(query, createMockCommands());
 
       expect(() => combatModule.destroy()).not.toThrow();
     });
@@ -181,7 +190,7 @@ describe('CombatModule', () => {
       const tower = createMockTower();
       const query = createMockQuery([tower], []);
 
-      combatModule.init(query);
+      combatModule.init(query, createMockCommands());
       combatModule.update(0.1);
 
       combatModule.destroy();
