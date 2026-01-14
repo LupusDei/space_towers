@@ -1,9 +1,9 @@
 // Combat Module Tests
 // Layer 2: Combat Integration Tests
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import type { Tower, Enemy, QueryInterface, Point } from '../types';
-import { TowerType, EnemyType } from '../types';
+import { TowerType } from '../types';
 import { combatModule } from './CombatModule';
 import { eventBus } from '../events';
 
@@ -26,21 +26,8 @@ function createMockTower(overrides: Partial<Tower> = {}): Tower {
   };
 }
 
-function createMockEnemy(overrides: Partial<Enemy> = {}): Enemy {
-  return {
-    id: 'enemy_1',
-    type: EnemyType.SCOUT,
-    position: { x: 200, y: 200 },
-    health: 30,
-    maxHealth: 30,
-    speed: 80,
-    armor: 0,
-    reward: 10,
-    pathIndex: 0,
-    path: [],
-    ...overrides,
-  };
-}
+// createMockEnemy is available for future test expansion
+// function createMockEnemy(overrides: Partial<Enemy> = {}): Enemy { ... }
 
 function createMockQuery(
   towers: Tower[] = [],

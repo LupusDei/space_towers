@@ -356,7 +356,7 @@ class CombatModuleImpl implements GameModule {
 
   private handleProjectileFire(tower: Tower, target: Enemy, _currentTime: number): void {
     const startPosition = towerPositionToPixels(tower.position);
-    const targetPosition = { ...target.position };
+    // Target position saved for potential projectile tracking: { ...target.position }
 
     // Acquire projectile from pool
     const projectile = projectilePool.acquire();
