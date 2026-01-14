@@ -296,23 +296,19 @@ function renderHUD(ctx: CanvasRenderingContext2D, state: ReturnType<typeof engin
   ctx.font = `${fontSize}px monospace`;
   ctx.textBaseline = 'top';
 
-  // Background for HUD
+  // Background for HUD (smaller since credits moved to TowerPanel)
   ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-  ctx.fillRect(padding - 5, padding - 5, 200, 80);
-
-  // Credits
-  ctx.fillStyle = '#FFD700';
-  ctx.fillText(`Credits: ${state.credits}`, padding, padding);
+  ctx.fillRect(padding - 5, padding - 5, 200, 65);
 
   // Lives
   ctx.fillStyle = '#FF6666';
-  ctx.fillText(`Lives: ${state.lives}`, padding, padding + fontSize + 5);
+  ctx.fillText(`Lives: ${state.lives}`, padding, padding);
 
   // Wave
   ctx.fillStyle = '#66FF66';
-  ctx.fillText(`Wave: ${state.wave}`, padding, padding + (fontSize + 5) * 2);
+  ctx.fillText(`Wave: ${state.wave}`, padding, padding + fontSize + 5);
 
   // Phase
   ctx.fillStyle = '#6666FF';
-  ctx.fillText(`Phase: ${state.phase}`, padding, padding + (fontSize + 5) * 3);
+  ctx.fillText(`Phase: ${state.phase}`, padding, padding + (fontSize + 5) * 2);
 }

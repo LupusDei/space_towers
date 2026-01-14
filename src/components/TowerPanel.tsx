@@ -27,6 +27,10 @@ export default function TowerPanel({
 
   return (
     <div style={styles.container}>
+      <div style={styles.creditsDisplay}>
+        <span style={styles.creditsLabel}>Credits</span>
+        <span style={styles.creditsValue}>${credits}</span>
+      </div>
       <div style={styles.header}>Towers</div>
       <div style={styles.towerGrid}>
         {towerTypes.map((type) => {
@@ -82,6 +86,28 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'rgba(10, 10, 26, 0.9)',
     borderRadius: '8px',
     border: `1px solid ${colors.accent}33`,
+  },
+  creditsDisplay: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.md,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    borderRadius: '6px',
+    border: `1px solid ${colors.credits}44`,
+  },
+  creditsLabel: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+  },
+  creditsValue: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.credits,
   },
   header: {
     fontFamily: typography.fontFamily.mono,

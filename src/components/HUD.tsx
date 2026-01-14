@@ -66,10 +66,6 @@ export default function HUD() {
   return (
     <div className={styles.container}>
       <div className={styles.stat}>
-        <span className={styles.creditsLabel}>Credits:</span>
-        <span className={styles.creditsValue}>{state.credits}</span>
-      </div>
-      <div className={styles.stat}>
         <span className={styles.livesLabel}>Lives:</span>
         <span className={styles.livesValue}>{state.lives}</span>
       </div>
