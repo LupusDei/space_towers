@@ -1,6 +1,7 @@
 import { TowerType, type Tower } from '../game/types';
 import { TOWER_STATS, GAME_CONFIG } from '../game/config';
 import { colors, spacing, typography } from '../styles/theme';
+import TowerIcon from './TowerIcon';
 
 interface TowerPanelProps {
   credits: number;
@@ -44,6 +45,9 @@ export default function TowerPanel({
               disabled={!canAfford}
               onClick={() => onSelectTowerType(isSelected ? null : type)}
             >
+              <div style={styles.iconContainer}>
+                <TowerIcon type={type} size={36} />
+              </div>
               <div style={styles.towerName}>{stats.name}</div>
               <div style={styles.towerCost}>
                 <span style={styles.creditIcon}>$</span>
@@ -114,6 +118,12 @@ const styles: Record<string, React.CSSProperties> = {
     opacity: 0.4,
     cursor: 'not-allowed',
     borderColor: colors.text.muted,
+  },
+  iconContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
   },
   towerName: {
     fontSize: typography.fontSize.sm,
