@@ -475,6 +475,14 @@ class GameEngine {
     this.stateNotifier.notify();
   }
 
+  /**
+   * Handle projectile hitting its target. Applies damage to PRIMARY target only.
+   *
+   * ARCHITECTURE NOTE: Splash damage for missiles is handled separately by
+   * CombatModule.handleProjectileHit() which listens for PROJECTILE_HIT events.
+   * That handler explicitly excludes the primary target to prevent double-damage.
+   * See CombatModule.applyDamage() for the full damage flow documentation.
+   */
   private projectileHit(projectile: Projectile): void {
     const target = this.state.enemies.get(projectile.targetId);
     if (target) {

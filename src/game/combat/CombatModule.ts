@@ -392,6 +392,18 @@ class CombatModuleImpl implements GameModule {
   // Damage Application
   // ==========================================================================
 
+  /**
+   * Apply damage to an enemy. Used ONLY by hitscan towers (Laser, Tesla).
+   *
+   * ARCHITECTURE NOTE - Damage Flow:
+   * - Hitscan towers (Laser, Tesla): CombatModule.applyDamage() applies damage directly
+   * - Projectile towers (Missile, Cannon): Engine.projectileHit() applies primary damage
+   * - Splash damage (Missiles): CombatModule.applySplashDamageExcluding() handles
+   *   secondary targets, explicitly EXCLUDING the primary to prevent double-damage
+   *
+   * This split is intentional - projectile towers need Engine to track travel time,
+   * while hitscan towers deal instant damage without projectiles.
+   */
   private applyDamage(enemy: Enemy, damage: number, _towerId: string): void {
     enemy.health -= damage;
 
