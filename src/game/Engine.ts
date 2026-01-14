@@ -10,14 +10,16 @@ import type {
   Point,
   CellState,
   TowerType,
+  EnemyType,
 } from './types';
 import { GamePhase as Phase, CellState as CS } from './types';
-import { GAME_CONFIG, CANVAS_WIDTH, CANVAS_HEIGHT } from './config';
+import { GAME_CONFIG, CANVAS_WIDTH, CANVAS_HEIGHT, ENEMY_STATS } from './config';
 import { createGrid, type Grid } from './grid/Grid';
 import { eventBus, createEvent } from './events';
 import { enemyPool, projectilePool } from './pools';
 import { findPath } from './grid/Pathfinding';
 import type { SpriteRenderContext } from '../sprites/types';
+import { createWaveController, type WaveController } from './enemies/Wave';
 
 // ============================================================================
 // Constants
@@ -70,9 +72,15 @@ class GameEngine {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
 
+  // Wave controller
+  private waveController: WaveController;
+
   constructor() {
     this.grid = createGrid();
     this.state = this.createInitialState();
+    this.waveController = createWaveController({
+      onSpawnEnemy: this.handleSpawnEnemy.bind(this),
+    });
   }
 
   // ==========================================================================
@@ -132,6 +140,7 @@ class GameEngine {
     eventBus.clear();
     enemyPool.reset();
     projectilePool.reset();
+    this.waveController.reset();
     this.subscribers.clear();
     this.canvas = null;
     this.ctx = null;
@@ -160,6 +169,7 @@ class GameEngine {
     this.grid.reset();
     this.setupDefaultLevel();
     this.recalculatePath();
+    this.waveController.reset();
 
     eventBus.emit(createEvent('GAME_START', { wave: 1 }));
     this.start();
@@ -169,17 +179,24 @@ class GameEngine {
     if (this.state.phase !== Phase.PLANNING) return;
 
     this.setPhase(Phase.COMBAT);
-    // Wave spawning will be handled by combat integration layer
+    this.waveController.startWave(this.state.wave);
   }
 
   endWave(): void {
     if (this.state.phase !== Phase.COMBAT) return;
 
-    // Check if all enemies are cleared
-    if (this.state.enemies.size === 0) {
-      this.state.wave++;
-      this.setPhase(Phase.PLANNING);
+    // Award wave completion reward
+    const waveReward = this.waveController.reward;
+    if (waveReward > 0) {
+      this.addCredits(waveReward);
     }
+
+    // Signal wave completion to controller (emits WAVE_COMPLETE event)
+    this.waveController.completeWave();
+
+    // Advance to next wave
+    this.state.wave++;
+    this.setPhase(Phase.PLANNING);
   }
 
   pause(): void {
@@ -273,6 +290,9 @@ class GameEngine {
   }
 
   private updateCombat(dt: number): void {
+    // Update wave spawning
+    this.waveController.update(dt);
+
     // Update enemies
     for (const enemy of this.state.enemies.values()) {
       const reachedEnd = this.updateEnemy(enemy, dt);
@@ -289,8 +309,8 @@ class GameEngine {
       }
     }
 
-    // Check for wave completion
-    if (this.state.enemies.size === 0) {
+    // Check for wave completion (all spawned and all killed)
+    if (this.waveController.spawningComplete && this.state.enemies.size === 0) {
       this.endWave();
     }
 
@@ -358,6 +378,31 @@ class GameEngine {
     projectile.position.y += dy * ratio;
 
     return false;
+  }
+
+  private handleSpawnEnemy(type: EnemyType, health: number): Enemy | null {
+    const stats = ENEMY_STATS[type];
+    const enemy = enemyPool.acquire();
+
+    // Initialize enemy with stats
+    enemy.type = type;
+    enemy.health = health;
+    enemy.maxHealth = health;
+    enemy.speed = stats.speed;
+    enemy.armor = stats.armor;
+    enemy.reward = stats.reward;
+    enemy.pathIndex = 0;
+    enemy.path = this.path;
+
+    // Set spawn position (convert grid position to pixel position)
+    enemy.position.x = this.spawnPoint.x * GAME_CONFIG.CELL_SIZE;
+    enemy.position.y = this.spawnPoint.y * GAME_CONFIG.CELL_SIZE;
+
+    // Add to engine state
+    this.state.enemies.set(enemy.id, enemy);
+    this.notifySubscribers();
+
+    return enemy;
   }
 
   private enemyEscaped(enemy: Enemy): void {
