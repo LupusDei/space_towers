@@ -19,6 +19,7 @@ export interface GameActions {
   sellTower: (towerId: string) => boolean;
   engage: () => void;
   selectTower: (towerId: string | null) => void;
+  selectTowerType: (type: TowerType | null) => void;
   startGame: () => void;
 }
 
@@ -133,6 +134,11 @@ export function useGameEngine(): UseGameEngineResult {
     engine.setSelectedTower(towerId);
   }, []);
 
+  // Action: Select a tower type for placement
+  const selectTowerType = useCallback((type: TowerType | null) => {
+    engine.setSelectedTowerType(type);
+  }, []);
+
   // Action: Start the game
   const startGame = useCallback(() => {
     engine.startGame();
@@ -143,6 +149,7 @@ export function useGameEngine(): UseGameEngineResult {
     sellTower,
     engage,
     selectTower,
+    selectTowerType,
     startGame,
   };
 
