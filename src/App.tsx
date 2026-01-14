@@ -19,8 +19,9 @@ function App() {
   };
 
   const handleSelectTowerType = (type: TowerType | null) => {
-    // TowerPanel selection - engine handles this via setSelectedTowerType
-    // For now, we'll just deselect any selected tower when selecting a tower type
+    // Set the selected tower type in the engine
+    actions.selectTowerType(type);
+    // Deselect any selected tower when selecting a tower type
     if (type !== null) {
       actions.selectTower(null);
     }

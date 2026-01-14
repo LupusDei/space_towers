@@ -41,16 +41,13 @@ const enemySprites: Record<EnemyType, { draw: (ctx: SpriteRenderContext, enemy: 
 export default function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoveredCell, setHoveredCell] = useState<Point | null>(null);
-  const [selectedTowerType, setSelectedTowerType] = useState<TowerType | null>(TowerType.LASER);
   const timeRef = useRef(0);
 
   // Use refs for values that the render loop needs without causing effect re-runs
   const hoveredCellRef = useRef<Point | null>(null);
-  const selectedTowerTypeRef = useRef<TowerType | null>(TowerType.LASER);
 
   // Keep refs in sync with state
   hoveredCellRef.current = hoveredCell;
-  selectedTowerTypeRef.current = selectedTowerType;
 
   // Convert mouse position to grid cell
   const getGridCell = useCallback((e: React.MouseEvent<HTMLCanvasElement>): Point | null => {
@@ -84,17 +81,18 @@ export default function Game() {
   // Handle click for tower placement
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const cell = getGridCell(e);
-    if (!cell || !selectedTowerType) return;
+    const towerType = engine.getSnapshot().selectedTowerType;
+    if (!cell || !towerType) return;
 
     const phase = engine.getPhase();
     if (phase !== GamePhase.PLANNING) return;
 
     // Try to place tower
-    const tower = engine.placeTower(selectedTowerType, cell);
+    const tower = engine.placeTower(towerType, cell);
     if (tower) {
-      console.log(`Placed ${selectedTowerType} tower at (${cell.x}, ${cell.y})`);
+      console.log(`Placed ${towerType} tower at (${cell.x}, ${cell.y})`);
     }
-  }, [getGridCell, selectedTowerType]);
+  }, [getGridCell]);
 
   // Handle right-click for tower selling
   const handleContextMenu = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -142,8 +140,8 @@ export default function Game() {
       ctx!.fillStyle = '#0a0a1a';
       ctx!.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-      // Render grid cells (use refs to get current values without re-running effect)
-      renderGrid(renderContext, state.grid, hoveredCellRef.current, selectedTowerTypeRef.current);
+      // Render grid cells (use ref for hovered, get selectedTowerType from state)
+      renderGrid(renderContext, state.grid, hoveredCellRef.current, state.selectedTowerType);
 
       // Render path visualization
       if (state.path.length > 0) {
@@ -179,49 +177,16 @@ export default function Game() {
   }, []); // Empty deps - only run once on mount
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-      <canvas
-        ref={canvasRef}
-        width={CANVAS_WIDTH}
-        height={CANVAS_HEIGHT}
-        style={{ display: 'block', border: '2px solid #333' }}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        onClick={handleClick}
-        onContextMenu={handleContextMenu}
-      />
-      <div style={{ display: 'flex', gap: '10px' }}>
-        {Object.values(TowerType).map((type) => (
-          <button
-            key={type}
-            onClick={() => setSelectedTowerType(type)}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: selectedTowerType === type ? '#4a4a6a' : '#2a2a3a',
-              color: '#fff',
-              border: selectedTowerType === type ? '2px solid #00ffff' : '2px solid #444',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            {type.charAt(0).toUpperCase() + type.slice(1)}
-          </button>
-        ))}
-        <button
-          onClick={() => engine.startWave()}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#2a4a2a',
-            color: '#fff',
-            border: '2px solid #4a6a4a',
-            borderRadius: '4px',
-            cursor: 'pointer',
-          }}
-        >
-          Start Wave
-        </button>
-      </div>
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={CANVAS_WIDTH}
+      height={CANVAS_HEIGHT}
+      style={{ display: 'block', border: '2px solid #333' }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
+      onContextMenu={handleContextMenu}
+    />
   );
 }
 
