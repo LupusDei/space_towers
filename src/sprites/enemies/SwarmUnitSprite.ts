@@ -8,9 +8,9 @@ export const SwarmUnitSprite: EnemySprite = {
     const { ctx, cellSize, time } = context;
     const { x, y } = enemy.position;
 
-    // Convert grid position to pixel coordinates
-    const baseX = x * cellSize + cellSize / 2;
-    const baseY = y * cellSize + cellSize / 2;
+    // Enemy position is already in pixels, just add half cell to get center
+    const baseX = x + cellSize / 2;
+    const baseY = y + cellSize / 2;
 
     // Jittery movement - unique per enemy using id hash
     const idHash = enemy.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);

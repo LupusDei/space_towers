@@ -30,9 +30,9 @@ export class ScoutDroneSprite implements EnemySprite {
     const { ctx, cellSize, time } = context;
     const { position, health, maxHealth, id } = enemy;
 
-    // Convert grid position to canvas coordinates (center of cell)
-    const centerX = (position.x + 0.5) * cellSize;
-    const centerY = (position.y + 0.5) * cellSize;
+    // Enemy position is already in pixels, just add half cell to get center
+    const centerX = position.x + cellSize / 2;
+    const centerY = position.y + cellSize / 2;
 
     // Base size (small drone - about 60% of cell)
     const baseSize = cellSize * 0.3;

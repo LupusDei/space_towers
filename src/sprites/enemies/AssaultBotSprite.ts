@@ -14,9 +14,9 @@ export const AssaultBotSprite: EnemySprite = {
     const { ctx, cellSize, time } = context;
     const { x, y } = enemy.position;
 
-    // Convert grid position to pixel coordinates (center of cell)
-    const centerX = x * cellSize + cellSize / 2;
-    const centerY = y * cellSize + cellSize / 2;
+    // Enemy position is already in pixels, just add half cell to get center
+    const centerX = x + cellSize / 2;
+    const centerY = y + cellSize / 2;
 
     // Medium-sized robot - about 60% of cell
     const bodyWidth = cellSize * 0.5;
