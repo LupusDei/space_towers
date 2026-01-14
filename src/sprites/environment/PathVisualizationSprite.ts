@@ -9,10 +9,10 @@ const PARTICLE_COUNT = 8;
 // Speed at which particles flow (units per second)
 const PARTICLE_SPEED = 2;
 
-// Path colors (cyan accent)
-const PATH_COLOR = '#00ffff';
-const PATH_GLOW_COLOR = 'rgba(0, 255, 255, 0.3)';
-const PARTICLE_COLOR = '#aaffff';
+// Path colors (subtle cyan accent - 70% less prominent)
+const PATH_COLOR = 'rgba(0, 255, 255, 0.3)';
+const PATH_GLOW_COLOR = 'rgba(0, 255, 255, 0.09)';
+const PARTICLE_COLOR = 'rgba(170, 255, 255, 0.3)';
 
 export interface PathVisualizationSprite {
   draw(context: SpriteRenderContext, path: Point[]): void;
