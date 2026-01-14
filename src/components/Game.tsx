@@ -209,7 +209,7 @@ export default function Game() {
       ctx!.fillStyle = 'yellow';
       ctx!.font = 'bold 20px monospace';
       ctx!.fillText(`DEBUG: ${state.enemies.size} enemies, ${state.towers.size} towers`, 220, 30);
-      ctx!.fillText(`Phase: ${state.phase}, Lives: ${state.lives}`, 220, 55);
+      ctx!.fillText(`Phase: ${state.phase}, Lives: ${state.lives}, Time: ${timeRef.current.toFixed(1)}s`, 220, 55);
 
       animationFrameId = requestAnimationFrame(render);
     }
