@@ -6,7 +6,7 @@ import type { Tower, Enemy, Projectile, Point } from '../game/types';
 import type { SpriteRenderContext } from '../sprites/types';
 
 // Import sprites
-import { drawCell } from '../sprites/environment/GridCellSprites';
+import { drawCachedGrid } from '../sprites/environment/GridCache';
 import { PathVisualizationSprite } from '../sprites/environment/PathVisualizationSprite';
 
 // Import effects
@@ -185,8 +185,12 @@ export default function Game() {
       ctx!.fillStyle = '#0a0a1a';
       ctx!.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-      // Render grid cells (use refs to get current values without re-running effect)
-      renderGrid(renderContext, state.grid, hoveredCellRef.current, state.selectedTowerType);
+      // Render grid cells using cached renderer
+      const canPlaceAtHover = hoveredCellRef.current !== null &&
+        state.selectedTowerType !== null &&
+        state.grid[hoveredCellRef.current.y]?.[hoveredCellRef.current.x] === CellState.EMPTY &&
+        !engine.wouldBlockPath(hoveredCellRef.current);
+      drawCachedGrid(renderContext, state.grid, hoveredCellRef.current, canPlaceAtHover);
 
       // Render path visualization
       if (state.path.length > 0) {
@@ -282,29 +286,6 @@ export default function Game() {
 // =============================================================================
 // Render Functions
 // =============================================================================
-
-function renderGrid(
-  context: SpriteRenderContext,
-  grid: CellState[][],
-  hoveredCell: Point | null,
-  selectedTowerType: TowerType | null
-): void {
-  for (let y = 0; y < grid.length; y++) {
-    for (let x = 0; x < grid[y].length; x++) {
-      const cellState = grid[y][x];
-      const position = { x, y };
-      const isHovered = hoveredCell?.x === x && hoveredCell?.y === y;
-
-      // Check if this cell can have a tower placed (for hover effect)
-      const canPlace = isHovered &&
-        selectedTowerType !== null &&
-        cellState === CellState.EMPTY &&
-        !engine.wouldBlockPath(position);
-
-      drawCell(context, position, cellState, canPlace);
-    }
-  }
-}
 
 function renderTowerPreview(
   context: SpriteRenderContext,

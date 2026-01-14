@@ -27,6 +27,7 @@ import { findPath, wouldBlockPath } from './grid/Pathfinding';
 import { TowerFactory } from './towers/TowerFactory';
 import { createWaveController, type WaveController } from './enemies/Wave';
 import { combatModule } from './combat/CombatModule';
+import { createSpatialHash, type SpatialHash } from './SpatialHash';
 
 // ============================================================================
 // Constants
@@ -92,6 +93,9 @@ class GameEngine {
   // Wave controller
   private waveController: WaveController;
 
+  // Spatial hash for efficient enemy queries
+  private spatialHash: SpatialHash;
+
   // Injected dependencies (use globals if not provided)
   private eventBus: EventBus;
   private enemyPool: ObjectPool<Enemy>;
@@ -105,6 +109,7 @@ class GameEngine {
 
     this.grid = createGrid();
     this.state = this.createInitialState();
+    this.spatialHash = createSpatialHash();
     this.waveController = createWaveController({
       onSpawnEnemy: this.handleSpawnEnemy.bind(this),
     });
@@ -180,6 +185,7 @@ class GameEngine {
     this.path = [];
     this.spawnPoint = { x: 0, y: 0 };
     this.exitPoint = { x: 0, y: 0 };
+    this.spatialHash.clear();
     this.waveController.reset();
     this.eventBus.clear();
     this.enemyPool.reset();
@@ -413,6 +419,9 @@ class GameEngine {
       enemy.position.y += dy * ratio;
     }
 
+    // Update spatial hash after position change
+    this.spatialHash.update(enemy);
+
     return enemy.pathIndex >= this.path.length;
   }
 
@@ -460,8 +469,9 @@ class GameEngine {
     enemy.position.x = this.spawnPoint.x * GAME_CONFIG.CELL_SIZE;
     enemy.position.y = this.spawnPoint.y * GAME_CONFIG.CELL_SIZE;
 
-    // Add to engine state
+    // Add to engine state and spatial hash
     this.state.enemies.set(enemy.id, enemy);
+    this.spatialHash.insert(enemy);
     console.log('[Engine] Spawned enemy:', enemy.id, 'type:', enemy.type, 'pos:', enemy.position, 'enemies count:', this.state.enemies.size);
     this.notifySubscribers();
 
@@ -470,6 +480,7 @@ class GameEngine {
 
   private enemyEscaped(enemy: Enemy): void {
     this.state.enemies.delete(enemy.id);
+    this.spatialHash.remove(enemy);
     this.state.lives--;
 
     this.eventBus.emit(createEvent('ENEMY_ESCAPED', { enemy, livesLost: 1 }));
@@ -504,6 +515,7 @@ class GameEngine {
 
   private enemyKilled(enemy: Enemy, towerId: string): void {
     this.state.enemies.delete(enemy.id);
+    this.spatialHash.remove(enemy);
     this.state.credits += enemy.reward;
     this.state.score += enemy.reward;
 
@@ -583,20 +595,8 @@ class GameEngine {
   }
 
   getEnemiesInRange(position: Point, range: number): Enemy[] {
-    const result: Enemy[] = [];
-    const rangeSquared = range * range;
-
-    for (const enemy of this.state.enemies.values()) {
-      const dx = enemy.position.x - position.x * GAME_CONFIG.CELL_SIZE;
-      const dy = enemy.position.y - position.y * GAME_CONFIG.CELL_SIZE;
-      const distSquared = dx * dx + dy * dy;
-
-      if (distSquared <= rangeSquared) {
-        result.push(enemy);
-      }
-    }
-
-    return result;
+    // Use spatial hash for O(1) average-case lookups
+    return this.spatialHash.query(position, range);
   }
 
   getPath(): Point[] {
@@ -723,6 +723,7 @@ class GameEngine {
 
   addEnemy(enemy: Enemy): void {
     this.state.enemies.set(enemy.id, enemy);
+    this.spatialHash.insert(enemy);
     this.notifySubscribers();
   }
 
@@ -730,6 +731,7 @@ class GameEngine {
     const enemy = this.state.enemies.get(enemyId);
     if (enemy) {
       this.state.enemies.delete(enemyId);
+      this.spatialHash.remove(enemy);
       this.enemyPool.release(enemy);
       this.notifySubscribers();
     }
