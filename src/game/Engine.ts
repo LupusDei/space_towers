@@ -91,6 +91,11 @@ class GameEngine {
   // Cached sorted enemies list for getEnemiesAlongPath()
   private sortedEnemiesCache: Enemy[] | null = null;
 
+  // Cached snapshot for getSnapshot() (performance optimization)
+  // Returns same GameState object if stateVersion hasn't changed
+  private cachedSnapshot: GameState | null = null;
+  private snapshotVersion = -1;
+
   // Injected dependencies (use globals if not provided)
   private eventBus: EventBus;
   private enemyPool: ObjectPool<Enemy>;
@@ -205,6 +210,8 @@ class GameEngine {
     this.exitPoint = { x: 0, y: 0 };
     this.spatialHash.clear();
     this.sortedEnemiesCache = null;
+    this.cachedSnapshot = null;
+    this.snapshotVersion = -1;
     this.waveController.reset();
     this.eventBus.clear();
     this.enemyPool.reset();
@@ -539,7 +546,15 @@ class GameEngine {
       console.log('[Engine.getSnapshot] enemies in state:', this.state.enemies.size,
         Array.from(this.state.enemies.values()).map(e => ({ id: e.id, pos: {...e.position} })));
     }
-    return {
+
+    // Return cached snapshot if stateVersion hasn't changed
+    const currentVersion = this.stateNotifier.getVersion();
+    if (this.cachedSnapshot !== null && this.snapshotVersion === currentVersion) {
+      return this.cachedSnapshot;
+    }
+
+    // Create new snapshot and cache it
+    this.cachedSnapshot = {
       phase: this.stateMachine.getPhase(),
       wave: this.state.wave,
       lives: this.state.lives,
@@ -554,6 +569,9 @@ class GameEngine {
       selectedTowerType: this.state.selectedTowerType,
       isPaused: this.state.isPaused,
     };
+    this.snapshotVersion = currentVersion;
+
+    return this.cachedSnapshot;
   }
 
   getVersion(): number {

@@ -644,6 +644,101 @@ describe('Engine Integration', () => {
   });
 
   // ==========================================================================
+  // Snapshot Caching Tests
+  // ==========================================================================
+
+  describe('Snapshot Caching', () => {
+    it('returns same snapshot object when called multiple times without state changes', () => {
+      engine.startGame();
+
+      const snapshot1 = engine.getSnapshot();
+      const snapshot2 = engine.getSnapshot();
+
+      // Should return the exact same cached object
+      expect(snapshot2).toBe(snapshot1);
+    });
+
+    it('returns new snapshot after state changes', () => {
+      engine.startGame();
+
+      const snapshot1 = engine.getSnapshot();
+
+      // Trigger state change by placing a tower
+      engine.placeTower(TowerType.LASER, { x: 5, y: 5 });
+
+      const snapshot2 = engine.getSnapshot();
+
+      // Should return a new object since state changed
+      expect(snapshot2).not.toBe(snapshot1);
+      // And data should be different
+      expect(snapshot2.towers.size).toBe(1);
+      expect(snapshot1.towers.size).toBe(0);
+    });
+
+    it('caches the Maps inside snapshot (no new allocations)', () => {
+      engine.startGame();
+      engine.placeTower(TowerType.LASER, { x: 5, y: 5 });
+
+      const snapshot1 = engine.getSnapshot();
+      const towers1 = snapshot1.towers;
+      const enemies1 = snapshot1.enemies;
+      const projectiles1 = snapshot1.projectiles;
+
+      const snapshot2 = engine.getSnapshot();
+
+      // Same snapshot object means same Map objects
+      expect(snapshot2.towers).toBe(towers1);
+      expect(snapshot2.enemies).toBe(enemies1);
+      expect(snapshot2.projectiles).toBe(projectiles1);
+    });
+
+    it('clears snapshot cache on reset', () => {
+      engine.startGame();
+      engine.placeTower(TowerType.LASER, { x: 5, y: 5 });
+
+      const snapshot1 = engine.getSnapshot();
+      expect(snapshot1.towers.size).toBe(1);
+
+      engine.reset();
+
+      // After reset, getSnapshot should create a fresh snapshot
+      const snapshot2 = engine.getSnapshot();
+
+      // Should be different objects
+      expect(snapshot2).not.toBe(snapshot1);
+      // And the new snapshot should reflect reset state
+      expect(snapshot2.towers.size).toBe(0);
+    });
+
+    it('invalidates cache when setSelectedTowerType is called', () => {
+      engine.startGame();
+
+      const snapshot1 = engine.getSnapshot();
+
+      engine.setSelectedTowerType(TowerType.LASER);
+
+      const snapshot2 = engine.getSnapshot();
+
+      expect(snapshot2).not.toBe(snapshot1);
+      expect(snapshot2.selectedTowerType).toBe(TowerType.LASER);
+    });
+
+    it('invalidates cache when addCredits is called', () => {
+      engine.startGame();
+
+      const snapshot1 = engine.getSnapshot();
+      const credits1 = snapshot1.credits;
+
+      engine.addCredits(100);
+
+      const snapshot2 = engine.getSnapshot();
+
+      expect(snapshot2).not.toBe(snapshot1);
+      expect(snapshot2.credits).toBe(credits1 + 100);
+    });
+  });
+
+  // ==========================================================================
   // Reset and Cleanup Tests
   // ==========================================================================
 
