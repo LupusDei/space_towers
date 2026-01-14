@@ -1,13 +1,14 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { engine } from '../game/Engine';
 import { GAME_CONFIG, CANVAS_WIDTH, CANVAS_HEIGHT, TOWER_STATS } from '../game/config';
-import { GamePhase, TowerType, CellState, EnemyType } from '../game/types';
+import { GamePhase, TowerType, CellState } from '../game/types';
 import type { Tower, Enemy, Projectile, Point } from '../game/types';
 import type { SpriteRenderContext } from '../sprites/types';
 
 // Import sprites
 import { drawCachedGrid } from '../sprites/environment/GridCache';
 import { PathVisualizationSprite } from '../sprites/environment/PathVisualizationSprite';
+import { getTowerSprite, getEnemySprite } from '../sprites/SpriteRegistry';
 
 // Import effects
 import { drawAllDamageNumbers } from '../sprites/effects/DamageNumberSprite';
@@ -15,35 +16,6 @@ import { explosionManager } from '../sprites/effects/ExplosionSprite';
 
 // Import combat module for hitscan effects
 import { combatModule } from '../game/combat/CombatModule';
-import { LaserTurretSprite } from '../sprites/towers/LaserTurretSprite';
-import { MissileBatterySprite } from '../sprites/towers/MissileBatterySprite';
-import { TeslaCoilSprite } from '../sprites/towers/TeslaCoilSprite';
-import { PlasmaCannonSprite } from '../sprites/towers/PlasmaCannonSprite';
-import { ScoutDroneSprite } from '../sprites/enemies/ScoutDroneSprite';
-import { AssaultBotSprite } from '../sprites/enemies/AssaultBotSprite';
-import { HeavyMechSprite } from '../sprites/enemies/HeavyMechSprite';
-import { SwarmUnitSprite } from '../sprites/enemies/SwarmUnitSprite';
-import { BossSprite } from '../sprites/enemies/BossSprite';
-
-// Sprite instances for stateful sprites (classes)
-const scoutSprite = new ScoutDroneSprite();
-
-// Map tower types to sprites
-const towerSprites: Record<TowerType, typeof LaserTurretSprite> = {
-  [TowerType.LASER]: LaserTurretSprite,
-  [TowerType.MISSILE]: MissileBatterySprite,
-  [TowerType.TESLA]: TeslaCoilSprite,
-  [TowerType.CANNON]: PlasmaCannonSprite,
-};
-
-// Map enemy types to sprites
-const enemySprites: Record<EnemyType, { draw: (ctx: SpriteRenderContext, enemy: Enemy) => void }> = {
-  [EnemyType.SCOUT]: scoutSprite,
-  [EnemyType.FIGHTER]: AssaultBotSprite,
-  [EnemyType.TANK]: HeavyMechSprite,
-  [EnemyType.SWARM]: SwarmUnitSprite,
-  [EnemyType.BOSS]: BossSprite,
-};
 
 export default function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -295,7 +267,7 @@ function renderTowerPreview(
   // Only show preview if we have a hovered cell and selected tower type
   if (!hoveredCell || !selectedTowerType) return;
 
-  const sprite = towerSprites[selectedTowerType];
+  const sprite = getTowerSprite(selectedTowerType);
   if (!sprite) return;
 
   const { ctx, cellSize } = context;
@@ -367,7 +339,7 @@ function renderTowerPreview(
 }
 
 function renderTower(context: SpriteRenderContext, tower: Tower, isSelected: boolean, isHovered: boolean): void {
-  const sprite = towerSprites[tower.type];
+  const sprite = getTowerSprite(tower.type);
   if (sprite) {
     sprite.draw(context, tower);
 
@@ -379,7 +351,7 @@ function renderTower(context: SpriteRenderContext, tower: Tower, isSelected: boo
 }
 
 function renderEnemy(context: SpriteRenderContext, enemy: Enemy): void {
-  const sprite = enemySprites[enemy.type];
+  const sprite = getEnemySprite(enemy.type);
   if (sprite) {
     sprite.draw(context, enemy);
   }
@@ -419,7 +391,7 @@ function renderHitscanEffects(context: SpriteRenderContext, towers: Tower[]): vo
     if (!tower) continue;
 
     // Get the sprite for this tower type
-    const sprite = towerSprites[tower.type];
+    const sprite = getTowerSprite(tower.type);
     if (!sprite || !sprite.drawFiring) continue;
 
     // Convert target position to grid coordinates for drawFiring
@@ -438,7 +410,7 @@ function renderHitscanEffects(context: SpriteRenderContext, towers: Tower[]): vo
     const tower = towerMap.get(effect.towerId);
     if (!tower || tower.type !== TowerType.TESLA) continue;
 
-    const sprite = towerSprites[tower.type];
+    const sprite = getTowerSprite(tower.type);
     if (!sprite || !sprite.drawFiring) continue;
 
     // Draw chain to each target in sequence
