@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { TowerType, type Tower } from '../game/types';
 import { TOWER_STATS, GAME_CONFIG } from '../game/config';
+import { eventBus } from '../game/events';
 import { colors, spacing, typography } from '../styles/theme';
 import TowerIcon from './TowerIcon';
 
@@ -14,12 +16,29 @@ interface TowerPanelProps {
 const towerTypes = Object.values(TowerType) as TowerType[];
 
 export default function TowerPanel({
-  credits,
+  credits: initialCredits,
   selectedTowerType,
   selectedTower,
   onSelectTowerType,
   onSellTower,
 }: TowerPanelProps) {
+  // Subscribe directly to credits changes for immediate updates
+  const [credits, setCredits] = useState(initialCredits);
+
+  useEffect(() => {
+    // Sync with prop when it changes (e.g., on game restart)
+    setCredits(initialCredits);
+  }, [initialCredits]);
+
+  useEffect(() => {
+    const unsubscribe = eventBus.on('CREDITS_CHANGED', (event) => {
+      setCredits(event.payload.newTotal);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
   const getRefundAmount = (tower: Tower): number => {
     const stats = TOWER_STATS[tower.type];
     return Math.floor(stats.cost * GAME_CONFIG.SELL_REFUND_PERCENT);
