@@ -51,8 +51,10 @@ function createMockQuery(
         return dist <= range;
       });
     },
+    getEnemiesAlongPath: () => [...enemies].sort((a, b) => b.pathIndex - a.pathIndex),
     getPath: () => [],
     getCell: () => 'empty' as const,
+    getTowerAt: () => undefined,
     getGameState: () => ({
       phase: 'combat' as const,
       wave: 1,

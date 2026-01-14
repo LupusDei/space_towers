@@ -251,8 +251,10 @@ export interface QueryInterface {
   getTowerById(id: string): Tower | undefined;
   getEnemyById(id: string): Enemy | undefined;
   getEnemiesInRange(position: Point, range: number): Enemy[];
+  getEnemiesAlongPath(): Enemy[];
   getPath(): Point[];
   getCell(position: Point): CellState;
+  getTowerAt(position: Point): Tower | undefined;
   getGameState(): GameState;
 }
 

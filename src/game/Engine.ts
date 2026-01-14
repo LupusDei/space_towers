@@ -626,8 +626,40 @@ class GameEngine {
     return this.path;
   }
 
+  /**
+   * Get all enemies sorted by their progress along the path (furthest first).
+   * Enemies with higher pathIndex are closer to escaping.
+   * @returns Array of enemies sorted by path progress (descending)
+   */
+  getEnemiesAlongPath(): Enemy[] {
+    const enemies = Array.from(this.state.enemies.values());
+    return enemies.sort((a, b) => b.pathIndex - a.pathIndex);
+  }
+
   getCell(position: Point): CellState {
     return this.grid.getCell(position);
+  }
+
+  /**
+   * Get the tower at a specific grid position.
+   * @param position - Grid position to check
+   * @returns The tower at that position, or undefined if none
+   */
+  getTowerAt(position: Point): Tower | undefined {
+    for (const tower of this.state.towers.values()) {
+      if (tower.position.x === position.x && tower.position.y === position.y) {
+        return tower;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Get the current game state (for QueryInterface).
+   * @returns The current GameState snapshot
+   */
+  getGameState(): GameState {
+    return this.getSnapshot();
   }
 
   getGrid(): Grid {

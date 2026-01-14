@@ -52,8 +52,10 @@ function createMockQuery(enemies: Enemy[] = []): QueryInterface {
         return Math.sqrt(dx * dx + dy * dy) <= range;
       });
     },
+    getEnemiesAlongPath: () => [...enemies].sort((a, b) => b.pathIndex - a.pathIndex),
     getPath: () => [],
     getCell: () => 'empty' as CellState,
+    getTowerAt: () => undefined,
     getGameState: () => ({}) as GameState,
   };
 }
