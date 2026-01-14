@@ -46,23 +46,28 @@ export const MissileBatterySprite: TowerSprite = {
     drawStatusLights(ctx, centerX, centerY, cellSize, time, true);
   },
 
-  drawRange(context: SpriteRenderContext, tower: Tower): void {
+  drawRange(context: SpriteRenderContext, tower: Tower, isSelected?: boolean): void {
     const { ctx, cellSize } = context;
     const { x, y } = tower.position;
 
     const centerX = x * cellSize + cellSize / 2;
     const centerY = y * cellSize + cellSize / 2;
-    const rangePixels = tower.range * cellSize;
+    // Range is already in pixels
+    const rangePixels = tower.range;
+
+    // Different opacity for selected vs hovered
+    const fillAlpha = isSelected ? 0.15 : 0.08;
+    const strokeAlpha = isSelected ? 0.5 : 0.3;
 
     // Range circle fill (orange tint for missiles)
-    ctx.fillStyle = 'rgba(255, 120, 50, 0.1)';
+    ctx.fillStyle = `rgba(255, 120, 50, ${fillAlpha})`;
     ctx.beginPath();
     ctx.arc(centerX, centerY, rangePixels, 0, Math.PI * 2);
     ctx.fill();
 
     // Range circle border
-    ctx.strokeStyle = 'rgba(255, 120, 50, 0.4)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(255, 120, 50, ${strokeAlpha})`;
+    ctx.lineWidth = isSelected ? 2 : 1;
     ctx.setLineDash([5, 5]);
     ctx.beginPath();
     ctx.arc(centerX, centerY, rangePixels, 0, Math.PI * 2);

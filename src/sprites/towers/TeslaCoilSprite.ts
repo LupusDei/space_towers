@@ -122,6 +122,35 @@ export const TeslaCoilSprite: TowerSprite = {
     ctx.arc(centerX, electrodeY, electrodeRadius * 3, 0, Math.PI * 2);
     ctx.fill();
   },
+
+  drawRange(context: SpriteRenderContext, tower: Tower, isSelected?: boolean): void {
+    const { ctx, cellSize } = context;
+    const { x, y } = tower.position;
+
+    const centerX = x * cellSize + cellSize / 2;
+    const centerY = y * cellSize + cellSize / 2;
+    // Range is already in pixels
+    const rangePixels = tower.range;
+
+    // Different opacity for selected vs hovered
+    const fillAlpha = isSelected ? 0.15 : 0.08;
+    const strokeAlpha = isSelected ? 0.5 : 0.3;
+
+    // Range circle fill (electric blue tint)
+    ctx.fillStyle = `rgba(100, 180, 255, ${fillAlpha})`;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, rangePixels, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Range circle border
+    ctx.strokeStyle = `rgba(100, 180, 255, ${strokeAlpha})`;
+    ctx.lineWidth = isSelected ? 2 : 1;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, rangePixels, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  },
 };
 
 function drawIdleSparks(

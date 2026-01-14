@@ -19,7 +19,7 @@ export interface SpriteRenderContext {
 export interface TowerSprite {
   draw(context: SpriteRenderContext, tower: Tower): void;
   drawFiring?(context: SpriteRenderContext, tower: Tower, target: Point): void;
-  drawRange?(context: SpriteRenderContext, tower: Tower): void;
+  drawRange?(context: SpriteRenderContext, tower: Tower, isSelected?: boolean): void;
 }
 
 // ============================================================================

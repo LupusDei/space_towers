@@ -223,6 +223,66 @@ describe('Engine Integration', () => {
   });
 
   // ==========================================================================
+  // Tower Selection Tests
+  // ==========================================================================
+
+  describe('Tower Selection', () => {
+    beforeEach(() => {
+      engine.startGame();
+    });
+
+    it('can select a placed tower', () => {
+      const position = { x: 5, y: 5 };
+      const tower = engine.placeTower(TowerType.LASER, position);
+
+      engine.setSelectedTower(tower!.id);
+
+      expect(engine.getSnapshot().selectedTower).toBe(tower!.id);
+    });
+
+    it('can deselect a tower by setting null', () => {
+      const position = { x: 5, y: 5 };
+      const tower = engine.placeTower(TowerType.LASER, position);
+      engine.setSelectedTower(tower!.id);
+
+      engine.setSelectedTower(null);
+
+      expect(engine.getSnapshot().selectedTower).toBeNull();
+    });
+
+    it('can get tower at position', () => {
+      const position = { x: 5, y: 5 };
+      const tower = engine.placeTower(TowerType.LASER, position);
+
+      const foundTower = engine.getTowerAt(position);
+
+      expect(foundTower).toBeDefined();
+      expect(foundTower!.id).toBe(tower!.id);
+    });
+
+    it('returns undefined for empty position', () => {
+      const position = { x: 5, y: 5 };
+
+      const foundTower = engine.getTowerAt(position);
+
+      expect(foundTower).toBeUndefined();
+    });
+
+    it('can select tower type for placement', () => {
+      engine.setSelectedTowerType(TowerType.MISSILE);
+
+      expect(engine.getSnapshot().selectedTowerType).toBe(TowerType.MISSILE);
+    });
+
+    it('can deselect tower type by setting null', () => {
+      engine.setSelectedTowerType(TowerType.MISSILE);
+      engine.setSelectedTowerType(null);
+
+      expect(engine.getSnapshot().selectedTowerType).toBeNull();
+    });
+  });
+
+  // ==========================================================================
   // Enemy Spawning Tests
   // ==========================================================================
 

@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { engine } from '../game/Engine';
-import { GAME_CONFIG, CANVAS_WIDTH, CANVAS_HEIGHT } from '../game/config';
+import { GAME_CONFIG, CANVAS_WIDTH, CANVAS_HEIGHT, TOWER_STATS } from '../game/config';
 import { GamePhase, TowerType, CellState, EnemyType } from '../game/types';
 import type { Tower, Enemy, Projectile, Point } from '../game/types';
 import type { SpriteRenderContext } from '../sprites/types';
@@ -48,13 +48,16 @@ const enemySprites: Record<EnemyType, { draw: (ctx: SpriteRenderContext, enemy: 
 export default function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoveredCell, setHoveredCell] = useState<Point | null>(null);
+  const [hoveredTower, setHoveredTower] = useState<Tower | null>(null);
   const timeRef = useRef(0);
 
   // Use refs for values that the render loop needs without causing effect re-runs
   const hoveredCellRef = useRef<Point | null>(null);
+  const hoveredTowerRef = useRef<Tower | null>(null);
 
   // Keep refs in sync with state
   hoveredCellRef.current = hoveredCell;
+  hoveredTowerRef.current = hoveredTower;
 
 
   // Convert mouse position to grid cell
@@ -79,26 +82,55 @@ export default function Game() {
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const cell = getGridCell(e);
     setHoveredCell(cell);
+
+    // Check if hovering over a tower
+    if (cell) {
+      const tower = engine.getTowerAt(cell);
+      setHoveredTower(tower ?? null);
+    } else {
+      setHoveredTower(null);
+    }
   }, [getGridCell]);
 
   // Handle mouse leave
   const handleMouseLeave = useCallback(() => {
     setHoveredCell(null);
+    setHoveredTower(null);
   }, []);
 
-  // Handle click for tower placement
+  // Handle click for tower placement or selection
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const cell = getGridCell(e);
-    const towerType = engine.getSnapshot().selectedTowerType;
-    if (!cell || !towerType) return;
+    if (!cell) return;
 
-    const phase = engine.getPhase();
-    if (phase !== GamePhase.PLANNING) return;
+    const state = engine.getSnapshot();
+    const towerType = state.selectedTowerType;
 
-    // Try to place tower
-    const tower = engine.placeTower(towerType, cell);
-    if (tower) {
-      console.log(`Placed ${towerType} tower at (${cell.x}, ${cell.y})`);
+    // If we have a tower type selected, try to place it
+    if (towerType) {
+      const phase = engine.getPhase();
+      if (phase !== GamePhase.PLANNING) return;
+
+      // Try to place tower
+      const tower = engine.placeTower(towerType, cell);
+      if (tower) {
+        console.log(`Placed ${towerType} tower at (${cell.x}, ${cell.y})`);
+      }
+      return;
+    }
+
+    // No tower type selected - check if clicking on a tower to select it
+    const clickedTower = engine.getTowerAt(cell);
+    if (clickedTower) {
+      // Toggle selection: deselect if already selected, else select
+      if (state.selectedTower === clickedTower.id) {
+        engine.setSelectedTower(null);
+      } else {
+        engine.setSelectedTower(clickedTower.id);
+      }
+    } else {
+      // Clicked on empty space - deselect any selected tower
+      engine.setSelectedTower(null);
     }
   }, [getGridCell]);
 
@@ -169,8 +201,11 @@ export default function Game() {
       if (towersArray.length > 0 && Math.random() < 0.01) { // Log occasionally to reduce spam
         console.log('Towers to render:', towersArray.length, towersArray.map(t => ({ id: t.id, pos: t.position, type: t.type })));
       }
+      const hoveredTowerNow = hoveredTowerRef.current;
       for (const tower of towersArray) {
-        renderTower(renderContext, tower, state.selectedTower === tower.id);
+        const isSelected = state.selectedTower === tower.id;
+        const isHovered = hoveredTowerNow?.id === tower.id;
+        renderTower(renderContext, tower, isSelected, isHovered);
       }
 
       // Render enemies
@@ -279,39 +314,85 @@ function renderTowerPreview(
   // Only show preview if we have a hovered cell and selected tower type
   if (!hoveredCell || !selectedTowerType) return;
 
-  // Check if placement is valid
-  if (!engine.canPlaceTower(hoveredCell)) return;
-
   const sprite = towerSprites[selectedTowerType];
   if (!sprite) return;
 
-  // Create a preview tower object
+  const { ctx, cellSize } = context;
+  const canPlace = engine.canPlaceTower(hoveredCell);
+
+  // Get tower stats for range preview
+  const stats = TOWER_STATS[selectedTowerType];
+
+  // Create a preview tower object with actual range for preview
   const previewTower: Tower = {
     id: 'preview',
     type: selectedTowerType,
     position: hoveredCell,
     level: 1,
-    damage: 0,
-    range: 0,
-    fireRate: 0,
+    damage: stats.damage,
+    range: stats.range,
+    fireRate: stats.fireRate,
     lastFired: 0,
     target: null,
   };
 
-  // Draw with reduced opacity
-  context.ctx.globalAlpha = 0.4;
-  sprite.draw(context, previewTower);
-  context.ctx.globalAlpha = 1.0;
+  // Draw range preview (always show, dimmer if invalid)
+  if (sprite.drawRange) {
+    ctx.globalAlpha = canPlace ? 0.4 : 0.2;
+    sprite.drawRange(context, previewTower, false);
+    ctx.globalAlpha = 1.0;
+  }
+
+  // Draw valid/invalid indicator around the cell
+  const cellX = hoveredCell.x * cellSize;
+  const cellY = hoveredCell.y * cellSize;
+
+  if (canPlace) {
+    // Valid placement - green border
+    ctx.strokeStyle = 'rgba(0, 255, 100, 0.8)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cellX + 2, cellY + 2, cellSize - 4, cellSize - 4);
+  } else {
+    // Invalid placement - red border and X
+    ctx.strokeStyle = 'rgba(255, 50, 50, 0.8)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cellX + 2, cellY + 2, cellSize - 4, cellSize - 4);
+
+    // Draw X mark
+    ctx.beginPath();
+    ctx.moveTo(cellX + 8, cellY + 8);
+    ctx.lineTo(cellX + cellSize - 8, cellY + cellSize - 8);
+    ctx.moveTo(cellX + cellSize - 8, cellY + 8);
+    ctx.lineTo(cellX + 8, cellY + cellSize - 8);
+    ctx.stroke();
+  }
+
+  // Draw tower preview with appropriate tint
+  if (canPlace) {
+    // Valid - normal preview with green tint
+    ctx.globalAlpha = 0.6;
+    sprite.draw(context, previewTower);
+    ctx.globalAlpha = 1.0;
+  } else {
+    // Invalid - red tinted preview
+    ctx.globalAlpha = 0.4;
+    sprite.draw(context, previewTower);
+    ctx.globalAlpha = 1.0;
+
+    // Overlay red tint
+    ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+    ctx.fillRect(cellX, cellY, cellSize, cellSize);
+  }
 }
 
-function renderTower(context: SpriteRenderContext, tower: Tower, isSelected: boolean): void {
+function renderTower(context: SpriteRenderContext, tower: Tower, isSelected: boolean, isHovered: boolean): void {
   const sprite = towerSprites[tower.type];
   if (sprite) {
     sprite.draw(context, tower);
 
-    // Draw range indicator if selected
-    if (isSelected && sprite.drawRange) {
-      sprite.drawRange(context, tower);
+    // Draw range indicator if selected or hovered
+    if ((isSelected || isHovered) && sprite.drawRange) {
+      sprite.drawRange(context, tower, isSelected);
     }
   }
 }
