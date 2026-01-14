@@ -26,8 +26,21 @@ function createMockTower(overrides: Partial<Tower> = {}): Tower {
   };
 }
 
-// createMockEnemy is available for future test expansion
-// function createMockEnemy(overrides: Partial<Enemy> = {}): Enemy { ... }
+function createMockEnemy(overrides: Partial<Enemy> = {}): Enemy {
+  return {
+    id: 'enemy_1',
+    type: 'scout' as Enemy['type'],
+    position: { x: 220, y: 220 }, // In pixels, within range of tower at grid (5,5)
+    health: 100,
+    maxHealth: 100,
+    speed: 80,
+    armor: 0,
+    reward: 10,
+    pathIndex: 0,
+    path: [],
+    ...overrides,
+  };
+}
 
 function createMockQuery(
   towers: Tower[] = [],
@@ -238,6 +251,86 @@ describe('cleanupVisualEffects', () => {
     // This should not throw - it's the fix for lingering effects
     expect(() => combatModule.cleanupVisualEffects(1000)).not.toThrow();
     expect(() => combatModule.cleanupVisualEffects(2000)).not.toThrow();
+  });
+});
+
+describe('Laser Tower Damage', () => {
+  beforeEach(() => {
+    eventBus.clear();
+    combatModule.destroy();
+  });
+
+  it('should apply damage to enemy when laser tower fires', () => {
+    const tower = createMockTower({ type: TowerType.LASER, damage: 10 });
+    const enemy = createMockEnemy({ health: 100, armor: 0 });
+    const query = createMockQuery([tower], [enemy]);
+    const commands = createMockCommands();
+
+    combatModule.init(query, commands);
+
+    // First update creates tower instance
+    combatModule.update(0.1);
+
+    // Tower should have fired and enemy should have taken damage
+    expect(enemy.health).toBe(90); // 100 - 10 damage
+  });
+
+  it('should create hitscan effect when laser fires', () => {
+    const tower = createMockTower({ type: TowerType.LASER });
+    const enemy = createMockEnemy();
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    const effects = combatModule.getHitscanEffects();
+    expect(effects.length).toBeGreaterThan(0);
+    expect(effects[0].type).toBe('laser');
+  });
+
+  it('should reduce damage by armor', () => {
+    const tower = createMockTower({ type: TowerType.LASER, damage: 10 });
+    const enemy = createMockEnemy({ health: 100, armor: 3 });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(enemy.health).toBe(93); // 100 - (10 - 3) = 93
+  });
+
+  it('should not damage enemy outside range', () => {
+    const tower = createMockTower({ type: TowerType.LASER, range: 50, position: { x: 0, y: 0 } });
+    // Enemy at pixel (500, 500) is way outside range of 50 pixels from grid (0,0)
+    const enemy = createMockEnemy({ position: { x: 500, y: 500 }, health: 100 });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(enemy.health).toBe(100); // No damage
+    expect(combatModule.getHitscanEffects().length).toBe(0);
+  });
+
+  it('should kill enemy when health reaches zero', () => {
+    const tower = createMockTower({ type: TowerType.LASER, damage: 100 });
+    const enemy = createMockEnemy({ health: 50, armor: 0 });
+    let removedEnemyId: string | null = null;
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: (id: string) => {
+        removedEnemyId = id;
+      },
+      addCredits: () => {},
+      getTime: () => 0,
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(removedEnemyId).toBe(enemy.id);
   });
 });
 
