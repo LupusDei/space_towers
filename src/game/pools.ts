@@ -185,3 +185,23 @@ export const projectilePool = new ObjectPool<Projectile>({
   reset: resetProjectile,
   initialSize: 100,
 });
+
+// ============================================================================
+// Factory Functions (for testing with isolated instances)
+// ============================================================================
+
+export function createEnemyPool(initialSize = 50): ObjectPool<Enemy> {
+  return new ObjectPool<Enemy>({
+    create: createEnemy,
+    reset: resetEnemy,
+    initialSize,
+  });
+}
+
+export function createProjectilePool(initialSize = 100): ObjectPool<Projectile> {
+  return new ObjectPool<Projectile>({
+    create: createProjectile,
+    reset: resetProjectile,
+    initialSize,
+  });
+}

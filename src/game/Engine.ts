@@ -15,8 +15,12 @@ import type {
 import { GamePhase as Phase, CellState as CS } from './types';
 import { GAME_CONFIG, CANVAS_WIDTH, CANVAS_HEIGHT, TOWER_STATS, ENEMY_STATS } from './config';
 import { createGrid, type Grid } from './grid/Grid';
-import { eventBus, createEvent } from './events';
-import { enemyPool, projectilePool } from './pools';
+import { eventBus as globalEventBus, createEvent, type EventBus } from './events';
+import {
+  enemyPool as globalEnemyPool,
+  projectilePool as globalProjectilePool,
+  type ObjectPool,
+} from './pools';
 import { findPath, wouldBlockPath } from './grid/Pathfinding';
 import { TowerFactory } from './towers/TowerFactory';
 import type { SpriteRenderContext } from '../sprites/types';
@@ -50,6 +54,16 @@ interface EngineState {
 }
 
 // ============================================================================
+// Engine Dependencies (for dependency injection / testing)
+// ============================================================================
+
+export interface EngineDependencies {
+  eventBus?: EventBus;
+  enemyPool?: ObjectPool<Enemy>;
+  projectilePool?: ObjectPool<Projectile>;
+}
+
+// ============================================================================
 // Engine Class
 // ============================================================================
 
@@ -80,7 +94,17 @@ class GameEngine {
   // Wave controller
   private waveController: WaveController;
 
-  constructor() {
+  // Injected dependencies (use globals if not provided)
+  private eventBus: EventBus;
+  private enemyPool: ObjectPool<Enemy>;
+  private projectilePool: ObjectPool<Projectile>;
+
+  constructor(deps?: Partial<EngineDependencies>) {
+    // Use injected dependencies or fall back to globals
+    this.eventBus = deps?.eventBus ?? globalEventBus;
+    this.enemyPool = deps?.enemyPool ?? globalEnemyPool;
+    this.projectilePool = deps?.projectilePool ?? globalProjectilePool;
+
     this.grid = createGrid();
     this.state = this.createInitialState();
     this.waveController = createWaveController({
@@ -143,13 +167,32 @@ class GameEngine {
 
   destroy(): void {
     this.stop();
-    eventBus.clear();
-    enemyPool.reset();
-    projectilePool.reset();
+    this.eventBus.clear();
+    this.enemyPool.reset();
+    this.projectilePool.reset();
     this.waveController.reset();
     this.subscribers.clear();
     this.canvas = null;
     this.ctx = null;
+  }
+
+  /**
+   * Reset engine to initial state without destroying canvas binding.
+   * Useful for tests that need to reset state between test cases.
+   */
+  reset(): void {
+    this.stop();
+    this.state = this.createInitialState();
+    this.grid = createGrid();
+    this.path = [];
+    this.spawnPoint = { x: 0, y: 0 };
+    this.exitPoint = { x: 0, y: 0 };
+    this.waveController.reset();
+    this.eventBus.clear();
+    this.enemyPool.reset();
+    this.projectilePool.reset();
+    this.subscribers.clear();
+    this.stateVersion = 0;
   }
 
   // ==========================================================================
@@ -162,7 +205,7 @@ class GameEngine {
 
     this.state.phase = newPhase;
 
-    eventBus.emit(createEvent('PHASE_CHANGE', { from: oldPhase, to: newPhase }));
+    this.eventBus.emit(createEvent('PHASE_CHANGE', { from: oldPhase, to: newPhase }));
     this.notifySubscribers();
   }
 
@@ -177,7 +220,7 @@ class GameEngine {
     this.recalculatePath();
     this.waveController.reset();
 
-    eventBus.emit(createEvent('GAME_START', { wave: 1 }));
+    this.eventBus.emit(createEvent('GAME_START', { wave: 1 }));
     this.start();
   }
 
@@ -229,13 +272,13 @@ class GameEngine {
   victory(): void {
     this.setPhase(Phase.VICTORY);
     this.stop();
-    eventBus.emit(createEvent('GAME_OVER', { victory: true, score: this.state.score }));
+    this.eventBus.emit(createEvent('GAME_OVER', { victory: true, score: this.state.score }));
   }
 
   defeat(): void {
     this.setPhase(Phase.DEFEAT);
     this.stop();
-    eventBus.emit(createEvent('GAME_OVER', { victory: false, score: this.state.score }));
+    this.eventBus.emit(createEvent('GAME_OVER', { victory: false, score: this.state.score }));
   }
 
   // ==========================================================================
@@ -371,7 +414,7 @@ class GameEngine {
     if (!target) {
       // Target no longer exists, remove projectile
       this.state.projectiles.delete(projectile.id);
-      projectilePool.release(projectile);
+      this.projectilePool.release(projectile);
       return false;
     }
 
@@ -394,7 +437,7 @@ class GameEngine {
 
   private handleSpawnEnemy(type: EnemyType, health: number): Enemy | null {
     const stats = ENEMY_STATS[type];
-    const enemy = enemyPool.acquire();
+    const enemy = this.enemyPool.acquire();
 
     // Initialize enemy with stats
     enemy.type = type;
@@ -421,10 +464,10 @@ class GameEngine {
     this.state.enemies.delete(enemy.id);
     this.state.lives--;
 
-    eventBus.emit(createEvent('ENEMY_ESCAPED', { enemy, livesLost: 1 }));
-    eventBus.emit(createEvent('LIVES_CHANGED', { amount: -1, newTotal: this.state.lives }));
+    this.eventBus.emit(createEvent('ENEMY_ESCAPED', { enemy, livesLost: 1 }));
+    this.eventBus.emit(createEvent('LIVES_CHANGED', { amount: -1, newTotal: this.state.lives }));
 
-    enemyPool.release(enemy);
+    this.enemyPool.release(enemy);
     this.notifySubscribers();
   }
 
@@ -434,7 +477,7 @@ class GameEngine {
       const effectiveDamage = Math.max(0, projectile.damage - target.armor);
       target.health -= effectiveDamage;
 
-      eventBus.emit(
+      this.eventBus.emit(
         createEvent('PROJECTILE_HIT', {
           projectile,
           targetId: projectile.targetId,
@@ -448,7 +491,7 @@ class GameEngine {
     }
 
     this.state.projectiles.delete(projectile.id);
-    projectilePool.release(projectile);
+    this.projectilePool.release(projectile);
   }
 
   private enemyKilled(enemy: Enemy, towerId: string): void {
@@ -456,12 +499,12 @@ class GameEngine {
     this.state.credits += enemy.reward;
     this.state.score += enemy.reward;
 
-    eventBus.emit(createEvent('ENEMY_KILLED', { enemy, towerId, reward: enemy.reward }));
-    eventBus.emit(
+    this.eventBus.emit(createEvent('ENEMY_KILLED', { enemy, towerId, reward: enemy.reward }));
+    this.eventBus.emit(
       createEvent('CREDITS_CHANGED', { amount: enemy.reward, newTotal: this.state.credits })
     );
 
-    enemyPool.release(enemy);
+    this.enemyPool.release(enemy);
     this.notifySubscribers();
   }
 
@@ -721,7 +764,7 @@ class GameEngine {
     const enemy = this.state.enemies.get(enemyId);
     if (enemy) {
       this.state.enemies.delete(enemyId);
-      enemyPool.release(enemy);
+      this.enemyPool.release(enemy);
       this.notifySubscribers();
     }
   }
@@ -732,14 +775,14 @@ class GameEngine {
 
   addCredits(amount: number): void {
     this.state.credits += amount;
-    eventBus.emit(createEvent('CREDITS_CHANGED', { amount, newTotal: this.state.credits }));
+    this.eventBus.emit(createEvent('CREDITS_CHANGED', { amount, newTotal: this.state.credits }));
     this.notifySubscribers();
   }
 
   spendCredits(amount: number): boolean {
     if (this.state.credits < amount) return false;
     this.state.credits -= amount;
-    eventBus.emit(
+    this.eventBus.emit(
       createEvent('CREDITS_CHANGED', { amount: -amount, newTotal: this.state.credits })
     );
     this.notifySubscribers();
@@ -821,7 +864,7 @@ class GameEngine {
     this.state.towersPlacedThisRound.add(tower.id);
 
     // Emit event
-    eventBus.emit(createEvent('TOWER_PLACED', { tower: tower.toData(), cost: stats.cost }));
+    this.eventBus.emit(createEvent('TOWER_PLACED', { tower: tower.toData(), cost: stats.cost }));
     this.notifySubscribers();
 
     return tower;
@@ -858,7 +901,7 @@ class GameEngine {
 
     // Emit event
     const towerData = tower instanceof Object && 'toData' in tower ? (tower as { toData: () => Tower }).toData() : tower;
-    eventBus.emit(createEvent('TOWER_SOLD', { tower: towerData, refund }));
+    this.eventBus.emit(createEvent('TOWER_SOLD', { tower: towerData, refund }));
     this.notifySubscribers();
 
     return refund;
@@ -875,7 +918,30 @@ class GameEngine {
 }
 
 // ============================================================================
-// Singleton Export
+// Factory Function (for testing with isolated instances)
+// ============================================================================
+
+/**
+ * Create a new GameEngine instance with optional dependency injection.
+ * Use this for testing to get isolated instances that don't share global state.
+ *
+ * @example
+ * import { createEngine } from './Engine';
+ * import { createEventBus } from './events';
+ * import { createEnemyPool, createProjectilePool } from './pools';
+ *
+ * const testEngine = createEngine({
+ *   eventBus: createEventBus(),
+ *   enemyPool: createEnemyPool(),
+ *   projectilePool: createProjectilePool(),
+ * });
+ */
+export function createEngine(deps?: Partial<EngineDependencies>): GameEngine {
+  return new GameEngine(deps);
+}
+
+// ============================================================================
+// Singleton Export (for production use)
 // ============================================================================
 
 export const engine = new GameEngine();

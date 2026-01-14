@@ -9,7 +9,7 @@ type EventMap = {
   [K in GameEventType]: EventCallback<Extract<GameEvents, { type: K }>>[];
 };
 
-interface EventBus {
+export interface EventBus {
   on<K extends GameEventType>(
     type: K,
     callback: EventCallback<Extract<GameEvents, { type: K }>>
