@@ -16,21 +16,7 @@ import { Tower as TowerClass } from '../towers/Tower';
 import { findTarget, findChainTargets, getEnemiesInSplash } from '../towers/Targeting';
 import { projectilePool } from '../pools';
 import { eventBus, createEvent } from '../events';
-import { GAME_CONFIG } from '../config';
-
-// ============================================================================
-// Combat Constants
-// ============================================================================
-
-const PROJECTILE_SPEED = 400; // pixels per second for all projectile towers
-const MISSILE_SPLASH_RADIUS = 1.5; // cells
-const TESLA_MAX_CHAIN = 2; // maximum chain targets
-const TESLA_CHAIN_RANGE = 2; // cells for chain jump
-const CHAIN_DAMAGE_FALLOFF = 0.7; // each chain target takes 70% of previous damage
-
-// Visual effect durations (ms)
-const HITSCAN_EFFECT_DURATION = 100; // Brief flash for laser/tesla
-const SPLASH_EFFECT_DURATION = 200;
+import { GAME_CONFIG, COMBAT_CONFIG } from '../config';
 
 // ============================================================================
 // Visual Effect Tracking
@@ -273,7 +259,7 @@ class CombatModuleImpl implements GameModule {
       towerPosition: { ...tower.position },
       targetPosition: { ...target.position },
       startTime: currentTime,
-      duration: HITSCAN_EFFECT_DURATION,
+      duration: COMBAT_CONFIG.HITSCAN_EFFECT_DURATION,
     });
 
     // Emit projectile fired event (for audio/other systems)
@@ -302,7 +288,7 @@ class CombatModuleImpl implements GameModule {
     this.applyDamage(target, primaryDamage, tower.id);
 
     // Find chain targets
-    const chainTargets = findChainTargets(target, this.query, TESLA_MAX_CHAIN, TESLA_CHAIN_RANGE);
+    const chainTargets = findChainTargets(target, this.query, COMBAT_CONFIG.TESLA_MAX_CHAIN, COMBAT_CONFIG.TESLA_CHAIN_RANGE);
 
     // Build target positions for visual effect
     const targetPositions: Point[] = [{ ...target.position }];
@@ -310,7 +296,7 @@ class CombatModuleImpl implements GameModule {
     // Apply chain lightning damage with falloff
     let chainDamage = tower.damage;
     for (const chainTarget of chainTargets) {
-      chainDamage *= CHAIN_DAMAGE_FALLOFF;
+      chainDamage *= COMBAT_CONFIG.CHAIN_DAMAGE_FALLOFF;
       const effectiveDamage = calculateDamage(chainDamage, chainTarget.armor);
       this.applyDamage(chainTarget, effectiveDamage, tower.id);
       targetPositions.push({ ...chainTarget.position });
@@ -322,7 +308,7 @@ class CombatModuleImpl implements GameModule {
       towerPosition: { ...tower.position },
       targets: targetPositions,
       startTime: currentTime,
-      duration: HITSCAN_EFFECT_DURATION,
+      duration: COMBAT_CONFIG.HITSCAN_EFFECT_DURATION,
     });
 
     // Also add to hitscan effects for compatibility
@@ -332,7 +318,7 @@ class CombatModuleImpl implements GameModule {
       towerPosition: { ...tower.position },
       targetPosition: { ...target.position },
       startTime: currentTime,
-      duration: HITSCAN_EFFECT_DURATION,
+      duration: COMBAT_CONFIG.HITSCAN_EFFECT_DURATION,
     });
 
     // Emit event
@@ -366,7 +352,7 @@ class CombatModuleImpl implements GameModule {
 
     // Determine if this is a splash projectile
     const isSplash = tower.type === TT.MISSILE;
-    const aoeRadius = isSplash ? MISSILE_SPLASH_RADIUS * GAME_CONFIG.CELL_SIZE : 0;
+    const aoeRadius = isSplash ? COMBAT_CONFIG.MISSILE_SPLASH_RADIUS * GAME_CONFIG.CELL_SIZE : 0;
 
     // Initialize projectile
     projectile.id = `proj_${tower.id}_${Date.now()}`;
@@ -377,7 +363,7 @@ class CombatModuleImpl implements GameModule {
     projectile.velocity.x = 0;
     projectile.velocity.y = 0;
     projectile.damage = tower.damage;
-    projectile.speed = PROJECTILE_SPEED;
+    projectile.speed = COMBAT_CONFIG.DEFAULT_PROJECTILE_SPEED;
     projectile.piercing = false;
     projectile.aoe = aoeRadius;
 
@@ -472,7 +458,7 @@ class CombatModuleImpl implements GameModule {
       position: { ...position },
       radius,
       startTime: currentTime,
-      duration: SPLASH_EFFECT_DURATION,
+      duration: COMBAT_CONFIG.SPLASH_EFFECT_DURATION,
     });
   }
 
@@ -504,7 +490,7 @@ class CombatModuleImpl implements GameModule {
       position: { ...position },
       radius,
       startTime: currentTime,
-      duration: SPLASH_EFFECT_DURATION,
+      duration: COMBAT_CONFIG.SPLASH_EFFECT_DURATION,
     });
   }
 

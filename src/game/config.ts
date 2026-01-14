@@ -37,6 +37,27 @@ export const GAME_CONFIG = {
 } as const;
 
 // ============================================================================
+// Combat Configuration
+// ============================================================================
+
+export const COMBAT_CONFIG = {
+  // Projectile settings
+  DEFAULT_PROJECTILE_SPEED: 400, // pixels per second for projectile towers
+
+  // Missile tower
+  MISSILE_SPLASH_RADIUS: 1.5, // cells
+
+  // Tesla tower
+  TESLA_MAX_CHAIN: 2, // maximum chain targets
+  TESLA_CHAIN_RANGE: 2, // cells for chain jump
+  CHAIN_DAMAGE_FALLOFF: 0.7, // each chain target takes 70% of previous damage
+
+  // Visual effect durations (ms)
+  HITSCAN_EFFECT_DURATION: 100, // Brief flash for laser/tesla
+  SPLASH_EFFECT_DURATION: 200,
+} as const;
+
+// ============================================================================
 // Tower Statistics
 // ============================================================================
 
