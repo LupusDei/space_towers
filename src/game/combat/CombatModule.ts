@@ -8,6 +8,7 @@ import type {
   TowerType,
   GameModule,
   QueryInterface,
+  CommandInterface,
   ProjectileHitEvent,
 } from '../types';
 import { TowerType as TT } from '../types';
@@ -16,7 +17,6 @@ import { findTarget, findChainTargets, getEnemiesInSplash } from '../towers/Targ
 import { projectilePool } from '../pools';
 import { eventBus, createEvent } from '../events';
 import { GAME_CONFIG } from '../config';
-import engine from '../Engine';
 
 // ============================================================================
 // Combat Constants
@@ -102,6 +102,7 @@ function calculateDamage(baseDamage: number, armor: number): number {
 class CombatModuleImpl implements GameModule {
   name = 'CombatModule';
   private query: QueryInterface | null = null;
+  private commands: CommandInterface | null = null;
   private state: CombatState = {
     hitscanEffects: [],
     chainEffects: [],
@@ -110,8 +111,9 @@ class CombatModuleImpl implements GameModule {
     eventUnsubscribers: [],
   };
 
-  init(query: QueryInterface): void {
+  init(query: QueryInterface, commands: CommandInterface): void {
     this.query = query;
+    this.commands = commands;
     this.state = {
       hitscanEffects: [],
       chainEffects: [],
@@ -148,9 +150,9 @@ class CombatModuleImpl implements GameModule {
   }
 
   update(dt: number): void {
-    if (!this.query) return;
+    if (!this.query || !this.commands) return;
 
-    const currentTime = engine.getTime();
+    const currentTime = this.commands.getTime();
 
     // Update tower instances and cooldowns
     this.updateTowers(dt);
@@ -169,6 +171,7 @@ class CombatModuleImpl implements GameModule {
     }
 
     this.query = null;
+    this.commands = null;
     this.state.hitscanEffects = [];
     this.state.chainEffects = [];
     this.state.splashEffects = [];
@@ -379,7 +382,7 @@ class CombatModuleImpl implements GameModule {
     projectile.aoe = aoeRadius;
 
     // Add to game engine
-    engine.addProjectile(projectile);
+    this.commands!.addProjectile(projectile);
 
     // Emit event
     eventBus.emit(
@@ -413,10 +416,10 @@ class CombatModuleImpl implements GameModule {
 
   private handleEnemyKilled(enemy: Enemy, towerId: string): void {
     // Remove enemy from game
-    engine.removeEnemy(enemy.id);
+    this.commands!.removeEnemy(enemy.id);
 
     // Award credits and score
-    engine.addCredits(enemy.reward);
+    this.commands!.addCredits(enemy.reward);
 
     // Emit kill event
     eventBus.emit(createEvent('ENEMY_KILLED', { enemy, towerId, reward: enemy.reward }));
@@ -427,9 +430,9 @@ class CombatModuleImpl implements GameModule {
   // ==========================================================================
 
   applySplashDamage(position: Point, damage: number, radius: number, sourceId: string): void {
-    if (!this.query) return;
+    if (!this.query || !this.commands) return;
 
-    const currentTime = engine.getTime();
+    const currentTime = this.commands.getTime();
     const splashEnemies = getEnemiesInSplash(position, this.query, radius / GAME_CONFIG.CELL_SIZE);
 
     for (const enemy of splashEnemies) {
@@ -456,9 +459,9 @@ class CombatModuleImpl implements GameModule {
     sourceId: string,
     excludeTargetId: string
   ): void {
-    if (!this.query) return;
+    if (!this.query || !this.commands) return;
 
-    const currentTime = engine.getTime();
+    const currentTime = this.commands.getTime();
     const splashEnemies = getEnemiesInSplash(position, this.query, radius / GAME_CONFIG.CELL_SIZE);
 
     for (const enemy of splashEnemies) {
