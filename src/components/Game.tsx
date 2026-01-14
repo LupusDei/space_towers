@@ -49,13 +49,6 @@ export default function Game() {
   // Keep refs in sync with state
   hoveredCellRef.current = hoveredCell;
 
-  // Subscribe to engine state changes for phase updates
-  useEffect(() => {
-    const unsubscribe = engine.subscribe(() => {
-      setGamePhase(engine.getPhase());
-    });
-    return unsubscribe;
-  }, []);
 
   // Convert mouse position to grid cell
   const getGridCell = useCallback((e: React.MouseEvent<HTMLCanvasElement>): Point | null => {
@@ -162,7 +155,7 @@ export default function Game() {
       }
 
       // Render tower preview when placing
-      renderTowerPreview(renderContext, hoveredCellRef.current, selectedTowerTypeRef.current);
+      renderTowerPreview(renderContext, hoveredCellRef.current, state.selectedTowerType);
 
       // Render towers
       const towersArray = Array.from(state.towers.values());
