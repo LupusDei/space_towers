@@ -1,10 +1,18 @@
 // useGameEngine - React hook for game engine integration
 // Provides throttled state subscription and action dispatchers
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import engine from '../game/Engine';
 import { TOWER_STATS, GAME_CONFIG } from '../game/config';
-import type { GameState, Point, TowerType, Tower } from '../game/types';
+import type {
+  GameState,
+  Point,
+  TowerType,
+  Tower,
+  QueryInterface,
+  CommandInterface,
+  SubscribableInterface,
+} from '../game/types';
 
 const THROTTLE_MS = 50; // 50ms throttle for UI updates
 
@@ -28,8 +36,28 @@ export interface UseGameEngineResult {
   actions: GameActions;
 }
 
-export function useGameEngine(): UseGameEngineResult {
-  const [state, setState] = useState<GameState>(() => engine.getSnapshot());
+export interface UseGameEngineOptions {
+  query?: QueryInterface;
+  commands?: CommandInterface;
+  subscribable?: SubscribableInterface;
+}
+
+export function useGameEngine(options?: UseGameEngineOptions): UseGameEngineResult {
+  // Get interfaces from options or use engine defaults
+  const query = useMemo(
+    () => options?.query ?? engine.getQueryInterface(),
+    [options?.query]
+  );
+  const commands = useMemo(
+    () => options?.commands ?? engine.getCommandInterface(),
+    [options?.commands]
+  );
+  const subscribable = useMemo(
+    () => options?.subscribable ?? engine.getSubscribableInterface(),
+    [options?.subscribable]
+  );
+
+  const [state, setState] = useState<GameState>(() => subscribable.getSnapshot());
   const lastUpdateRef = useRef<number>(0);
   const pendingUpdateRef = useRef<boolean>(false);
   const rafIdRef = useRef<number | null>(null);
@@ -41,21 +69,21 @@ export function useGameEngine(): UseGameEngineResult {
       const elapsed = now - lastUpdateRef.current;
 
       if (elapsed >= THROTTLE_MS) {
-        setState(engine.getSnapshot());
+        setState(subscribable.getSnapshot());
         lastUpdateRef.current = now;
         pendingUpdateRef.current = false;
       } else if (!pendingUpdateRef.current) {
         pendingUpdateRef.current = true;
         const delay = THROTTLE_MS - elapsed;
         rafIdRef.current = window.setTimeout(() => {
-          setState(engine.getSnapshot());
+          setState(subscribable.getSnapshot());
           lastUpdateRef.current = performance.now();
           pendingUpdateRef.current = false;
         }, delay);
       }
     };
 
-    const unsubscribe = engine.subscribe(handleUpdate);
+    const unsubscribe = subscribable.subscribe(handleUpdate);
 
     return () => {
       unsubscribe();
@@ -64,12 +92,12 @@ export function useGameEngine(): UseGameEngineResult {
         rafIdRef.current = null;
       }
     };
-  }, []);
+  }, [subscribable]);
 
   // Action: Place a tower
   const placeTower = useCallback((position: Point, type: TowerType): boolean => {
     // Check if position is valid
-    if (!engine.canPlaceTower(position)) {
+    if (!query.canPlaceTower(position)) {
       return false;
     }
 
@@ -80,12 +108,12 @@ export function useGameEngine(): UseGameEngineResult {
     }
 
     // Check if player has enough credits
-    if (engine.getCredits() < stats.cost) {
+    if (query.getCredits() < stats.cost) {
       return false;
     }
 
     // Spend credits
-    if (!engine.spendCredits(stats.cost)) {
+    if (!commands.spendCredits(stats.cost)) {
       return false;
     }
 
@@ -102,13 +130,13 @@ export function useGameEngine(): UseGameEngineResult {
       target: null,
     };
 
-    engine.addTower(tower);
+    commands.addTower(tower);
     return true;
-  }, []);
+  }, [query, commands]);
 
   // Action: Sell a tower
   const sellTower = useCallback((towerId: string): boolean => {
-    const tower = engine.getTowerById(towerId);
+    const tower = query.getTowerById(towerId);
     if (!tower) {
       return false;
     }
@@ -118,31 +146,31 @@ export function useGameEngine(): UseGameEngineResult {
     const refund = Math.floor(stats.cost * GAME_CONFIG.SELL_REFUND_PERCENT);
 
     // Remove tower and add refund
-    engine.removeTower(towerId);
-    engine.addCredits(refund);
+    commands.removeTower(towerId);
+    commands.addCredits(refund);
 
     return true;
-  }, []);
+  }, [query, commands]);
 
   // Action: Start wave (engage)
   const engage = useCallback(() => {
-    engine.startWave();
-  }, []);
+    commands.startWave();
+  }, [commands]);
 
   // Action: Select a tower
   const selectTower = useCallback((towerId: string | null) => {
-    engine.setSelectedTower(towerId);
-  }, []);
+    commands.setSelectedTower(towerId);
+  }, [commands]);
 
   // Action: Select a tower type for placement
   const selectTowerType = useCallback((type: TowerType | null) => {
-    engine.setSelectedTowerType(type);
-  }, []);
+    commands.setSelectedTowerType(type);
+  }, [commands]);
 
   // Action: Start the game
   const startGame = useCallback(() => {
-    engine.startGame();
-  }, []);
+    commands.startGame();
+  }, [commands]);
 
   const actions: GameActions = {
     placeTower,

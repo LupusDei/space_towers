@@ -70,6 +70,8 @@ function createMockQuery(
       selectedTowerType: null,
       isPaused: false,
     }),
+    canPlaceTower: () => true,
+    getCredits: () => 200,
   };
 }
 
@@ -79,6 +81,13 @@ function createMockCommands(): CommandInterface {
     removeEnemy: () => {},
     addCredits: () => {},
     getTime: () => 0,
+    spendCredits: () => true,
+    addTower: () => {},
+    removeTower: () => undefined,
+    startWave: () => {},
+    setSelectedTower: () => {},
+    setSelectedTowerType: () => {},
+    startGame: () => {},
   };
 }
 

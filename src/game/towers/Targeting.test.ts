@@ -57,6 +57,8 @@ function createMockQuery(enemies: Enemy[] = []): QueryInterface {
     getCell: () => 'empty' as CellState,
     getTowerAt: () => undefined,
     getGameState: () => ({}) as GameState,
+    canPlaceTower: () => true,
+    getCredits: () => 200,
   };
 }
 

@@ -277,6 +277,8 @@ export interface QueryInterface {
   getCell(position: Point): CellState;
   getTowerAt(position: Point): Tower | undefined;
   getGameState(): GameState;
+  canPlaceTower(position: Point): boolean;
+  getCredits(): number;
 }
 
 export interface CommandInterface {
@@ -284,6 +286,18 @@ export interface CommandInterface {
   removeEnemy(enemyId: string): void;
   addCredits(amount: number): void;
   getTime(): number;
+  spendCredits(amount: number): boolean;
+  addTower(tower: Tower): void;
+  removeTower(towerId: string): Tower | undefined;
+  startWave(): void;
+  setSelectedTower(towerId: string | null): void;
+  setSelectedTowerType(type: TowerType | null): void;
+  startGame(): void;
+}
+
+export interface SubscribableInterface {
+  getSnapshot(): GameState;
+  subscribe(callback: () => void): () => void;
 }
 
 export interface GameModule {

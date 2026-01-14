@@ -13,6 +13,7 @@ import type {
   EnemyType,
   CommandInterface,
   QueryInterface,
+  SubscribableInterface,
 } from './types';
 import { GamePhase as Phase, CellState as CS } from './types';
 import { GAME_CONFIG, CANVAS_WIDTH, CANVAS_HEIGHT, TOWER_STATS, ENEMY_STATS } from './config';
@@ -679,6 +680,13 @@ class GameEngine {
       removeEnemy: (enemyId) => this.removeEnemy(enemyId),
       addCredits: (amount) => this.addCredits(amount),
       getTime: () => this.getTime(),
+      spendCredits: (amount) => this.spendCredits(amount),
+      addTower: (tower) => this.addTower(tower),
+      removeTower: (towerId) => this.removeTower(towerId),
+      startWave: () => this.startWave(),
+      setSelectedTower: (towerId) => this.setSelectedTower(towerId),
+      setSelectedTowerType: (type) => this.setSelectedTowerType(type),
+      startGame: () => this.startGame(),
     };
   }
 
@@ -698,6 +706,18 @@ class GameEngine {
       getCell: (position) => this.getCell(position),
       getTowerAt: (position) => this.getTowerAt(position),
       getGameState: () => this.getGameState(),
+      canPlaceTower: (position) => this.canPlaceTower(position),
+      getCredits: () => this.getCredits(),
+    };
+  }
+
+  /**
+   * Get a SubscribableInterface for React hooks that need state subscription.
+   */
+  getSubscribableInterface(): SubscribableInterface {
+    return {
+      getSnapshot: () => this.getSnapshot(),
+      subscribe: (callback) => this.subscribe(callback),
     };
   }
 
