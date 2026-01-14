@@ -147,7 +147,7 @@ export default function Game() {
       ctx!.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
       // Render grid cells (use refs to get current values without re-running effect)
-      renderGrid(renderContext, state.grid, hoveredCellRef.current, selectedTowerTypeRef.current);
+      renderGrid(renderContext, state.grid, hoveredCellRef.current, state.selectedTowerType);
 
       // Render path visualization
       if (state.path.length > 0) {
