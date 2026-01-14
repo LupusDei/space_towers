@@ -222,6 +222,7 @@ class GameEngine {
     this.waveController.reset();
 
     this.eventBus.emit(createEvent('GAME_START', { wave: 1 }));
+    this.notifySubscribers();
     this.start();
   }
 
