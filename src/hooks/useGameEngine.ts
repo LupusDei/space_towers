@@ -3,16 +3,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import engine from '../game/Engine';
-import { TOWER_STATS, GAME_CONFIG } from '../game/config';
-import type { GameState, Point, TowerType, Tower } from '../game/types';
+import type { GameState, Point, TowerType } from '../game/types';
 
 const THROTTLE_MS = 50; // 50ms throttle for UI updates
-
-let nextTowerId = 1;
-
-function generateTowerId(): string {
-  return `tower-${nextTowerId++}`;
-}
 
 export interface GameActions {
   placeTower: (position: Point, type: TowerType) => boolean;
@@ -66,62 +59,14 @@ export function useGameEngine(): UseGameEngineResult {
     };
   }, []);
 
-  // Action: Place a tower
+  // Action: Place a tower (delegates to Engine.placeTower)
   const placeTower = useCallback((position: Point, type: TowerType): boolean => {
-    // Check if position is valid
-    if (!engine.canPlaceTower(position)) {
-      return false;
-    }
-
-    // Get tower stats
-    const stats = TOWER_STATS[type];
-    if (!stats) {
-      return false;
-    }
-
-    // Check if player has enough credits
-    if (engine.getCredits() < stats.cost) {
-      return false;
-    }
-
-    // Spend credits
-    if (!engine.spendCredits(stats.cost)) {
-      return false;
-    }
-
-    // Create tower
-    const tower: Tower = {
-      id: generateTowerId(),
-      type,
-      position,
-      level: 1,
-      damage: stats.damage,
-      range: stats.range,
-      fireRate: stats.fireRate,
-      lastFired: 0,
-      target: null,
-    };
-
-    engine.addTower(tower);
-    return true;
+    return engine.placeTower(type, position) !== null;
   }, []);
 
-  // Action: Sell a tower
+  // Action: Sell a tower (delegates to Engine.sellTower)
   const sellTower = useCallback((towerId: string): boolean => {
-    const tower = engine.getTowerById(towerId);
-    if (!tower) {
-      return false;
-    }
-
-    // Calculate refund
-    const stats = TOWER_STATS[tower.type];
-    const refund = Math.floor(stats.cost * GAME_CONFIG.SELL_REFUND_PERCENT);
-
-    // Remove tower and add refund
-    engine.removeTower(towerId);
-    engine.addCredits(refund);
-
-    return true;
+    return engine.sellTower(towerId) > 0;
   }, []);
 
   // Action: Start wave (engage)
