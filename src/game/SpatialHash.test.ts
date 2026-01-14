@@ -175,14 +175,17 @@ describe('SpatialHash', () => {
     });
 
     it('should handle query with zero range', () => {
-      const enemy = createMockEnemy('e1', GAME_CONFIG.CELL_SIZE, GAME_CONFIG.CELL_SIZE);
+      // Enemy at center of cell (1,1) - pixel position (CELL_SIZE + CELL_SIZE/2, CELL_SIZE + CELL_SIZE/2)
+      const centerX = GAME_CONFIG.CELL_SIZE + GAME_CONFIG.CELL_SIZE / 2;
+      const centerY = GAME_CONFIG.CELL_SIZE + GAME_CONFIG.CELL_SIZE / 2;
+      const enemy = createMockEnemy('e1', centerX, centerY);
       spatialHash.insert(enemy);
 
-      // Query at exact position with zero range should only find if exactly at center
+      // Query at grid (1,1) with zero range - should find enemy at cell center
       const result = spatialHash.query({ x: 1, y: 1 }, 0);
 
-      // The enemy is at pixel position (CELL_SIZE, CELL_SIZE)
-      // Query at grid (1,1) = pixel (CELL_SIZE, CELL_SIZE) with range 0
+      // The enemy is at the center of cell (1,1)
+      // Query center is also at center of cell (1,1)
       // Distance is 0, so it should be found
       expect(result).toContain(enemy);
     });
