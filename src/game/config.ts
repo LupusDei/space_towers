@@ -65,8 +65,8 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
   [TowerType.LASER]: {
     type: TowerType.LASER,
     name: 'Laser Tower',
-    cost: 50,
-    damage: 10,
+    cost: 25,
+    damage: 5,
     range: 150,
     fireRate: 0.5, // seconds between shots
     upgradeCost: 30,
@@ -78,8 +78,8 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
   [TowerType.MISSILE]: {
     type: TowerType.MISSILE,
     name: 'Missile Tower',
-    cost: 100,
-    damage: 40,
+    cost: 50,
+    damage: 20,
     range: 200,
     fireRate: 2.0,
     upgradeCost: 60,
@@ -91,8 +91,8 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
   [TowerType.TESLA]: {
     type: TowerType.TESLA,
     name: 'Tesla Tower',
-    cost: 75,
-    damage: 15,
+    cost: 38,
+    damage: 8,
     range: 120,
     fireRate: 0.8,
     upgradeCost: 45,
@@ -104,8 +104,8 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
   [TowerType.CANNON]: {
     type: TowerType.CANNON,
     name: 'Cannon Tower',
-    cost: 125,
-    damage: 60,
+    cost: 63,
+    damage: 30,
     range: 175,
     fireRate: 2.5,
     upgradeCost: 75,
