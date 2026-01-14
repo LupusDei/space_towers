@@ -2,6 +2,7 @@
 
 import type { Enemy } from '../../game/types';
 import type { EnemySprite, SpriteRenderContext } from '../types';
+import { drawHealthBar } from '../effects/HealthBar';
 
 // Track health for damage flash detection
 const lastHealthMap = new Map<string, number>();
@@ -115,27 +116,18 @@ export const HeavyMechSprite: EnemySprite = {
     ctx.fillRect(centerX - bodyWidth / 2 - 8, centerY - bodyHeight / 6, 6, 4);
     ctx.fillRect(centerX + bodyWidth / 2 + 2, centerY - bodyHeight / 6, 6, 4);
 
-    // Always-visible health bar (positioned above the mech)
-    const healthBarWidth = bodyWidth;
-    const healthBarHeight = 6;
-    const healthBarX = centerX - healthBarWidth / 2;
-    const healthBarY = centerY - bodyHeight / 2 - 20;
-    const healthPercent = enemy.health / enemy.maxHealth;
-
-    // Health bar background
-    ctx.fillStyle = '#333333';
-    ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-
-    // Health bar fill (red to dark red based on health)
-    const healthColor =
-      healthPercent > 0.5 ? '#FF4444' : healthPercent > 0.25 ? '#FF8800' : '#FF0000';
-    ctx.fillStyle = healthColor;
-    ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthPercent, healthBarHeight);
-
-    // Health bar border
-    ctx.strokeStyle = '#666666';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+    // Health bar with smooth animation (always visible for tanks)
+    drawHealthBar(ctx, enemy.id, centerX, centerY, enemy.health, enemy.maxHealth, time, {
+      offsetY: -bodyHeight / 2 - 20,
+      showOnlyWhenDamaged: false,
+      style: {
+        width: bodyWidth,
+        height: 6,
+        borderColor: '#666666',
+        getHealthColor: (healthPercent: number) =>
+          healthPercent > 0.5 ? '#FF4444' : healthPercent > 0.25 ? '#FF8800' : '#FF0000',
+      },
+    });
 
     ctx.restore();
   },

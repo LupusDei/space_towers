@@ -2,6 +2,7 @@
 
 import type { Enemy } from '../../game/types';
 import type { EnemySprite, SpriteRenderContext } from '../types';
+import { drawBossHealthBar } from '../effects/HealthBar';
 
 // Track health for damage flash detection
 const lastHealthMap = new Map<string, number>();
@@ -249,61 +250,15 @@ export const BossSprite: EnemySprite = {
       barrelHeight
     );
 
-    // Large prominent health bar (much bigger than regular enemies)
-    const healthBarWidth = scaledWidth * 1.2;
-    const healthBarHeight = 10;
-    const healthBarX = centerX - healthBarWidth / 2;
-    const healthBarY = centerY - scaledHeight / 2 - headHeight - 25 + bobOffset;
-    const healthPercent = enemy.health / enemy.maxHealth;
-
-    // Health bar background with border
-    ctx.fillStyle = '#111111';
-    ctx.fillRect(healthBarX - 2, healthBarY - 2, healthBarWidth + 4, healthBarHeight + 4);
-
-    // Health bar inner background
-    ctx.fillStyle = '#333333';
-    ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-
-    // Health bar fill with gradient
-    const healthGradient = ctx.createLinearGradient(
-      healthBarX,
-      healthBarY,
-      healthBarX + healthBarWidth * healthPercent,
-      healthBarY
-    );
-    if (healthPercent > 0.5) {
-      healthGradient.addColorStop(0, '#FF00FF');
-      healthGradient.addColorStop(1, '#9B30FF');
-    } else if (healthPercent > 0.25) {
-      healthGradient.addColorStop(0, '#FF8800');
-      healthGradient.addColorStop(1, '#FF4400');
-    } else {
-      healthGradient.addColorStop(0, '#FF0000');
-      healthGradient.addColorStop(1, '#AA0000');
-    }
-    ctx.fillStyle = healthGradient;
-    ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthPercent, healthBarHeight);
-
-    // Health bar border with glow
-    if (!isFlashing) {
-      ctx.shadowBlur = 5;
-      ctx.shadowColor = BOSS_GLOW;
-    }
-    ctx.strokeStyle = secondaryColor;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-
-    // Health bar segments (to show scale)
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.lineWidth = 1;
-    for (let i = 1; i < 10; i++) {
-      const segmentX = healthBarX + (healthBarWidth / 10) * i;
-      ctx.beginPath();
-      ctx.moveTo(segmentX, healthBarY);
-      ctx.lineTo(segmentX, healthBarY + healthBarHeight);
-      ctx.stroke();
-    }
+    // Large prominent health bar with smooth animation (always visible for boss)
+    drawBossHealthBar(ctx, enemy.id, centerX, centerY, enemy.health, enemy.maxHealth, time, {
+      width: scaledWidth * 1.2,
+      height: 10,
+      offsetY: -scaledHeight / 2 - headHeight - 25 + bobOffset,
+      segments: 10,
+      glowColor: BOSS_GLOW,
+      isFlashing,
+    });
 
     ctx.restore();
   },

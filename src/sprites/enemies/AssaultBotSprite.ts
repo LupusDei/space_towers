@@ -2,6 +2,7 @@
 
 import type { Enemy } from '../../game/types';
 import type { EnemySprite, SpriteRenderContext } from '../types';
+import { drawHealthBar } from '../effects/HealthBar';
 
 // Track health for damage flash detection
 const lastHealthMap = new Map<string, number>();
@@ -158,27 +159,18 @@ export const AssaultBotSprite: EnemySprite = {
     ctx.arc(centerX, centerY - bodyHeight / 2 - cellSize * 0.22, 2, 0, Math.PI * 2);
     ctx.fill();
 
-    // Health bar (always visible, positioned above)
-    const healthBarWidth = bodyWidth * 1.2;
-    const healthBarHeight = 5;
-    const healthBarX = centerX - healthBarWidth / 2;
-    const healthBarY = centerY - bodyHeight / 2 - cellSize * 0.28;
-    const healthPercent = enemy.health / enemy.maxHealth;
-
-    // Health bar background
-    ctx.fillStyle = '#333333';
-    ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-
-    // Health bar fill (orange to yellow based on health)
-    const healthColor =
-      healthPercent > 0.5 ? '#FFD700' : healthPercent > 0.25 ? '#FFA500' : '#FF4500';
-    ctx.fillStyle = healthColor;
-    ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthPercent, healthBarHeight);
-
-    // Health bar border
-    ctx.strokeStyle = '#666666';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+    // Health bar with smooth animation (always visible for assault bots)
+    drawHealthBar(ctx, enemy.id, centerX, centerY, enemy.health, enemy.maxHealth, time, {
+      offsetY: -bodyHeight / 2 - cellSize * 0.28,
+      showOnlyWhenDamaged: false,
+      style: {
+        width: bodyWidth * 1.2,
+        height: 5,
+        borderColor: '#666666',
+        getHealthColor: (healthPercent: number) =>
+          healthPercent > 0.5 ? '#FFD700' : healthPercent > 0.25 ? '#FFA500' : '#FF4500',
+      },
+    });
 
     ctx.restore();
   },

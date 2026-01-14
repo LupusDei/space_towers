@@ -3,3 +3,4 @@
 export * from './ExplosionSprite';
 export * from './DamageNumberSprite';
 export * from './RangeIndicator';
+export * from './HealthBar';

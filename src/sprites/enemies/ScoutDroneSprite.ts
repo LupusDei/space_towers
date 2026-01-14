@@ -2,13 +2,12 @@
 
 import type { Enemy } from '../../game/types';
 import type { EnemySprite, SpriteRenderContext } from '../types';
+import { drawHealthBar } from '../effects/HealthBar';
 
 // Scout drone colors
 const DRONE_GREEN = '#00ff88';
 const DRONE_GREEN_DARK = '#00aa55';
 const DRONE_ACCENT = '#88ffcc';
-const HEALTH_BAR_BG = '#333333';
-const HEALTH_BAR_FILL = '#00ff00';
 const DAMAGE_FLASH_COLOR = '#ffffff';
 
 // Animation constants
@@ -60,10 +59,15 @@ export class ScoutDroneSprite implements EnemySprite {
 
     ctx.restore();
 
-    // Draw health bar if damaged (drawn without rotation)
-    if (health < maxHealth) {
-      this.drawHealthBar(ctx, centerX, centerY, cellSize, health, maxHealth);
-    }
+    // Draw health bar if damaged (drawn without rotation, with smooth animation)
+    drawHealthBar(ctx, id, centerX, centerY, health, maxHealth, time, {
+      offsetY: -cellSize * 0.5,
+      showOnlyWhenDamaged: true,
+      style: {
+        width: cellSize * 0.6,
+        height: 4,
+      },
+    });
 
     // Clean up old flash entries
     if (flashTime !== undefined && performance.now() - flashTime > 100) {
@@ -106,34 +110,6 @@ export class ScoutDroneSprite implements EnemySprite {
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
     ctx.fillStyle = DRONE_ACCENT;
     ctx.fill();
-  }
-
-  private drawHealthBar(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    cellSize: number,
-    health: number,
-    maxHealth: number
-  ): void {
-    const barWidth = cellSize * 0.6;
-    const barHeight = 4;
-    const barY = y - cellSize * 0.5; // Above the drone
-
-    const healthPercent = health / maxHealth;
-
-    // Background
-    ctx.fillStyle = HEALTH_BAR_BG;
-    ctx.fillRect(x - barWidth / 2, barY, barWidth, barHeight);
-
-    // Health fill
-    ctx.fillStyle = HEALTH_BAR_FILL;
-    ctx.fillRect(x - barWidth / 2, barY, barWidth * healthPercent, barHeight);
-
-    // Border
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x - barWidth / 2, barY, barWidth, barHeight);
   }
 }
 

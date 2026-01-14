@@ -2,6 +2,7 @@
 
 import type { Enemy } from '../../game/types';
 import type { EnemySprite, SpriteRenderContext } from '../types';
+import { drawHealthBar } from '../effects/HealthBar';
 
 export const SwarmUnitSprite: EnemySprite = {
   draw(context: SpriteRenderContext, enemy: Enemy): void {
@@ -45,24 +46,19 @@ export const SwarmUnitSprite: EnemySprite = {
     ctx.arc(centerX, centerY, size * 0.4, 0, Math.PI * 2);
     ctx.fill();
 
-    // Minimal health bar - only show if damaged
-    if (enemy.health < enemy.maxHealth) {
-      const healthPercent = enemy.health / enemy.maxHealth;
-      const barWidth = cellSize * 0.25;
-      const barHeight = 2;
-      const barX = centerX - barWidth / 2;
-      const barY = centerY - size - 4;
-
-      // Background
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-      ctx.fillRect(barX, barY, barWidth, barHeight);
-
-      // Health fill - changes color based on health
-      const healthColor =
-        healthPercent > 0.5 ? '#88FF88' : healthPercent > 0.25 ? '#FFFF00' : '#FF4444';
-      ctx.fillStyle = healthColor;
-      ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
-    }
+    // Health bar with smooth animation (only show if damaged)
+    drawHealthBar(ctx, enemy.id, centerX, centerY, enemy.health, enemy.maxHealth, time, {
+      offsetY: -size - 4,
+      showOnlyWhenDamaged: true,
+      style: {
+        width: cellSize * 0.25,
+        height: 2,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        borderWidth: 0,
+        getHealthColor: (healthPercent: number) =>
+          healthPercent > 0.5 ? '#88FF88' : healthPercent > 0.25 ? '#FFFF00' : '#FF4444',
+      },
+    });
 
     // Death flash effect when very low health
     if (enemy.health / enemy.maxHealth < 0.2) {
