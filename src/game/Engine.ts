@@ -24,7 +24,6 @@ import {
 } from './pools';
 import { findPath, wouldBlockPath } from './grid/Pathfinding';
 import { TowerFactory } from './towers/TowerFactory';
-import type { SpriteRenderContext } from '../sprites/types';
 import { createWaveController, type WaveController } from './enemies/Wave';
 
 // ============================================================================
@@ -85,10 +84,6 @@ class GameEngine {
   private subscribers = new Set<() => void>();
   private stateVersion = 0;
 
-  // Rendering
-  private canvas: HTMLCanvasElement | null = null;
-  private ctx: CanvasRenderingContext2D | null = null;
-
   // Factory for creating towers
   private towerFactory = new TowerFactory();
 
@@ -136,9 +131,6 @@ class GameEngine {
   }
 
   init(canvas: HTMLCanvasElement): void {
-    this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
-
     // Set canvas dimensions
     canvas.width = CANVAS_WIDTH;
     canvas.height = CANVAS_HEIGHT;
@@ -173,8 +165,6 @@ class GameEngine {
     this.projectilePool.reset();
     this.waveController.reset();
     this.subscribers.clear();
-    this.canvas = null;
-    this.ctx = null;
   }
 
   /**
@@ -326,9 +316,8 @@ class GameEngine {
       this.accumulator -= FIXED_TIMESTEP;
     }
 
-    // Render with interpolation
-    const interpolation = this.accumulator / FIXED_TIMESTEP;
-    this.render(interpolation);
+    // Note: Rendering is handled by Game.tsx component, not here
+    // This allows React to manage the render loop while Engine handles game logic
 
     this.animationFrameId = requestAnimationFrame(this.gameLoop);
   };
@@ -508,86 +497,6 @@ class GameEngine {
 
     this.enemyPool.release(enemy);
     this.notifySubscribers();
-  }
-
-  // ==========================================================================
-  // Rendering
-  // ==========================================================================
-
-  private render(_interpolation: number): void {
-    void _interpolation; // Will be used for smooth rendering
-    if (!this.ctx || !this.canvas) return;
-
-    const ctx = this.ctx;
-
-    // Clear canvas
-    ctx.fillStyle = '#0a0a1a';
-    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-    const renderContext: SpriteRenderContext = {
-      ctx,
-      cellSize: GAME_CONFIG.CELL_SIZE,
-      time: this.state.time,
-    };
-
-    // Render grid
-    this.renderGrid(renderContext);
-
-    // Render path
-    this.renderPath(renderContext);
-
-    // Render towers (sprites will be called by integration layers)
-    // Render enemies (sprites will be called by integration layers)
-    // Render projectiles (sprites will be called by integration layers)
-  }
-
-  private renderGrid(context: SpriteRenderContext): void {
-    const { ctx, cellSize } = context;
-    const cells = this.grid.getCells();
-
-    for (let y = 0; y < cells.length; y++) {
-      for (let x = 0; x < cells[y].length; x++) {
-        const cell = cells[y][x];
-        const px = x * cellSize;
-        const py = y * cellSize;
-
-        // Grid lines
-        ctx.strokeStyle = 'rgba(50, 50, 100, 0.3)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(px, py, cellSize, cellSize);
-
-        // Spawn/Exit markers
-        if (cell === CS.SPAWN) {
-          ctx.fillStyle = 'rgba(0, 255, 100, 0.3)';
-          ctx.fillRect(px, py, cellSize, cellSize);
-        } else if (cell === CS.EXIT) {
-          ctx.fillStyle = 'rgba(255, 0, 100, 0.3)';
-          ctx.fillRect(px, py, cellSize, cellSize);
-        }
-      }
-    }
-  }
-
-  private renderPath(context: SpriteRenderContext): void {
-    if (this.path.length < 2) return;
-
-    const { ctx, cellSize } = context;
-
-    ctx.strokeStyle = 'rgba(100, 150, 255, 0.4)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-
-    ctx.beginPath();
-    const first = this.path[0];
-    ctx.moveTo(first.x * cellSize + cellSize / 2, first.y * cellSize + cellSize / 2);
-
-    for (let i = 1; i < this.path.length; i++) {
-      const point = this.path[i];
-      ctx.lineTo(point.x * cellSize + cellSize / 2, point.y * cellSize + cellSize / 2);
-    }
-
-    ctx.stroke();
-    ctx.setLineDash([]);
   }
 
   // ==========================================================================

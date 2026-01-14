@@ -44,6 +44,14 @@ export default function Game() {
   const [selectedTowerType, setSelectedTowerType] = useState<TowerType | null>(TowerType.LASER);
   const timeRef = useRef(0);
 
+  // Use refs for values that the render loop needs without causing effect re-runs
+  const hoveredCellRef = useRef<Point | null>(null);
+  const selectedTowerTypeRef = useRef<TowerType | null>(TowerType.LASER);
+
+  // Keep refs in sync with state
+  hoveredCellRef.current = hoveredCell;
+  selectedTowerTypeRef.current = selectedTowerType;
+
   // Convert mouse position to grid cell
   const getGridCell = useCallback((e: React.MouseEvent<HTMLCanvasElement>): Point | null => {
     const canvas = canvasRef.current;
@@ -108,7 +116,7 @@ export default function Game() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Initialize engine with canvas
+    // Initialize engine with canvas (only once on mount)
     engine.init(canvas);
 
     // Start the game automatically for now
@@ -134,8 +142,8 @@ export default function Game() {
       ctx!.fillStyle = '#0a0a1a';
       ctx!.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-      // Render grid cells
-      renderGrid(renderContext, state.grid, hoveredCell, selectedTowerType);
+      // Render grid cells (use refs to get current values without re-running effect)
+      renderGrid(renderContext, state.grid, hoveredCellRef.current, selectedTowerTypeRef.current);
 
       // Render path visualization
       if (state.path.length > 0) {
@@ -168,7 +176,7 @@ export default function Game() {
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [hoveredCell, selectedTowerType]);
+  }, []); // Empty deps - only run once on mount
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
