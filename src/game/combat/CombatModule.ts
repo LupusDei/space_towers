@@ -17,8 +17,6 @@ import { findTarget, findChainTargets, getEnemiesInSplash } from '../towers/Targ
 import { projectilePool } from '../pools';
 import { eventBus, createEvent } from '../events';
 import { GAME_CONFIG } from '../config';
-import { spawnDamageNumber } from '../../sprites/effects/DamageNumberSprite';
-import { explosionManager } from '../../sprites/effects/ExplosionSprite';
 
 // ============================================================================
 // Combat Constants
@@ -411,7 +409,7 @@ class CombatModuleImpl implements GameModule {
   private applyDamage(enemy: Enemy, damage: number, _towerId: string): void {
     enemy.health -= damage;
 
-    // Spawn damage number at enemy position
+    // Request damage number visual effect
     if (damage > 0 && this.commands) {
       const currentTime = this.commands.getTime();
       // Enemy position is in pixels, add offset for center
@@ -419,7 +417,11 @@ class CombatModuleImpl implements GameModule {
         x: enemy.position.x + GAME_CONFIG.CELL_SIZE / 2,
         y: enemy.position.y + GAME_CONFIG.CELL_SIZE / 2,
       };
-      spawnDamageNumber(Math.round(damage), damagePos, currentTime);
+      eventBus.emit(createEvent('DAMAGE_NUMBER_REQUESTED', {
+        damage: Math.round(damage),
+        position: damagePos,
+        time: currentTime,
+      }));
     }
 
     if (enemy.health <= 0) {
@@ -428,13 +430,17 @@ class CombatModuleImpl implements GameModule {
   }
 
   private handleEnemyKilled(enemy: Enemy, towerId: string): void {
-    // Spawn explosion at enemy position
+    // Request explosion visual effect
     const currentTime = this.commands!.getTime();
     const explosionPos = {
       x: enemy.position.x + GAME_CONFIG.CELL_SIZE / 2,
       y: enemy.position.y + GAME_CONFIG.CELL_SIZE / 2,
     };
-    explosionManager.spawn(explosionPos, enemy.type, currentTime);
+    eventBus.emit(createEvent('EXPLOSION_REQUESTED', {
+      position: explosionPos,
+      enemyType: enemy.type,
+      time: currentTime,
+    }));
 
     // Remove enemy from game
     this.commands!.removeEnemy(enemy.id);

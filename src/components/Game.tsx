@@ -11,8 +11,11 @@ import { PathVisualizationSprite } from '../sprites/environment/PathVisualizatio
 import { getTowerSprite, getEnemySprite } from '../sprites/SpriteRegistry';
 
 // Import effects
-import { drawAllDamageNumbers } from '../sprites/effects/DamageNumberSprite';
+import { drawAllDamageNumbers, spawnDamageNumber } from '../sprites/effects/DamageNumberSprite';
 import { explosionManager } from '../sprites/effects/ExplosionSprite';
+
+// Import event bus for effect subscriptions
+import { eventBus } from '../game/events';
 
 // Import combat module for hitscan effects
 import { combatModule } from '../game/combat/CombatModule';
@@ -70,6 +73,14 @@ export default function Game() {
     inputHandler.init(canvas, {
       onHoveredCellChange: setHoveredCell,
       onHoveredTowerChange: setHoveredTower,
+    });
+
+    // Subscribe to visual effect events (rendering layer handles effects triggered by game logic)
+    const unsubDamageNumber = eventBus.on('DAMAGE_NUMBER_REQUESTED', (event) => {
+      spawnDamageNumber(event.payload.damage, event.payload.position, event.payload.time);
+    });
+    const unsubExplosion = eventBus.on('EXPLOSION_REQUESTED', (event) => {
+      explosionManager.spawn(event.payload.position, event.payload.enemyType, event.payload.time);
     });
 
     // Start the game automatically for now
@@ -181,6 +192,8 @@ export default function Game() {
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      unsubDamageNumber();
+      unsubExplosion();
     };
   }, []); // Empty deps - only run once on mount
 

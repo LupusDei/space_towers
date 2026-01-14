@@ -147,7 +147,9 @@ export type GameEventType =
   | 'PROJECTILE_HIT'
   | 'PHASE_CHANGE'
   | 'CREDITS_CHANGED'
-  | 'LIVES_CHANGED';
+  | 'LIVES_CHANGED'
+  | 'DAMAGE_NUMBER_REQUESTED'
+  | 'EXPLOSION_REQUESTED';
 
 export interface GameEvent<T = unknown> {
   type: GameEventType;
@@ -223,6 +225,23 @@ export interface LivesChangedEvent extends GameEvent<{ amount: number; newTotal:
   type: 'LIVES_CHANGED';
 }
 
+// Visual effect events - emitted by game logic, handled by rendering layer
+export interface DamageNumberRequestedEvent extends GameEvent<{
+  damage: number;
+  position: Point;
+  time: number;
+}> {
+  type: 'DAMAGE_NUMBER_REQUESTED';
+}
+
+export interface ExplosionRequestedEvent extends GameEvent<{
+  position: Point;
+  enemyType: EnemyType;
+  time: number;
+}> {
+  type: 'EXPLOSION_REQUESTED';
+}
+
 export type GameEvents =
   | GameStartEvent
   | GameOverEvent
@@ -238,7 +257,9 @@ export type GameEvents =
   | ProjectileHitEvent
   | PhaseChangeEvent
   | CreditsChangedEvent
-  | LivesChangedEvent;
+  | LivesChangedEvent
+  | DamageNumberRequestedEvent
+  | ExplosionRequestedEvent;
 
 // ============================================================================
 // Module System
