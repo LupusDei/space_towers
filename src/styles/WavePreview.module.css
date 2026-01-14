@@ -1,0 +1,168 @@
+/* Wave Preview - Neon/Holographic Theme */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(10, 10, 26, 0.9) 0%, rgba(10, 10, 26, 0.75) 100%);
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  border-radius: 6px;
+  box-shadow:
+    0 0 12px rgba(0, 255, 255, 0.15),
+    inset 0 0 20px rgba(0, 255, 255, 0.05);
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 14px;
+  backdrop-filter: blur(4px);
+  min-width: 180px;
+}
+
+.container.bossWave {
+  border-color: rgba(255, 51, 102, 0.6);
+  box-shadow:
+    0 0 16px rgba(255, 51, 102, 0.2),
+    inset 0 0 20px rgba(255, 51, 102, 0.05);
+  animation: bossGlow 2s ease-in-out infinite;
+}
+
+@keyframes bossGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 16px rgba(255, 51, 102, 0.2),
+      inset 0 0 20px rgba(255, 51, 102, 0.05);
+  }
+  50% {
+    box-shadow:
+      0 0 24px rgba(255, 51, 102, 0.35),
+      inset 0 0 24px rgba(255, 51, 102, 0.1);
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.title {
+  color: #00ffff;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+.bossIndicator {
+  padding: 2px 6px;
+  background: linear-gradient(135deg, rgba(255, 51, 102, 0.3) 0%, rgba(255, 51, 102, 0.15) 100%);
+  border: 1px solid rgba(255, 51, 102, 0.6);
+  border-radius: 3px;
+  color: #ff3366;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-shadow: 0 0 6px rgba(255, 51, 102, 0.6);
+  animation: bossPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes bossPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.enemyList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.enemyRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  background: rgba(0, 255, 255, 0.03);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.enemyRow:hover {
+  background: rgba(0, 255, 255, 0.08);
+}
+
+.enemyRow.bossEnemy {
+  background: rgba(255, 51, 102, 0.08);
+  border: 1px solid rgba(255, 51, 102, 0.3);
+}
+
+.enemyRow.bossEnemy:hover {
+  background: rgba(255, 51, 102, 0.12);
+}
+
+.enemyIcon {
+  width: 16px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+}
+
+.enemyRow.bossEnemy .enemyIcon {
+  color: #ff3366;
+  text-shadow: 0 0 6px rgba(255, 51, 102, 0.5);
+}
+
+.enemyName {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+}
+
+.enemyRow.bossEnemy .enemyName {
+  color: #ff3366;
+  font-weight: 500;
+}
+
+.enemyCount {
+  color: #00ffff;
+  font-weight: 600;
+  font-size: 13px;
+  text-shadow: 0 0 4px rgba(0, 255, 255, 0.4);
+}
+
+.enemyRow.bossEnemy .enemyCount {
+  color: #ff3366;
+  text-shadow: 0 0 4px rgba(255, 51, 102, 0.4);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.totalLabel {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.totalCount {
+  color: #00ff88;
+  font-weight: 700;
+  font-size: 14px;
+  text-shadow:
+    0 0 8px rgba(0, 255, 136, 0.5),
+    0 0 16px rgba(0, 255, 136, 0.25);
+}
