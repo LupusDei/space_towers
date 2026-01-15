@@ -57,6 +57,8 @@ export default function TowerPanel({
           const canAfford = credits >= stats.cost;
           const isSelected = selectedTowerType === type;
 
+          const dps = (stats.damage / stats.fireRate).toFixed(1);
+
           return (
             <button
               key={type}
@@ -69,9 +71,14 @@ export default function TowerPanel({
               onClick={() => onSelectTowerType(isSelected ? null : type)}
             >
               <div style={styles.iconContainer}>
-                <TowerIcon type={type} size={36} />
+                <TowerIcon type={type} size={48} />
               </div>
               <div style={styles.towerName}>{stats.name}</div>
+              <div style={styles.towerStats}>
+                <span style={styles.statItem}>DMG: {stats.damage}</span>
+                <span style={styles.statItem}>DPS: {dps}</span>
+                <span style={styles.statItem}>RNG: {stats.range}</span>
+              </div>
               <div style={styles.towerCost}>
                 <span style={styles.creditIcon}>$</span>
                 {stats.cost}
@@ -146,7 +153,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     alignItems: 'center',
     gap: spacing.xs,
-    padding: spacing.sm,
+    padding: spacing.md,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     border: `1px solid ${colors.accent}66`,
     borderRadius: '6px',
@@ -175,10 +182,24 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: typography.fontWeight.medium,
     color: colors.text.primary,
   },
-  towerCost: {
+  towerStats: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '2px',
     fontSize: typography.fontSize.xs,
+    color: colors.text.secondary,
+    fontFamily: typography.fontFamily.mono,
+  },
+  statItem: {
+    whiteSpace: 'nowrap',
+  },
+  towerCost: {
+    fontSize: typography.fontSize.sm,
     color: colors.credits,
     fontFamily: typography.fontFamily.mono,
+    fontWeight: typography.fontWeight.bold,
+    marginTop: spacing.xs,
   },
   creditIcon: {
     marginRight: '2px',
