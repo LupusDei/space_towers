@@ -143,6 +143,17 @@
   text-shadow: 0 0 4px rgba(255, 51, 102, 0.4);
 }
 
+.enemyStats {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.enemyRow.bossEnemy .enemyStats {
+  color: rgba(255, 51, 102, 0.6);
+}
+
 .footer {
   display: flex;
   align-items: center;

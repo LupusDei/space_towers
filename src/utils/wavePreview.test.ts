@@ -2,13 +2,13 @@
 // Tests the utility functions used by the WavePreview component
 
 import { describe, it, expect } from 'vitest';
-import { aggregateEnemies, isBossWave, getEnemyIcon } from './wavePreview';
+import { aggregateEnemies, isBossWave, getEnemyIcon, formatSpeed } from './wavePreview';
 import { EnemyType, type WaveDefinition } from '../game/types';
 import { ENEMY_STATS } from '../game/config';
 
 describe('WavePreview Utilities', () => {
   describe('aggregateEnemies', () => {
-    it('aggregates a single enemy type', () => {
+    it('aggregates a single enemy type with stats', () => {
       const wave: WaveDefinition = {
         waveNumber: 1,
         spawns: [{ enemyType: EnemyType.SCOUT, count: 5, delay: 0, spawnInterval: 1000 }],
@@ -21,6 +21,9 @@ describe('WavePreview Utilities', () => {
       expect(result[0].type).toBe(EnemyType.SCOUT);
       expect(result[0].name).toBe(ENEMY_STATS[EnemyType.SCOUT].name);
       expect(result[0].count).toBe(5);
+      expect(result[0].hp).toBe(ENEMY_STATS[EnemyType.SCOUT].health);
+      expect(result[0].armor).toBe(ENEMY_STATS[EnemyType.SCOUT].armor);
+      expect(result[0].speed).toBe(ENEMY_STATS[EnemyType.SCOUT].speed);
     });
 
     it('aggregates multiple enemy types', () => {
@@ -166,6 +169,33 @@ describe('WavePreview Utilities', () => {
 
     it('returns star for boss', () => {
       expect(getEnemyIcon(EnemyType.BOSS)).toBe('\u2605');
+    });
+  });
+
+  describe('formatSpeed', () => {
+    it('returns vfast for speed >= 90', () => {
+      expect(formatSpeed(100)).toBe('vfast');
+      expect(formatSpeed(90)).toBe('vfast');
+    });
+
+    it('returns fast for speed 70-89', () => {
+      expect(formatSpeed(89)).toBe('fast');
+      expect(formatSpeed(70)).toBe('fast');
+    });
+
+    it('returns med for speed 50-69', () => {
+      expect(formatSpeed(69)).toBe('med');
+      expect(formatSpeed(50)).toBe('med');
+    });
+
+    it('returns slow for speed 35-49', () => {
+      expect(formatSpeed(49)).toBe('slow');
+      expect(formatSpeed(35)).toBe('slow');
+    });
+
+    it('returns vslow for speed < 35', () => {
+      expect(formatSpeed(34)).toBe('vslow');
+      expect(formatSpeed(25)).toBe('vslow');
     });
   });
 });

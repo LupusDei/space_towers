@@ -7,6 +7,9 @@ export interface EnemySummary {
   type: EnemyType;
   name: string;
   count: number;
+  hp: number;
+  armor: number;
+  speed: number;
 }
 
 /**
@@ -20,11 +23,17 @@ export function aggregateEnemies(wave: WaveDefinition): EnemySummary[] {
     counts.set(spawn.enemyType, current + spawn.count);
   }
 
-  return Array.from(counts.entries()).map(([type, count]) => ({
-    type,
-    name: ENEMY_STATS[type].name,
-    count,
-  }));
+  return Array.from(counts.entries()).map(([type, count]) => {
+    const stats = ENEMY_STATS[type];
+    return {
+      type,
+      name: stats.name,
+      count,
+      hp: stats.health,
+      armor: stats.armor,
+      speed: stats.speed,
+    };
+  });
 }
 
 /**
@@ -52,4 +61,15 @@ export function getEnemyIcon(type: EnemyType): string {
     default:
       return '\u25CF';
   }
+}
+
+/**
+ * Converts numeric speed to a descriptive label
+ */
+export function formatSpeed(speed: number): string {
+  if (speed >= 90) return 'vfast';
+  if (speed >= 70) return 'fast';
+  if (speed >= 50) return 'med';
+  if (speed >= 35) return 'slow';
+  return 'vslow';
 }

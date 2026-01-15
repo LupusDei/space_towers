@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { eventBus } from '../game/events';
 import { GamePhase, EnemyType, type WaveDefinition } from '../game/types';
 import { getWaveDefinition } from '../data/waves';
-import { aggregateEnemies, isBossWave, getEnemyIcon } from '../utils/wavePreview';
+import { aggregateEnemies, isBossWave, getEnemyIcon, formatSpeed } from '../utils/wavePreview';
 import styles from '../styles/WavePreview.module.css';
 
 interface WavePreviewProps {
@@ -66,6 +66,9 @@ export default function WavePreview({ wave, phase }: WavePreviewProps) {
             <span className={styles.enemyIcon}>{getEnemyIcon(enemy.type)}</span>
             <span className={styles.enemyName}>{enemy.name}</span>
             <span className={styles.enemyCount}>x{enemy.count}</span>
+            <span className={styles.enemyStats}>
+              {enemy.hp}hp • {enemy.armor}arm • {formatSpeed(enemy.speed)}
+            </span>
           </div>
         ))}
       </div>
