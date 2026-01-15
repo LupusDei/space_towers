@@ -486,7 +486,8 @@ class GameEngine {
   private projectileHit(projectile: Projectile): void {
     const target = this.state.enemies.get(projectile.targetId);
     if (target) {
-      const effectiveDamage = Math.max(0, projectile.damage - target.armor);
+      // Minimum 1 damage ensures enemies can always be killed
+      const effectiveDamage = Math.max(1, projectile.damage - target.armor);
       target.health -= effectiveDamage;
 
       this.eventBus.emit(

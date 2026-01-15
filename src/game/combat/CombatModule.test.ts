@@ -258,3 +258,81 @@ describe('Combat Constants', () => {
     expect(TowerType.CANNON).toBe('cannon');
   });
 });
+
+describe('Damage calculation', () => {
+  beforeEach(() => {
+    eventBus.clear();
+    combatModule.destroy();
+  });
+
+  it('should deal minimum 1 damage even when armor exceeds base damage', () => {
+    // Create a laser tower (damage 5 after balance) and heavily armored enemy (armor 30)
+    const tower = createMockTower({
+      id: 'tower_1',
+      type: TowerType.LASER,
+      position: { x: 5, y: 5 },
+      damage: 5,
+      range: 150,
+      fireRate: 0.5,
+    });
+
+    // Enemy with armor (30) much higher than tower damage (5)
+    const enemy: Enemy = {
+      id: 'enemy_1',
+      type: 'boss' as never,
+      health: 100,
+      maxHealth: 100,
+      speed: 25,
+      armor: 30, // Way higher than laser damage
+      reward: 200,
+      position: { x: 5 * 44 + 22, y: 5 * 44 + 22 }, // Same cell as tower, in pixels
+      pathIndex: 0,
+      path: [],
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    const commands = createMockCommands();
+    combatModule.init(query, commands);
+
+    // First update creates tower instance (ready to fire immediately)
+    combatModule.update(0.1);
+
+    // Enemy should have taken minimum 1 damage despite high armor
+    // 5 (damage) - 30 (armor) = -25, but min is 1
+    expect(enemy.health).toBe(99);
+  });
+
+  it('should deal normal damage when base damage exceeds armor', () => {
+    const tower = createMockTower({
+      id: 'tower_1',
+      type: TowerType.LASER,
+      position: { x: 5, y: 5 },
+      damage: 10,
+      range: 150,
+      fireRate: 0.5,
+    });
+
+    // Enemy with low armor
+    const enemy: Enemy = {
+      id: 'enemy_1',
+      type: 'scout' as never,
+      health: 30,
+      maxHealth: 30,
+      speed: 80,
+      armor: 0,
+      reward: 10,
+      position: { x: 5 * 44 + 22, y: 5 * 44 + 22 },
+      pathIndex: 0,
+      path: [],
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    const commands = createMockCommands();
+    combatModule.init(query, commands);
+
+    combatModule.update(0.1);
+
+    // 10 (damage) - 0 (armor) = 10 damage
+    expect(enemy.health).toBe(20);
+  });
+});

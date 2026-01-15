@@ -78,7 +78,9 @@ function towerPositionToPixels(position: Point): Point {
 }
 
 function calculateDamage(baseDamage: number, armor: number): number {
-  return Math.max(0, baseDamage - armor);
+  // Minimum 1 damage ensures enemies can always be killed eventually,
+  // even when armor exceeds base damage
+  return Math.max(1, baseDamage - armor);
 }
 
 // ============================================================================
