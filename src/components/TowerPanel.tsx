@@ -1,6 +1,19 @@
 import { useState, useEffect } from 'react';
 import { TowerType, type Tower } from '../game/types';
-import { TOWER_STATS, GAME_CONFIG } from '../game/config';
+import { TOWER_STATS, GAME_CONFIG, COMBAT_CONFIG } from '../game/config';
+
+function getSpecialEffect(type: TowerType): string | null {
+  switch (type) {
+    case TowerType.LASER:
+      return 'Hitscan';
+    case TowerType.MISSILE:
+      return `Splash ${COMBAT_CONFIG.MISSILE_SPLASH_RADIUS} cells`;
+    case TowerType.TESLA:
+      return `Chain ${COMBAT_CONFIG.TESLA_MAX_CHAIN} targets`;
+    default:
+      return null;
+  }
+}
 import { eventBus } from '../game/events';
 import { colors, spacing, typography } from '../styles/theme';
 import TowerIcon from './TowerIcon';
@@ -78,6 +91,9 @@ export default function TowerPanel({
                 <span style={styles.statItem}>DMG: {stats.damage}</span>
                 <span style={styles.statItem}>DPS: {dps}</span>
                 <span style={styles.statItem}>RNG: {stats.range}</span>
+                {getSpecialEffect(type) && (
+                  <span style={styles.specialEffect}>{getSpecialEffect(type)}</span>
+                )}
               </div>
               <div style={styles.towerCost}>
                 <span style={styles.creditIcon}>$</span>
@@ -193,6 +209,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   statItem: {
     whiteSpace: 'nowrap',
+  },
+  specialEffect: {
+    whiteSpace: 'nowrap',
+    color: colors.accent,
+    fontStyle: 'italic',
   },
   towerCost: {
     fontSize: typography.fontSize.sm,
