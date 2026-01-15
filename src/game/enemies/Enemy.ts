@@ -7,8 +7,8 @@ import { ENEMY_STATS } from '../config';
 export class Enemy implements Poolable {
   id: string = '';
   type: EnemyType = 'scout';
-  hp: number = 0;
-  maxHp: number = 0;
+  health: number = 0;
+  maxHealth: number = 0;
   speed: number = 0;
   position: Point = { x: 0, y: 0 };
   pathIndex: number = 0;
@@ -49,15 +49,15 @@ export class Enemy implements Poolable {
 
   takeDamage(amount: number): boolean {
     const effectiveDamage = Math.max(0, amount - this.armor);
-    this.hp -= effectiveDamage;
-    return this.hp <= 0;
+    this.health -= effectiveDamage;
+    return this.health <= 0;
   }
 
   reset(): void {
     this.id = '';
     this.type = 'scout';
-    this.hp = 0;
-    this.maxHp = 0;
+    this.health = 0;
+    this.maxHealth = 0;
     this.speed = 0;
     this.position.x = 0;
     this.position.y = 0;
@@ -70,8 +70,8 @@ export class Enemy implements Poolable {
     const stats = ENEMY_STATS[type];
     this.id = id;
     this.type = type;
-    this.hp = stats.health;
-    this.maxHp = stats.health;
+    this.health = stats.health;
+    this.maxHealth = stats.health;
     this.speed = stats.speed;
     this.armor = stats.armor;
     this.reward = stats.reward;
@@ -81,10 +81,10 @@ export class Enemy implements Poolable {
   }
 
   get isDead(): boolean {
-    return this.hp <= 0;
+    return this.health <= 0;
   }
 
   get healthPercent(): number {
-    return this.maxHp > 0 ? this.hp / this.maxHp : 0;
+    return this.maxHealth > 0 ? this.health / this.maxHealth : 0;
   }
 }
