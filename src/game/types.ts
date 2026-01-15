@@ -149,7 +149,8 @@ export type GameEventType =
   | 'CREDITS_CHANGED'
   | 'LIVES_CHANGED'
   | 'DAMAGE_NUMBER_REQUESTED'
-  | 'EXPLOSION_REQUESTED';
+  | 'EXPLOSION_REQUESTED'
+  | 'GOLD_NUMBER_REQUESTED';
 
 export interface GameEvent<T = unknown> {
   type: GameEventType;
@@ -242,6 +243,14 @@ export interface ExplosionRequestedEvent extends GameEvent<{
   type: 'EXPLOSION_REQUESTED';
 }
 
+export interface GoldNumberRequestedEvent extends GameEvent<{
+  amount: number;
+  position: Point;
+  time: number;
+}> {
+  type: 'GOLD_NUMBER_REQUESTED';
+}
+
 export type GameEvents =
   | GameStartEvent
   | GameOverEvent
@@ -259,7 +268,8 @@ export type GameEvents =
   | CreditsChangedEvent
   | LivesChangedEvent
   | DamageNumberRequestedEvent
-  | ExplosionRequestedEvent;
+  | ExplosionRequestedEvent
+  | GoldNumberRequestedEvent;
 
 // ============================================================================
 // Module System

@@ -432,13 +432,20 @@ class CombatModuleImpl implements GameModule {
   private handleEnemyKilled(enemy: Enemy, towerId: string): void {
     // Request explosion visual effect
     const currentTime = this.commands!.getTime();
-    const explosionPos = {
+    const deathPos = {
       x: enemy.position.x + GAME_CONFIG.CELL_SIZE / 2,
       y: enemy.position.y + GAME_CONFIG.CELL_SIZE / 2,
     };
     eventBus.emit(createEvent('EXPLOSION_REQUESTED', {
-      position: explosionPos,
+      position: deathPos,
       enemyType: enemy.type,
+      time: currentTime,
+    }));
+
+    // Request gold number visual effect
+    eventBus.emit(createEvent('GOLD_NUMBER_REQUESTED', {
+      amount: enemy.reward,
+      position: deathPos,
       time: currentTime,
     }));
 

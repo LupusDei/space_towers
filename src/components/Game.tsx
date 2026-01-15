@@ -12,6 +12,7 @@ import { getTowerSprite, getEnemySprite } from '../sprites/SpriteRegistry';
 
 // Import effects
 import { drawAllDamageNumbers, spawnDamageNumber } from '../sprites/effects/DamageNumberSprite';
+import { drawAllGoldNumbers, spawnGoldNumber } from '../sprites/effects/GoldNumberSprite';
 import { explosionManager } from '../sprites/effects/ExplosionSprite';
 
 // Import event bus for effect subscriptions
@@ -81,6 +82,9 @@ export default function Game() {
     });
     const unsubExplosion = eventBus.on('EXPLOSION_REQUESTED', (event) => {
       explosionManager.spawn(event.payload.position, event.payload.enemyType, event.payload.time);
+    });
+    const unsubGoldNumber = eventBus.on('GOLD_NUMBER_REQUESTED', (event) => {
+      spawnGoldNumber(event.payload.amount, event.payload.position, event.payload.time);
     });
 
     // Start the game automatically for now
@@ -176,6 +180,9 @@ export default function Game() {
       // Render damage numbers
       drawAllDamageNumbers(renderContext);
 
+      // Render gold numbers (kill rewards)
+      drawAllGoldNumbers(renderContext);
+
       // Render HUD overlay
       renderHUD(ctx!, state);
 
@@ -194,6 +201,7 @@ export default function Game() {
       cancelAnimationFrame(animationFrameId);
       unsubDamageNumber();
       unsubExplosion();
+      unsubGoldNumber();
     };
   }, []); // Empty deps - only run once on mount
 
