@@ -359,6 +359,14 @@ describe('Engine Integration', () => {
 
       expect(effectiveDamage).toBe(15);
     });
+
+    it('kill rewards match specification: Scout=$10, Fighter=$20, Tank=$50, Boss=$200', () => {
+      // Verify exact kill reward values per spec
+      expect(ENEMY_STATS[EnemyType.SCOUT].reward).toBe(10);
+      expect(ENEMY_STATS[EnemyType.FIGHTER].reward).toBe(20);
+      expect(ENEMY_STATS[EnemyType.TANK].reward).toBe(50);
+      expect(ENEMY_STATS[EnemyType.BOSS].reward).toBe(200);
+    });
   });
 
   // ==========================================================================
