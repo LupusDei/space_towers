@@ -10,6 +10,7 @@ import TowerPanel from './components/TowerPanel';
 import GameOver from './components/GameOver';
 import EngageButton from './components/EngageButton';
 import WavePreview from './components/WavePreview';
+import WaveSummary from './components/WaveSummary';
 
 // Total dimensions of game container (canvas + sidebar + gaps + padding)
 const GAME_CONTAINER_WIDTH = CANVAS_WIDTH + 16 + 200 + 32; // 1128
@@ -105,6 +106,7 @@ function App() {
         </div>
       </div>
       <GameOver onPlayAgain={handlePlayAgain} />
+      <WaveSummary phase={state.phase} />
     </div>
   );
 }
