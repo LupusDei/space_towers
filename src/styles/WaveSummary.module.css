@@ -1,0 +1,77 @@
+/* Wave Summary - Notification Overlay */
+
+.container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 32px;
+  background: linear-gradient(180deg, rgba(10, 10, 26, 0.95) 0%, rgba(10, 10, 26, 0.85) 100%);
+  border: 2px solid rgba(0, 255, 136, 0.6);
+  border-radius: 8px;
+  box-shadow:
+    0 0 20px rgba(0, 255, 136, 0.3),
+    0 0 40px rgba(0, 255, 136, 0.15),
+    inset 0 0 30px rgba(0, 255, 136, 0.05);
+  font-family: 'Fira Code', 'Consolas', monospace;
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.header {
+  color: #00ff88;
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 12px rgba(0, 255, 136, 0.6);
+}
+
+.breakdown {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.kills {
+  color: #ffcc00;
+  font-weight: 600;
+  text-shadow: 0 0 6px rgba(255, 204, 0, 0.4);
+}
+
+.bonus {
+  color: #00ffff;
+  font-weight: 600;
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.4);
+}
+
+.separator {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+}
+
+.total {
+  color: #00ff88;
+  font-weight: 700;
+  font-size: 16px;
+  text-shadow:
+    0 0 8px rgba(0, 255, 136, 0.5),
+    0 0 16px rgba(0, 255, 136, 0.25);
+}
