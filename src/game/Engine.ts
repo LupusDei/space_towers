@@ -101,9 +101,6 @@ class GameEngine {
   private enemyPool: ObjectPool<Enemy>;
   private projectilePool: ObjectPool<Projectile>;
 
-  // Logging throttle
-  private snapshotLogCounter = 0;
-
   // Cached arrays for frequently accessed collections (performance optimization)
   private towersCache: Tower[] = [];
   private towersCacheDirty = true;
@@ -462,7 +459,6 @@ class GameEngine {
     this.enemiesCacheDirty = true;
     this.spatialHash.insert(enemy);
     this.invalidateSortedEnemiesCache();
-    console.log('[Engine] Spawned enemy:', enemy.id, 'type:', enemy.type, 'pos:', enemy.position, 'enemies count:', this.state.enemies.size);
     this.stateNotifier.notify();
 
     return enemy;
@@ -523,6 +519,26 @@ class GameEngine {
     this.state.credits += enemy.reward;
     this.state.score += enemy.reward;
 
+    // Request gold number visual effect (floating +$X)
+    const deathPos = {
+      x: enemy.position.x + GAME_CONFIG.CELL_SIZE / 2,
+      y: enemy.position.y + GAME_CONFIG.CELL_SIZE / 2,
+    };
+    this.eventBus.emit(createEvent('GOLD_NUMBER_REQUESTED', {
+      amount: enemy.reward,
+      position: deathPos,
+      time: this.state.time,
+    }));
+
+    // Request explosion visual effect
+    this.eventBus.emit(createEvent('EXPLOSION_REQUESTED', {
+      position: deathPos,
+      enemyType: enemy.type,
+      time: this.state.time,
+    }));
+
+    console.log(`[Kill] Enemy ${enemy.type} killed by tower ${towerId} → +$${enemy.reward}`);
+
     this.eventBus.emit(createEvent('ENEMY_KILLED', { enemy, towerId, reward: enemy.reward }));
     this.eventBus.emit(
       createEvent('CREDITS_CHANGED', { amount: enemy.reward, newTotal: this.state.credits })
@@ -541,12 +557,6 @@ class GameEngine {
   }
 
   getSnapshot(): GameState {
-    this.snapshotLogCounter++;
-    if (this.snapshotLogCounter % 120 === 0 && this.state.enemies.size > 0) {
-      console.log('[Engine.getSnapshot] enemies in state:', this.state.enemies.size,
-        Array.from(this.state.enemies.values()).map(e => ({ id: e.id, pos: {...e.position} })));
-    }
-
     // Return cached snapshot if stateVersion hasn't changed
     const currentVersion = this.stateNotifier.getVersion();
     if (this.cachedSnapshot !== null && this.snapshotVersion === currentVersion) {

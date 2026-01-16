@@ -449,6 +449,8 @@ class CombatModuleImpl implements GameModule {
       time: currentTime,
     }));
 
+    console.log(`[Kill] Enemy ${enemy.type} killed by tower ${towerId} → +$${enemy.reward}`);
+
     // Remove enemy from game
     this.commands!.removeEnemy(enemy.id);
 

@@ -84,7 +84,7 @@ export default function TowerPanel({
               onClick={() => onSelectTowerType(isSelected ? null : type)}
             >
               <div style={styles.iconContainer}>
-                <TowerIcon type={type} size={48} />
+                <TowerIcon type={type} size={36} />
               </div>
               <div style={styles.towerName}>{stats.name}</div>
               <div style={styles.towerStats}>
@@ -168,8 +168,8 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: spacing.xs,
-    padding: spacing.md,
+    gap: '2px',
+    padding: spacing.sm,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     border: `1px solid ${colors.accent}66`,
     borderRadius: '6px',
@@ -191,10 +191,10 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: '2px',
   },
   towerName: {
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.medium,
     color: colors.text.primary,
   },
@@ -202,8 +202,8 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '2px',
-    fontSize: typography.fontSize.xs,
+    gap: '1px',
+    fontSize: '10px',
     color: colors.text.secondary,
     fontFamily: typography.fontFamily.mono,
   },
@@ -216,11 +216,11 @@ const styles: Record<string, React.CSSProperties> = {
     fontStyle: 'italic',
   },
   towerCost: {
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.xs,
     color: colors.credits,
     fontFamily: typography.fontFamily.mono,
     fontWeight: typography.fontWeight.bold,
-    marginTop: spacing.xs,
+    marginTop: '2px',
   },
   creditIcon: {
     marginRight: '2px',

@@ -28,10 +28,7 @@ export class PlaceTowerCommand implements GameCommand {
     // Only allow placement during planning phase
     if (engine.getPhase() !== GamePhase.PLANNING) return;
 
-    const tower = engine.placeTower(this.towerType, this.position);
-    if (tower) {
-      console.log(`Placed ${this.towerType} tower at (${this.position.x}, ${this.position.y})`);
-    }
+    engine.placeTower(this.towerType, this.position);
   }
 }
 
@@ -46,8 +43,7 @@ export class SellTowerCommand implements GameCommand {
   }
 
   execute(): void {
-    const refund = engine.sellTower(this.towerId);
-    console.log(`Sold tower for ${refund} credits`);
+    engine.sellTower(this.towerId);
   }
 }
 
