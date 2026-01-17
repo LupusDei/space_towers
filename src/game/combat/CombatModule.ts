@@ -354,7 +354,6 @@ class CombatModuleImpl implements GameModule {
 
   private handleProjectileFire(tower: Tower, target: Enemy, _currentTime: number): void {
     const startPosition = towerPositionToPixels(tower.position);
-    // Target position saved for potential projectile tracking: { ...target.position }
 
     // Acquire projectile from pool
     const projectile = projectilePool.acquire();
@@ -363,12 +362,16 @@ class CombatModuleImpl implements GameModule {
     const isSplash = tower.type === TT.MISSILE;
     const aoeRadius = isSplash ? COMBAT_CONFIG.MISSILE_SPLASH_RADIUS * GAME_CONFIG.CELL_SIZE : 0;
 
+    // Calculate projectile start position based on tower type
+    // Cannon fires from barrel tip (top middle), missile from center
+    const yOffset = tower.type === TT.CANNON ? -GAME_CONFIG.CELL_SIZE * 0.6 : 0;
+
     // Initialize projectile (keep pool-assigned id for proper pool tracking)
     projectile.sourceId = tower.id;
     projectile.targetId = target.id;
     projectile.towerType = tower.type;
     projectile.position.x = startPosition.x;
-    projectile.position.y = startPosition.y;
+    projectile.position.y = startPosition.y + yOffset;
     projectile.velocity.x = 0;
     projectile.velocity.y = 0;
     projectile.damage = tower.damage;
