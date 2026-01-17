@@ -57,8 +57,8 @@ describe('getDisplayedHealth', () => {
     // Initial state
     getDisplayedHealth('enemy_3', 50, 100, 0);
 
-    // Health increases instantly
-    const result = getDisplayedHealth('enemy_3', 75, 100, 100);
+    // Health increases instantly (time in seconds)
+    const result = getDisplayedHealth('enemy_3', 75, 100, 0.1);
     expect(result).toBe(75);
   });
 
@@ -66,8 +66,8 @@ describe('getDisplayedHealth', () => {
     // Initial state at full health
     getDisplayedHealth('enemy_4', 100, 100, 0);
 
-    // Damage dealt - health drops to 50
-    const result1 = getDisplayedHealth('enemy_4', 50, 100, 100);
+    // Damage dealt - health drops to 50 (time in seconds)
+    const result1 = getDisplayedHealth('enemy_4', 50, 100, 0.1);
     // Displayed health should be > 50 (still animating down)
     expect(result1).toBeGreaterThan(50);
     expect(result1).toBeLessThan(100);
@@ -77,11 +77,11 @@ describe('getDisplayedHealth', () => {
     // Initial state
     getDisplayedHealth('enemy_5', 100, 100, 0);
 
-    // Simulate time passing with damage
-    let result = getDisplayedHealth('enemy_5', 50, 100, 100);
+    // Simulate time passing with damage (time in seconds)
+    let result = getDisplayedHealth('enemy_5', 50, 100, 0.1);
 
     // After enough time passes (10 seconds), should reach target
-    result = getDisplayedHealth('enemy_5', 50, 100, 10000);
+    result = getDisplayedHealth('enemy_5', 50, 100, 10);
     expect(result).toBe(50);
   });
 
@@ -90,9 +90,9 @@ describe('getDisplayedHealth', () => {
     getDisplayedHealth('enemy_a', 100, 100, 0);
     getDisplayedHealth('enemy_b', 80, 100, 0);
 
-    // Damage enemy_a
-    const resultA = getDisplayedHealth('enemy_a', 50, 100, 100);
-    const resultB = getDisplayedHealth('enemy_b', 80, 100, 100);
+    // Damage enemy_a (time in seconds)
+    const resultA = getDisplayedHealth('enemy_a', 50, 100, 0.1);
+    const resultB = getDisplayedHealth('enemy_b', 80, 100, 0.1);
 
     // enemy_a should be animating, enemy_b unchanged
     expect(resultA).toBeGreaterThan(50);
@@ -127,15 +127,15 @@ describe('cleanupHealthBarState', () => {
     getDisplayedHealth('enemy_7', 100, 100, 0);
     getDisplayedHealth('enemy_8', 100, 100, 0);
 
-    // Damage both
-    getDisplayedHealth('enemy_7', 50, 100, 100);
-    getDisplayedHealth('enemy_8', 50, 100, 100);
+    // Damage both (time in seconds)
+    getDisplayedHealth('enemy_7', 50, 100, 0.1);
+    getDisplayedHealth('enemy_8', 50, 100, 0.1);
 
     // Clean up only enemy_7
     cleanupHealthBarState('enemy_7');
 
     // enemy_8 should still have state (still animating)
-    const result8 = getDisplayedHealth('enemy_8', 50, 100, 200);
+    const result8 = getDisplayedHealth('enemy_8', 50, 100, 0.2);
     expect(result8).toBeGreaterThan(50);
   });
 });
@@ -150,9 +150,9 @@ describe('resetAllHealthBarStates', () => {
     getDisplayedHealth('enemy_9', 100, 100, 0);
     getDisplayedHealth('enemy_10', 100, 100, 0);
 
-    // Damage both
-    getDisplayedHealth('enemy_9', 50, 100, 100);
-    getDisplayedHealth('enemy_10', 50, 100, 100);
+    // Damage both (time in seconds)
+    getDisplayedHealth('enemy_9', 50, 100, 0.1);
+    getDisplayedHealth('enemy_10', 50, 100, 0.1);
 
     // Reset all
     resetAllHealthBarStates();

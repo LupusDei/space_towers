@@ -65,8 +65,8 @@ export function getDisplayedHealth(
     return actualHealth;
   }
 
-  // Calculate time delta in seconds
-  const deltaTime = (currentTime - state.lastUpdateTime) / 1000;
+  // Calculate time delta (time is already in seconds from render context)
+  const deltaTime = currentTime - state.lastUpdateTime;
   state.lastUpdateTime = currentTime;
 
   // Calculate actual health percentage
