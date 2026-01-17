@@ -70,7 +70,7 @@ export function createExplosionSprite(enemyType: string): EffectSprite {
       const fadeOut = 1 - progress;
 
       const maxRadius = cellSize * 0.6;
-      const ringRadius = easeOut * maxRadius;
+      const ringRadius = Math.max(0, easeOut * maxRadius);
       const ringWidth = Math.max(1, (1 - progress) * 4);
 
       // Outer glow
