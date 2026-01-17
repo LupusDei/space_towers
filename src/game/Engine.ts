@@ -25,6 +25,7 @@ import {
 } from './pools';
 import { findPath, wouldBlockPath } from './grid/Pathfinding';
 import { TowerFactory } from './towers/TowerFactory';
+import { Tower as TowerClass } from './towers/Tower';
 import { createWaveController, type WaveController } from './enemies/Wave';
 import { combatModule } from './combat/CombatModule';
 import { createSpatialHash, type SpatialHash } from './SpatialHash';
@@ -940,6 +941,52 @@ class GameEngine {
    */
   wasTowerPlacedThisRound(towerId: string): boolean {
     return this.state.towersPlacedThisRound.has(towerId);
+  }
+
+  /**
+   * Upgrade a tower to the next level.
+   * Must be in planning phase and have enough credits.
+   * @param towerId - ID of the tower to upgrade
+   * @returns The upgrade cost if successful, 0 if upgrade failed
+   */
+  upgradeTower(towerId: string): number {
+    // Must be in planning phase
+    if (!this.stateMachine.isPlanning()) {
+      return 0;
+    }
+
+    const tower = this.state.towers.get(towerId) as TowerClass | undefined;
+    if (!tower) {
+      return 0;
+    }
+
+    const stats = TOWER_STATS[tower.type];
+
+    // Check if already at max level
+    if (tower.level >= stats.maxLevel) {
+      return 0;
+    }
+
+    // Get upgrade cost (index 0 = cost for level 2, etc.)
+    const upgradeCost = stats.upgradeCosts[tower.level - 1];
+
+    // Check if player can afford
+    if (this.state.credits < upgradeCost) {
+      return 0;
+    }
+
+    // Deduct credits
+    this.spendCredits(upgradeCost);
+
+    // Upgrade the tower
+    tower.upgrade();
+
+    // Emit event
+    const towerData = tower instanceof Object && 'toData' in tower ? (tower as { toData: () => Tower }).toData() : tower;
+    this.eventBus.emit(createEvent('TOWER_UPGRADED', { tower: towerData, cost: upgradeCost }));
+    this.stateNotifier.notify();
+
+    return upgradeCost;
   }
 }
 

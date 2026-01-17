@@ -110,6 +110,25 @@ export class Tower implements TowerData {
   }
 
   /**
+   * Upgrade the tower to the next level.
+   * Recalculates stats based on the new level.
+   * @returns true if upgrade was successful
+   */
+  upgrade(): boolean {
+    const stats = TOWER_STATS[this.type];
+    if (this.level >= stats.maxLevel) {
+      return false;
+    }
+
+    this.level++;
+    this.damage = stats.damage + (this.level - 1) * stats.damagePerLevel;
+    this.range = stats.range + (this.level - 1) * stats.rangePerLevel;
+    this.fireRate = stats.fireRate + (this.level - 1) * stats.fireRatePerLevel;
+
+    return true;
+  }
+
+  /**
    * Convert to plain data object matching TowerData interface.
    */
   toData(): TowerData {

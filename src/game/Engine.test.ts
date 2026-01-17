@@ -5,7 +5,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createEngine } from './Engine';
 import { createEventBus, type EventBus } from './events';
 import { createEnemyPool, createProjectilePool } from './pools';
-import { GamePhase, TowerType, CellState, EnemyType, type PhaseChangeEvent } from './types';
+import { GamePhase, TowerType, CellState, EnemyType, type PhaseChangeEvent, type Tower } from './types';
 import { GAME_CONFIG, TOWER_STATS, ENEMY_STATS } from './config';
 
 // Type for GameEngine instance (class is not exported directly)
@@ -219,6 +219,129 @@ describe('Engine Integration', () => {
     it('returns 0 for non-existent tower', () => {
       const refund = engine.sellTower('nonexistent');
       expect(refund).toBe(0);
+    });
+  });
+
+  // ==========================================================================
+  // Tower Upgrading Tests
+  // ==========================================================================
+
+  describe('Tower Upgrading', () => {
+    beforeEach(() => {
+      engine.startGame();
+    });
+
+    it('upgrades tower and deducts credits', () => {
+      const position = { x: 5, y: 5 };
+      const tower = engine.placeTower(TowerType.LASER, position);
+      const creditsAfterPlace = engine.getCredits();
+      const upgradeCost = TOWER_STATS[TowerType.LASER].upgradeCosts[0];
+
+      const cost = engine.upgradeTower(tower!.id);
+
+      expect(cost).toBe(upgradeCost);
+      expect(engine.getCredits()).toBe(creditsAfterPlace - upgradeCost);
+      expect(engine.getTowerById(tower!.id)?.level).toBe(2);
+    });
+
+    it('increases tower stats on upgrade', () => {
+      const position = { x: 5, y: 5 };
+      const tower = engine.placeTower(TowerType.LASER, position);
+      const stats = TOWER_STATS[TowerType.LASER];
+      const initialDamage = tower!.damage;
+      const initialRange = tower!.range;
+      const initialFireRate = tower!.fireRate;
+
+      engine.upgradeTower(tower!.id);
+
+      const upgradedTower = engine.getTowerById(tower!.id);
+      expect(upgradedTower?.damage).toBe(initialDamage + stats.damagePerLevel);
+      expect(upgradedTower?.range).toBe(initialRange + stats.rangePerLevel);
+      expect(upgradedTower?.fireRate).toBe(initialFireRate + stats.fireRatePerLevel);
+    });
+
+    it('returns 0 if not enough credits', () => {
+      // Starting credits is 200, laser costs 25, upgrade costs 30
+      // Place 7 lasers = 175 credits, leaving 25 credits (not enough for 30 upgrade)
+      engine.placeTower(TowerType.LASER, { x: 2, y: 2 });
+      engine.placeTower(TowerType.LASER, { x: 3, y: 2 });
+      engine.placeTower(TowerType.LASER, { x: 4, y: 2 });
+      engine.placeTower(TowerType.LASER, { x: 5, y: 2 });
+      engine.placeTower(TowerType.LASER, { x: 6, y: 2 });
+      engine.placeTower(TowerType.LASER, { x: 7, y: 2 });
+      const tower = engine.placeTower(TowerType.LASER, { x: 8, y: 2 });
+
+      // Should have 25 credits, not enough for upgrade (cost is 30)
+      expect(engine.getCredits()).toBe(25);
+      expect(tower).not.toBeNull();
+
+      const cost = engine.upgradeTower(tower!.id);
+
+      expect(cost).toBe(0);
+      expect(engine.getTowerById(tower!.id)?.level).toBe(1);
+    });
+
+    it('returns 0 for non-existent tower', () => {
+      const cost = engine.upgradeTower('nonexistent');
+      expect(cost).toBe(0);
+    });
+
+    it('returns 0 when tower is at max level', () => {
+      const position = { x: 5, y: 5 };
+      const tower = engine.placeTower(TowerType.LASER, position);
+      const stats = TOWER_STATS[TowerType.LASER];
+
+      // Give enough credits to upgrade to max level
+      for (let i = 0; i < 10; i++) {
+        engine['addCredits'](500);
+      }
+
+      // Upgrade to max level
+      for (let i = 1; i < stats.maxLevel; i++) {
+        engine.upgradeTower(tower!.id);
+      }
+
+      expect(engine.getTowerById(tower!.id)?.level).toBe(stats.maxLevel);
+
+      // Try to upgrade past max level
+      const cost = engine.upgradeTower(tower!.id);
+      expect(cost).toBe(0);
+      expect(engine.getTowerById(tower!.id)?.level).toBe(stats.maxLevel);
+    });
+
+    it('returns 0 when not in planning phase', () => {
+      const position = { x: 5, y: 5 };
+      const tower = engine.placeTower(TowerType.LASER, position);
+
+      // Start combat phase
+      engine.startWave();
+
+      const cost = engine.upgradeTower(tower!.id);
+
+      expect(cost).toBe(0);
+      expect(engine.getTowerById(tower!.id)?.level).toBe(1);
+    });
+
+    it('emits TOWER_UPGRADED event on successful upgrade', () => {
+      const position = { x: 5, y: 5 };
+      const tower = engine.placeTower(TowerType.LASER, position);
+      const upgradeCost = TOWER_STATS[TowerType.LASER].upgradeCosts[0];
+      let eventFired = false;
+      let eventTower: Tower | null = null;
+      let eventCost = 0;
+
+      eventBus.on('TOWER_UPGRADED', (event) => {
+        eventFired = true;
+        eventTower = event.payload.tower;
+        eventCost = event.payload.cost;
+      });
+
+      engine.upgradeTower(tower!.id);
+
+      expect(eventFired).toBe(true);
+      expect(eventTower).not.toBeNull();
+      expect(eventTower!.level).toBe(2);
+      expect(eventCost).toBe(upgradeCost);
     });
   });
 
