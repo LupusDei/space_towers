@@ -10,6 +10,7 @@ const THROTTLE_MS = 50; // 50ms throttle for UI updates
 export interface GameActions {
   placeTower: (position: Point, type: TowerType) => boolean;
   sellTower: (towerId: string) => boolean;
+  upgradeTower: (towerId: string) => boolean;
   engage: () => void;
   selectTower: (towerId: string | null) => void;
   selectTowerType: (type: TowerType | null) => void;
@@ -69,6 +70,16 @@ export function useGameEngine(): UseGameEngineResult {
     return engine.sellTower(towerId) > 0;
   }, []);
 
+  // Action: Upgrade a tower (delegates to Engine.upgradeTower)
+  const upgradeTower = useCallback((towerId: string): boolean => {
+    // Check if engine has upgradeTower method (may not be implemented yet)
+    const engineWithUpgrade = engine as unknown as { upgradeTower?: (id: string) => boolean };
+    if (typeof engineWithUpgrade.upgradeTower === 'function') {
+      return engineWithUpgrade.upgradeTower(towerId);
+    }
+    return false;
+  }, []);
+
   // Action: Start wave (engage)
   const engage = useCallback(() => {
     engine.startWave();
@@ -92,6 +103,7 @@ export function useGameEngine(): UseGameEngineResult {
   const actions: GameActions = {
     placeTower,
     sellTower,
+    upgradeTower,
     engage,
     selectTower,
     selectTowerType,

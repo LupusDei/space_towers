@@ -7,6 +7,7 @@ import MainMenu from './components/MainMenu';
 import Game from './components/Game';
 import HUD from './components/HUD';
 import TowerPanel from './components/TowerPanel';
+import TowerSelectionWindow from './components/TowerSelectionWindow';
 import GameOver from './components/GameOver';
 import EngageButton from './components/EngageButton';
 import WavePreview from './components/WavePreview';
@@ -71,6 +72,16 @@ function App() {
     }
   };
 
+  const handleUpgradeTower = () => {
+    if (state.selectedTower) {
+      actions.upgradeTower(state.selectedTower);
+    }
+  };
+
+  const handleCloseSelectionWindow = () => {
+    actions.selectTower(null);
+  };
+
   // Get the selected tower object from the state
   const selectedTowerObj = state.selectedTower
     ? state.towers.get(state.selectedTower) ?? null
@@ -107,6 +118,15 @@ function App() {
       </div>
       <GameOver onPlayAgain={handlePlayAgain} />
       <WaveSummary phase={state.phase} />
+      {selectedTowerObj && (
+        <TowerSelectionWindow
+          tower={selectedTowerObj}
+          credits={state.credits}
+          onSell={handleSellTower}
+          onUpgrade={handleUpgradeTower}
+          onClose={handleCloseSelectionWindow}
+        />
+      )}
     </div>
   );
 }
