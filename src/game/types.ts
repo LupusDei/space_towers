@@ -83,6 +83,7 @@ export interface Projectile {
   id: string;
   sourceId: string;
   targetId: string;
+  towerType: TowerType;
   position: Point;
   velocity: Point;
   damage: number;

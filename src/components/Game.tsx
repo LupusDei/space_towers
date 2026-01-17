@@ -15,6 +15,9 @@ import { drawAllDamageNumbers, spawnDamageNumber } from '../sprites/effects/Dama
 import { drawAllGoldNumbers, spawnGoldNumber } from '../sprites/effects/GoldNumberSprite';
 import { explosionManager } from '../sprites/effects/ExplosionSprite';
 
+// Import projectile sprites
+import { MissileSprite } from '../sprites/projectiles/MissileSprite';
+
 // Import event bus for effect subscriptions
 import { eventBus } from '../game/events';
 
@@ -293,11 +296,17 @@ function renderEnemy(context: SpriteRenderContext, enemy: Enemy): void {
 }
 
 function renderProjectile(context: SpriteRenderContext, projectile: Projectile): void {
-  // Simple projectile rendering - could be expanded with sprite types based on source tower
   const { ctx, cellSize } = context;
+
+  // Use appropriate sprite based on tower type
+  if (projectile.towerType === TowerType.MISSILE) {
+    MissileSprite.draw(context, projectile);
+    return;
+  }
+
+  // Default: draw a simple glowing orb for cannon/other projectiles
   const { x, y } = projectile.position;
 
-  // Draw a simple glowing orb
   ctx.fillStyle = 'rgba(255, 200, 100, 0.8)';
   ctx.beginPath();
   ctx.arc(x + cellSize / 2, y + cellSize / 2, 4, 0, Math.PI * 2);

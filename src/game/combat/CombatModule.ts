@@ -276,6 +276,7 @@ class CombatModuleImpl implements GameModule {
           id: `laser_${tower.id}_${currentTime}`,
           sourceId: tower.id,
           targetId: target.id,
+          towerType: tower.type,
           position: towerPositionToPixels(tower.position),
           velocity: { x: 0, y: 0 },
           damage: tower.damage,
@@ -335,6 +336,7 @@ class CombatModuleImpl implements GameModule {
           id: `tesla_${tower.id}_${currentTime}`,
           sourceId: tower.id,
           targetId: target.id,
+          towerType: tower.type,
           position: towerPositionToPixels(tower.position),
           velocity: { x: 0, y: 0 },
           damage: tower.damage,
@@ -364,6 +366,7 @@ class CombatModuleImpl implements GameModule {
     // Initialize projectile (keep pool-assigned id for proper pool tracking)
     projectile.sourceId = tower.id;
     projectile.targetId = target.id;
+    projectile.towerType = tower.type;
     projectile.position.x = startPosition.x;
     projectile.position.y = startPosition.y;
     projectile.velocity.x = 0;
@@ -383,6 +386,7 @@ class CombatModuleImpl implements GameModule {
           id: projectile.id,
           sourceId: projectile.sourceId,
           targetId: projectile.targetId,
+          towerType: projectile.towerType,
           position: { ...projectile.position },
           velocity: projectile.velocity,
           damage: projectile.damage,

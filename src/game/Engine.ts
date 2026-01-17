@@ -428,6 +428,12 @@ class GameEngine {
       return true;
     }
 
+    // Calculate normalized direction and update velocity for sprite rendering
+    const dirX = dx / distance;
+    const dirY = dy / distance;
+    projectile.velocity.x = dirX * projectile.speed;
+    projectile.velocity.y = dirY * projectile.speed;
+
     const moveDistance = projectile.speed * dt;
     const ratio = Math.min(1, moveDistance / distance);
     projectile.position.x += dx * ratio;

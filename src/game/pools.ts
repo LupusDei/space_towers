@@ -1,6 +1,6 @@
 // Object Pool Implementation for Space Towers
 
-import type { Enemy, EnemyType, Projectile, Point } from './types';
+import { TowerType, type Enemy, type EnemyType, type Projectile, type Point } from './types';
 
 // ============================================================================
 // Generic Object Pool
@@ -157,6 +157,7 @@ function createProjectile(): Projectile {
     id: generateProjectileId(),
     sourceId: '',
     targetId: '',
+    towerType: TowerType.CANNON,
     position: { ...ZERO_POINT },
     velocity: { ...ZERO_POINT },
     damage: 0,
@@ -170,6 +171,7 @@ function resetProjectile(projectile: Projectile): void {
   projectile.id = generateProjectileId();
   projectile.sourceId = '';
   projectile.targetId = '';
+  projectile.towerType = TowerType.CANNON;
   projectile.position.x = 0;
   projectile.position.y = 0;
   projectile.velocity.x = 0;

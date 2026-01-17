@@ -756,6 +756,7 @@ describe('Engine Integration', () => {
         id: 'test_proj_1',
         sourceId: 'tower_1',
         targetId: 'enemy_1',
+        towerType: TowerType.CANNON,
         position: { x: 100, y: 100 },
         velocity: { x: 0, y: 0 },
         damage: 10,
