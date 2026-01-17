@@ -174,12 +174,6 @@ export default function Game() {
       // Render HUD overlay
       renderHUD(ctx!, state);
 
-      // DEBUG: Show enemy count prominently
-      ctx!.fillStyle = 'yellow';
-      ctx!.font = 'bold 20px monospace';
-      ctx!.fillText(`DEBUG: ${state.enemies.size} enemies, ${state.towers.size} towers`, 220, 30);
-      ctx!.fillText(`Phase: ${state.phase}, Lives: ${state.lives}, Time: ${timeRef.current.toFixed(1)}s`, 220, 55);
-
       animationFrameId = requestAnimationFrame(render);
     }
 
