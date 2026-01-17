@@ -377,6 +377,48 @@ describe('Combat Constants', () => {
   });
 });
 
+describe('Projectile pool tracking', () => {
+  beforeEach(() => {
+    eventBus.clear();
+    combatModule.destroy();
+  });
+
+  it('should use pool-assigned projectile id for proper pool tracking', () => {
+    const tower = createMockTower({
+      id: 'tower_1',
+      type: TowerType.CANNON,
+      position: { x: 5, y: 5 },
+      damage: 25,
+      range: 150,
+      fireRate: 1.0,
+    });
+
+    const enemy = createMockEnemy({
+      id: 'enemy_1',
+      health: 100,
+      position: { x: 5 * 44 + 22, y: 5 * 44 + 22 },
+    });
+
+    let capturedProjectileId: string | null = null;
+    const commands = {
+      addProjectile: (proj: { id: string }) => {
+        capturedProjectileId = proj.id;
+      },
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    // Projectile id should be pool-assigned format (proj_N), not custom format
+    expect(capturedProjectileId).not.toBeNull();
+    expect(capturedProjectileId).toMatch(/^proj_\d+$/);
+  });
+});
+
 describe('Damage calculation', () => {
   beforeEach(() => {
     eventBus.clear();

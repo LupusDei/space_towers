@@ -361,8 +361,7 @@ class CombatModuleImpl implements GameModule {
     const isSplash = tower.type === TT.MISSILE;
     const aoeRadius = isSplash ? COMBAT_CONFIG.MISSILE_SPLASH_RADIUS * GAME_CONFIG.CELL_SIZE : 0;
 
-    // Initialize projectile
-    projectile.id = `proj_${tower.id}_${Date.now()}`;
+    // Initialize projectile (keep pool-assigned id for proper pool tracking)
     projectile.sourceId = tower.id;
     projectile.targetId = target.id;
     projectile.position.x = startPosition.x;
