@@ -11,23 +11,63 @@ export const PlasmaCannonSprite: TowerSprite = {
     const centerX = x * cellSize + cellSize / 2;
     const centerY = y * cellSize + cellSize / 2;
 
-    // Heavy industrial base platform
-    ctx.fillStyle = '#2a2030';
+    // Heavy industrial base platform with metallic gradient
+    const baseGradient = ctx.createLinearGradient(
+      centerX - cellSize * 0.4,
+      centerY + cellSize * 0.1,
+      centerX - cellSize * 0.4,
+      centerY + cellSize * 0.35
+    );
+    baseGradient.addColorStop(0, '#3d2d45');
+    baseGradient.addColorStop(0.3, '#2a2030');
+    baseGradient.addColorStop(0.7, '#1a1520');
+    baseGradient.addColorStop(1, '#2a2030');
+    ctx.fillStyle = baseGradient;
     ctx.beginPath();
     ctx.rect(centerX - cellSize * 0.4, centerY + cellSize * 0.1, cellSize * 0.8, cellSize * 0.25);
     ctx.fill();
-    ctx.strokeStyle = '#4a3050';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#5a4068';
+    ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Side supports (chunky industrial)
-    ctx.fillStyle = '#3a2840';
+    // Base platform highlight edge
+    ctx.strokeStyle = 'rgba(150, 120, 170, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(centerX - cellSize * 0.4, centerY + cellSize * 0.1);
+    ctx.lineTo(centerX + cellSize * 0.4, centerY + cellSize * 0.1);
+    ctx.stroke();
+
+    // Side supports with metallic sheen
+    const supportGradient = ctx.createLinearGradient(
+      centerX - cellSize * 0.35,
+      0,
+      centerX - cellSize * 0.23,
+      0
+    );
+    supportGradient.addColorStop(0, '#4a3858');
+    supportGradient.addColorStop(0.4, '#5a4868');
+    supportGradient.addColorStop(0.6, '#4a3858');
+    supportGradient.addColorStop(1, '#3a2840');
+    ctx.fillStyle = supportGradient;
     ctx.fillRect(
       centerX - cellSize * 0.35,
       centerY - cellSize * 0.1,
       cellSize * 0.12,
       cellSize * 0.25
     );
+
+    const supportGradient2 = ctx.createLinearGradient(
+      centerX + cellSize * 0.23,
+      0,
+      centerX + cellSize * 0.35,
+      0
+    );
+    supportGradient2.addColorStop(0, '#3a2840');
+    supportGradient2.addColorStop(0.4, '#5a4868');
+    supportGradient2.addColorStop(0.6, '#4a3858');
+    supportGradient2.addColorStop(1, '#4a3858');
+    ctx.fillStyle = supportGradient2;
     ctx.fillRect(
       centerX + cellSize * 0.23,
       centerY - cellSize * 0.1,
@@ -35,27 +75,67 @@ export const PlasmaCannonSprite: TowerSprite = {
       cellSize * 0.25
     );
 
-    // Main cannon housing
-    ctx.fillStyle = '#4a3858';
+    // Main cannon housing with metallic gradient
+    const housingGradient = ctx.createLinearGradient(
+      centerX - cellSize * 0.25,
+      0,
+      centerX + cellSize * 0.25,
+      0
+    );
+    housingGradient.addColorStop(0, '#3a2848');
+    housingGradient.addColorStop(0.2, '#5a4878');
+    housingGradient.addColorStop(0.5, '#6a5888');
+    housingGradient.addColorStop(0.8, '#5a4878');
+    housingGradient.addColorStop(1, '#3a2848');
+    ctx.fillStyle = housingGradient;
     ctx.beginPath();
     ctx.rect(centerX - cellSize * 0.25, centerY - cellSize * 0.25, cellSize * 0.5, cellSize * 0.4);
     ctx.fill();
-    ctx.strokeStyle = '#6a4878';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#7a5898';
+    ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Heavy barrel
+    // Housing panel lines (texture detail)
+    ctx.strokeStyle = 'rgba(90, 60, 100, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(centerX - cellSize * 0.1, centerY - cellSize * 0.25);
+    ctx.lineTo(centerX - cellSize * 0.1, centerY + cellSize * 0.15);
+    ctx.moveTo(centerX + cellSize * 0.1, centerY - cellSize * 0.25);
+    ctx.lineTo(centerX + cellSize * 0.1, centerY + cellSize * 0.15);
+    ctx.stroke();
+
+    // Housing highlight
+    ctx.strokeStyle = 'rgba(180, 150, 200, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(centerX - cellSize * 0.25, centerY - cellSize * 0.25);
+    ctx.lineTo(centerX + cellSize * 0.25, centerY - cellSize * 0.25);
+    ctx.stroke();
+
+    // Heavy barrel with metallic gradient
     const barrelLength = cellSize * 0.35;
     const barrelWidth = cellSize * 0.18;
-    ctx.fillStyle = '#5a4068';
+    const barrelGradient = ctx.createLinearGradient(
+      centerX - barrelWidth / 2,
+      0,
+      centerX + barrelWidth / 2,
+      0
+    );
+    barrelGradient.addColorStop(0, '#4a3858');
+    barrelGradient.addColorStop(0.25, '#6a5888');
+    barrelGradient.addColorStop(0.5, '#7a68a8');
+    barrelGradient.addColorStop(0.75, '#6a5888');
+    barrelGradient.addColorStop(1, '#4a3858');
+    ctx.fillStyle = barrelGradient;
     ctx.fillRect(
       centerX - barrelWidth / 2,
       centerY - cellSize * 0.25 - barrelLength,
       barrelWidth,
       barrelLength
     );
-    ctx.strokeStyle = '#7a5888';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#8a6898';
+    ctx.lineWidth = 1;
     ctx.strokeRect(
       centerX - barrelWidth / 2,
       centerY - cellSize * 0.25 - barrelLength,
@@ -63,17 +143,50 @@ export const PlasmaCannonSprite: TowerSprite = {
       barrelLength
     );
 
-    // Barrel rings (industrial detail)
-    ctx.strokeStyle = '#8a6898';
-    ctx.lineWidth = 3;
+    // Barrel rings with metallic effect (industrial detail)
     const ringY1 = centerY - cellSize * 0.3;
     const ringY2 = centerY - cellSize * 0.45;
+
+    // Ring shadows
+    ctx.strokeStyle = '#3a2848';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(centerX - barrelWidth / 2 - 2, ringY1 + 1);
+    ctx.lineTo(centerX + barrelWidth / 2 + 2, ringY1 + 1);
+    ctx.moveTo(centerX - barrelWidth / 2 - 2, ringY2 + 1);
+    ctx.lineTo(centerX + barrelWidth / 2 + 2, ringY2 + 1);
+    ctx.stroke();
+
+    // Ring highlights
+    ctx.strokeStyle = '#9a78b8';
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(centerX - barrelWidth / 2 - 2, ringY1);
     ctx.lineTo(centerX + barrelWidth / 2 + 2, ringY1);
     ctx.moveTo(centerX - barrelWidth / 2 - 2, ringY2);
     ctx.lineTo(centerX + barrelWidth / 2 + 2, ringY2);
     ctx.stroke();
+
+    // Rivets/bolts for texture
+    ctx.fillStyle = '#7a5898';
+    const rivetSize = cellSize * 0.025;
+    const rivetPositions = [
+      { x: centerX - cellSize * 0.2, y: centerY - cellSize * 0.2 },
+      { x: centerX + cellSize * 0.2, y: centerY - cellSize * 0.2 },
+      { x: centerX - cellSize * 0.2, y: centerY + cellSize * 0.1 },
+      { x: centerX + cellSize * 0.2, y: centerY + cellSize * 0.1 },
+    ];
+    for (const rivet of rivetPositions) {
+      ctx.beginPath();
+      ctx.arc(rivet.x, rivet.y, rivetSize, 0, Math.PI * 2);
+      ctx.fill();
+      // Rivet highlight
+      ctx.fillStyle = 'rgba(180, 150, 200, 0.5)';
+      ctx.beginPath();
+      ctx.arc(rivet.x - rivetSize * 0.3, rivet.y - rivetSize * 0.3, rivetSize * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#7a5898';
+    }
 
     // Plasma core glow (pulsing)
     const glowIntensity = 0.4 + 0.2 * Math.sin(time * 3);
@@ -87,14 +200,25 @@ export const PlasmaCannonSprite: TowerSprite = {
     ctx.arc(centerX, coreY, cellSize * 0.3, 0, Math.PI * 2);
     ctx.fill();
 
-    // Plasma core (bright center)
-    ctx.fillStyle = '#ff66ff';
+    // Plasma core (bright center with inner glow)
+    const coreGradient = ctx.createRadialGradient(centerX, coreY, 0, centerX, coreY, cellSize * 0.1);
+    coreGradient.addColorStop(0, '#ffffff');
+    coreGradient.addColorStop(0.4, '#ff88ff');
+    coreGradient.addColorStop(1, '#ff66ff');
+    ctx.fillStyle = coreGradient;
     ctx.beginPath();
     ctx.arc(centerX, coreY, cellSize * 0.08, 0, Math.PI * 2);
     ctx.fill();
 
-    // Barrel tip glow
+    // Barrel tip with metallic rim
     const tipY = centerY - cellSize * 0.25 - barrelLength;
+    ctx.strokeStyle = '#9a78b8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(centerX, tipY, barrelWidth / 2 + 1, Math.PI, 0);
+    ctx.stroke();
+
+    // Barrel tip glow
     const tipGlow = ctx.createRadialGradient(centerX, tipY, 0, centerX, tipY, cellSize * 0.15);
     tipGlow.addColorStop(0, `rgba(255, 150, 255, ${glowIntensity * 0.6})`);
     tipGlow.addColorStop(1, 'rgba(200, 50, 200, 0)');
