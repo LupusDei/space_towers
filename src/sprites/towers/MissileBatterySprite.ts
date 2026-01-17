@@ -1,4 +1,4 @@
-// Missile Battery Sprite - Multi-launcher rack with military/industrial aesthetic
+// Missile Battery Sprite - Sleek metallic multi-launcher with textured detail
 
 import type { Tower, Point } from '../../game/types';
 import type { TowerSprite, SpriteRenderContext } from '../types';
@@ -11,14 +11,14 @@ export const MissileBatterySprite: TowerSprite = {
     const centerX = x * cellSize + cellSize / 2;
     const centerY = y * cellSize + cellSize / 2;
 
-    // Base platform (military dark gray with hazard stripes)
-    drawBasePlatform(ctx, centerX, centerY, cellSize);
+    // Base platform with metallic finish
+    drawMetallicBase(ctx, centerX, centerY, cellSize);
 
-    // Launcher rack (2x2 missile tubes)
-    drawLauncherRack(ctx, centerX, centerY, cellSize, time);
+    // Sleek launcher housing
+    drawLauncherHousing(ctx, centerX, centerY, cellSize, time);
 
-    // Status lights
-    drawStatusLights(ctx, centerX, centerY, cellSize, time);
+    // Status indicators
+    drawStatusIndicators(ctx, centerX, centerY, cellSize, time);
   },
 
   drawFiring(context: SpriteRenderContext, tower: Tower, target: Point): void {
@@ -28,22 +28,22 @@ export const MissileBatterySprite: TowerSprite = {
     const centerX = x * cellSize + cellSize / 2;
     const centerY = y * cellSize + cellSize / 2;
 
-    // Calculate angle to target for launcher orientation
+    // Calculate angle to target
     const targetX = target.x * cellSize + cellSize / 2;
     const targetY = target.y * cellSize + cellSize / 2;
     const angle = Math.atan2(targetY - centerY, targetX - centerX);
 
     // Draw base platform
-    drawBasePlatform(ctx, centerX, centerY, cellSize);
+    drawMetallicBase(ctx, centerX, centerY, cellSize);
 
-    // Draw launcher rack with firing effects
-    drawLauncherRackFiring(ctx, centerX, centerY, cellSize, time, angle);
+    // Draw launcher with firing effects
+    drawLauncherHousingFiring(ctx, centerX, centerY, cellSize, time, angle);
 
-    // Muzzle flash and smoke
+    // Launch effects
     drawLaunchEffects(ctx, centerX, centerY, cellSize, time, angle);
 
-    // Status lights (red when firing)
-    drawStatusLights(ctx, centerX, centerY, cellSize, time, true);
+    // Status indicators (alert mode)
+    drawStatusIndicators(ctx, centerX, centerY, cellSize, time, true);
   },
 
   drawRange(context: SpriteRenderContext, tower: Tower, isSelected?: boolean): void {
@@ -52,10 +52,8 @@ export const MissileBatterySprite: TowerSprite = {
 
     const centerX = x * cellSize + cellSize / 2;
     const centerY = y * cellSize + cellSize / 2;
-    // Range is already in pixels
     const rangePixels = tower.range;
 
-    // Different opacity for selected vs hovered
     const fillAlpha = isSelected ? 0.15 : 0.08;
     const strokeAlpha = isSelected ? 0.5 : 0.3;
 
@@ -76,74 +74,176 @@ export const MissileBatterySprite: TowerSprite = {
   },
 };
 
-function drawBasePlatform(
+function drawMetallicBase(
   ctx: CanvasRenderingContext2D,
   centerX: number,
   centerY: number,
   cellSize: number
 ): void {
-  const baseRadius = cellSize * 0.38;
+  const baseRadius = cellSize * 0.4;
 
-  // Main base (dark industrial gray)
-  ctx.fillStyle = '#2a2a2e';
+  // Outer ring with metallic gradient
+  const outerGradient = ctx.createRadialGradient(
+    centerX - baseRadius * 0.3,
+    centerY - baseRadius * 0.3,
+    0,
+    centerX,
+    centerY,
+    baseRadius
+  );
+  outerGradient.addColorStop(0, '#5a5a65');
+  outerGradient.addColorStop(0.4, '#3a3a42');
+  outerGradient.addColorStop(0.8, '#2a2a30');
+  outerGradient.addColorStop(1, '#1a1a20');
+
+  ctx.fillStyle = outerGradient;
   ctx.beginPath();
   ctx.arc(centerX, centerY, baseRadius, 0, Math.PI * 2);
   ctx.fill();
 
-  // Base edge highlight
-  ctx.strokeStyle = '#3a3a3e';
-  ctx.lineWidth = 2;
+  // Metallic rim highlight
+  ctx.strokeStyle = '#6a6a75';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, baseRadius - 1, Math.PI * 1.1, Math.PI * 1.9);
   ctx.stroke();
 
-  // Hazard stripes around edge
-  const stripeCount = 8;
-  ctx.save();
+  // Inner platform with brushed metal texture
+  const innerRadius = baseRadius * 0.75;
+  const innerGradient = ctx.createLinearGradient(
+    centerX - innerRadius,
+    centerY - innerRadius,
+    centerX + innerRadius,
+    centerY + innerRadius
+  );
+  innerGradient.addColorStop(0, '#4a4a52');
+  innerGradient.addColorStop(0.3, '#3a3a42');
+  innerGradient.addColorStop(0.5, '#454550');
+  innerGradient.addColorStop(0.7, '#3a3a42');
+  innerGradient.addColorStop(1, '#4a4a52');
+
+  ctx.fillStyle = innerGradient;
   ctx.beginPath();
-  ctx.arc(centerX, centerY, baseRadius, 0, Math.PI * 2);
-  ctx.clip();
+  ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2);
+  ctx.fill();
 
-  for (let i = 0; i < stripeCount; i++) {
-    const angle = (i / stripeCount) * Math.PI * 2;
-    const stripeWidth = (Math.PI * 2) / (stripeCount * 2);
+  // Panel line details (concentric rings)
+  ctx.strokeStyle = '#2a2a30';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, innerRadius * 0.85, 0, Math.PI * 2);
+  ctx.stroke();
 
-    if (i % 2 === 0) {
-      ctx.fillStyle = '#4a4a20';
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.arc(centerX, centerY, baseRadius, angle, angle + stripeWidth);
-      ctx.closePath();
-      ctx.fill();
-    }
+  // Mounting bolts
+  const boltCount = 6;
+  const boltRadius = cellSize * 0.015;
+  const boltDistance = baseRadius * 0.88;
+
+  for (let i = 0; i < boltCount; i++) {
+    const angle = (i / boltCount) * Math.PI * 2;
+    const boltX = centerX + Math.cos(angle) * boltDistance;
+    const boltY = centerY + Math.sin(angle) * boltDistance;
+
+    // Bolt recess
+    ctx.fillStyle = '#1a1a20';
+    ctx.beginPath();
+    ctx.arc(boltX, boltY, boltRadius * 1.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bolt head with highlight
+    const boltGradient = ctx.createRadialGradient(
+      boltX - boltRadius * 0.3,
+      boltY - boltRadius * 0.3,
+      0,
+      boltX,
+      boltY,
+      boltRadius
+    );
+    boltGradient.addColorStop(0, '#6a6a72');
+    boltGradient.addColorStop(1, '#3a3a42');
+    ctx.fillStyle = boltGradient;
+    ctx.beginPath();
+    ctx.arc(boltX, boltY, boltRadius, 0, Math.PI * 2);
+    ctx.fill();
   }
-  ctx.restore();
-
-  // Inner ring
-  ctx.strokeStyle = '#4a4a4e';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, baseRadius * 0.7, 0, Math.PI * 2);
-  ctx.stroke();
 }
 
-function drawLauncherRack(
+function drawLauncherHousing(
   ctx: CanvasRenderingContext2D,
   centerX: number,
   centerY: number,
   cellSize: number,
   time: number
 ): void {
-  const tubeRadius = cellSize * 0.08;
-  const tubeSpacing = cellSize * 0.12;
-  const rackSize = cellSize * 0.25;
+  const housingSize = cellSize * 0.28;
+  const tubeRadius = cellSize * 0.065;
+  const tubeSpacing = cellSize * 0.1;
 
-  // Launcher housing (dark metal box)
-  ctx.fillStyle = '#3a3a40';
-  ctx.fillRect(centerX - rackSize, centerY - rackSize, rackSize * 2, rackSize * 2);
+  // Main housing with beveled metallic look
+  ctx.save();
 
-  // Housing border
-  ctx.strokeStyle = '#5a5a60';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(centerX - rackSize, centerY - rackSize, rackSize * 2, rackSize * 2);
+  // Housing shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  ctx.fillRect(
+    centerX - housingSize + 2,
+    centerY - housingSize + 2,
+    housingSize * 2,
+    housingSize * 2
+  );
+
+  // Housing body with metallic gradient
+  const housingGradient = ctx.createLinearGradient(
+    centerX - housingSize,
+    centerY - housingSize,
+    centerX + housingSize,
+    centerY + housingSize
+  );
+  housingGradient.addColorStop(0, '#5a5a62');
+  housingGradient.addColorStop(0.2, '#4a4a52');
+  housingGradient.addColorStop(0.5, '#3a3a42');
+  housingGradient.addColorStop(0.8, '#4a4a52');
+  housingGradient.addColorStop(1, '#5a5a62');
+
+  ctx.fillStyle = housingGradient;
+  ctx.fillRect(centerX - housingSize, centerY - housingSize, housingSize * 2, housingSize * 2);
+
+  // Top edge highlight
+  ctx.strokeStyle = '#7a7a85';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(centerX - housingSize, centerY - housingSize);
+  ctx.lineTo(centerX + housingSize, centerY - housingSize);
+  ctx.stroke();
+
+  // Left edge highlight
+  ctx.beginPath();
+  ctx.moveTo(centerX - housingSize, centerY - housingSize);
+  ctx.lineTo(centerX - housingSize, centerY + housingSize);
+  ctx.stroke();
+
+  // Bottom/right shadow edge
+  ctx.strokeStyle = '#2a2a30';
+  ctx.beginPath();
+  ctx.moveTo(centerX + housingSize, centerY - housingSize);
+  ctx.lineTo(centerX + housingSize, centerY + housingSize);
+  ctx.lineTo(centerX - housingSize, centerY + housingSize);
+  ctx.stroke();
+
+  // Panel line details
+  ctx.strokeStyle = '#2a2a32';
+  ctx.lineWidth = 0.5;
+  // Horizontal line
+  ctx.beginPath();
+  ctx.moveTo(centerX - housingSize * 0.9, centerY);
+  ctx.lineTo(centerX + housingSize * 0.9, centerY);
+  ctx.stroke();
+  // Vertical line
+  ctx.beginPath();
+  ctx.moveTo(centerX, centerY - housingSize * 0.9);
+  ctx.lineTo(centerX, centerY + housingSize * 0.9);
+  ctx.stroke();
+
+  ctx.restore();
 
   // 2x2 missile tube arrangement
   const tubePositions = [
@@ -157,40 +257,120 @@ function drawLauncherRack(
     const tubeX = centerX + pos.x;
     const tubeY = centerY + pos.y;
 
-    // Tube outer ring (dark metal)
-    ctx.fillStyle = '#2a2a30';
-    ctx.beginPath();
-    ctx.arc(tubeX, tubeY, tubeRadius * 1.3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Tube interior (deep shadow)
-    ctx.fillStyle = '#0a0a10';
-    ctx.beginPath();
-    ctx.arc(tubeX, tubeY, tubeRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Missile visible inside tube (red nose cone)
-    ctx.fillStyle = '#aa3030';
-    ctx.beginPath();
-    ctx.arc(tubeX, tubeY, tubeRadius * 0.6, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Highlight on missile tip
-    ctx.fillStyle = '#cc5050';
-    ctx.beginPath();
-    ctx.arc(tubeX - tubeRadius * 0.2, tubeY - tubeRadius * 0.2, tubeRadius * 0.25, 0, Math.PI * 2);
-    ctx.fill();
+    drawMissileTube(ctx, tubeX, tubeY, tubeRadius, false);
   }
 
-  // Central targeting sensor
-  const sensorPulse = 0.6 + 0.4 * Math.sin(time * 2);
-  ctx.fillStyle = `rgba(100, 200, 100, ${sensorPulse})`;
+  // Central targeting sensor with pulsing glow
+  const sensorPulse = 0.5 + 0.5 * Math.sin(time * 3);
+  const sensorRadius = cellSize * 0.025;
+
+  // Sensor housing
+  ctx.fillStyle = '#2a2a30';
   ctx.beginPath();
-  ctx.arc(centerX, centerY, cellSize * 0.04, 0, Math.PI * 2);
+  ctx.arc(centerX, centerY, sensorRadius * 1.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Sensor glow
+  ctx.fillStyle = `rgba(80, 200, 120, ${sensorPulse * 0.4})`;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, sensorRadius * 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Sensor core
+  ctx.fillStyle = `rgba(100, 255, 150, ${0.6 + sensorPulse * 0.4})`;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, sensorRadius, 0, Math.PI * 2);
   ctx.fill();
 }
 
-function drawLauncherRackFiring(
+function drawMissileTube(
+  ctx: CanvasRenderingContext2D,
+  tubeX: number,
+  tubeY: number,
+  tubeRadius: number,
+  isFiring: boolean,
+  flashIntensity: number = 0
+): void {
+  // Tube outer ring with metallic gradient
+  const outerGradient = ctx.createRadialGradient(
+    tubeX - tubeRadius * 0.3,
+    tubeY - tubeRadius * 0.3,
+    0,
+    tubeX,
+    tubeY,
+    tubeRadius * 1.4
+  );
+  outerGradient.addColorStop(0, '#5a5a65');
+  outerGradient.addColorStop(0.5, '#3a3a42');
+  outerGradient.addColorStop(1, '#2a2a30');
+
+  ctx.fillStyle = outerGradient;
+  ctx.beginPath();
+  ctx.arc(tubeX, tubeY, tubeRadius * 1.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Tube rim highlight
+  ctx.strokeStyle = '#6a6a72';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.arc(tubeX, tubeY, tubeRadius * 1.35, Math.PI * 1.2, Math.PI * 1.8);
+  ctx.stroke();
+
+  // Tube interior
+  if (isFiring) {
+    // Muzzle flash gradient
+    const flashGradient = ctx.createRadialGradient(tubeX, tubeY, 0, tubeX, tubeY, tubeRadius);
+    flashGradient.addColorStop(0, `rgba(255, 220, 150, ${flashIntensity})`);
+    flashGradient.addColorStop(0.4, `rgba(255, 150, 80, ${flashIntensity * 0.7})`);
+    flashGradient.addColorStop(1, `rgba(180, 80, 30, ${flashIntensity * 0.3})`);
+    ctx.fillStyle = flashGradient;
+  } else {
+    // Deep shadow interior
+    const interiorGradient = ctx.createRadialGradient(
+      tubeX + tubeRadius * 0.2,
+      tubeY + tubeRadius * 0.2,
+      0,
+      tubeX,
+      tubeY,
+      tubeRadius
+    );
+    interiorGradient.addColorStop(0, '#0a0a12');
+    interiorGradient.addColorStop(1, '#151520');
+    ctx.fillStyle = interiorGradient;
+  }
+  ctx.beginPath();
+  ctx.arc(tubeX, tubeY, tubeRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Missile visible inside tube (only when not firing)
+  if (!isFiring) {
+    // Missile body gradient
+    const missileGradient = ctx.createRadialGradient(
+      tubeX - tubeRadius * 0.2,
+      tubeY - tubeRadius * 0.2,
+      0,
+      tubeX,
+      tubeY,
+      tubeRadius * 0.65
+    );
+    missileGradient.addColorStop(0, '#dd5555');
+    missileGradient.addColorStop(0.5, '#bb3535');
+    missileGradient.addColorStop(1, '#992525');
+
+    ctx.fillStyle = missileGradient;
+    ctx.beginPath();
+    ctx.arc(tubeX, tubeY, tubeRadius * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Missile tip highlight
+    ctx.fillStyle = '#ff7070';
+    ctx.beginPath();
+    ctx.arc(tubeX - tubeRadius * 0.15, tubeY - tubeRadius * 0.15, tubeRadius * 0.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawLauncherHousingFiring(
   ctx: CanvasRenderingContext2D,
   centerX: number,
   centerY: number,
@@ -198,19 +378,59 @@ function drawLauncherRackFiring(
   time: number,
   _angle: number
 ): void {
-  const tubeRadius = cellSize * 0.08;
-  const tubeSpacing = cellSize * 0.12;
-  const rackSize = cellSize * 0.25;
+  const housingSize = cellSize * 0.28;
+  const tubeRadius = cellSize * 0.065;
+  const tubeSpacing = cellSize * 0.1;
 
-  // Launcher housing
-  ctx.fillStyle = '#3a3a40';
-  ctx.fillRect(centerX - rackSize, centerY - rackSize, rackSize * 2, rackSize * 2);
+  // Housing with same metallic styling
+  ctx.save();
 
-  ctx.strokeStyle = '#5a5a60';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(centerX - rackSize, centerY - rackSize, rackSize * 2, rackSize * 2);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  ctx.fillRect(
+    centerX - housingSize + 2,
+    centerY - housingSize + 2,
+    housingSize * 2,
+    housingSize * 2
+  );
 
-  // 2x2 missile tubes - one firing (rotating which tube based on time)
+  const housingGradient = ctx.createLinearGradient(
+    centerX - housingSize,
+    centerY - housingSize,
+    centerX + housingSize,
+    centerY + housingSize
+  );
+  housingGradient.addColorStop(0, '#5a5a62');
+  housingGradient.addColorStop(0.2, '#4a4a52');
+  housingGradient.addColorStop(0.5, '#3a3a42');
+  housingGradient.addColorStop(0.8, '#4a4a52');
+  housingGradient.addColorStop(1, '#5a5a62');
+
+  ctx.fillStyle = housingGradient;
+  ctx.fillRect(centerX - housingSize, centerY - housingSize, housingSize * 2, housingSize * 2);
+
+  // Edge highlights and shadows
+  ctx.strokeStyle = '#7a7a85';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(centerX - housingSize, centerY - housingSize);
+  ctx.lineTo(centerX + housingSize, centerY - housingSize);
+  ctx.moveTo(centerX - housingSize, centerY - housingSize);
+  ctx.lineTo(centerX - housingSize, centerY + housingSize);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#2a2a30';
+  ctx.beginPath();
+  ctx.moveTo(centerX + housingSize, centerY - housingSize);
+  ctx.lineTo(centerX + housingSize, centerY + housingSize);
+  ctx.lineTo(centerX - housingSize, centerY + housingSize);
+  ctx.stroke();
+
+  ctx.restore();
+
+  // Determine which tube is firing
+  const firingTube = Math.floor(time * 3) % 4;
+  const flashIntensity = 0.6 + 0.4 * Math.sin(time * 50);
+
   const tubePositions = [
     { x: -tubeSpacing, y: -tubeSpacing },
     { x: tubeSpacing, y: -tubeSpacing },
@@ -218,61 +438,32 @@ function drawLauncherRackFiring(
     { x: tubeSpacing, y: tubeSpacing },
   ];
 
-  const firingTube = Math.floor(time * 3) % 4;
-
   for (let i = 0; i < tubePositions.length; i++) {
     const pos = tubePositions[i];
     const tubeX = centerX + pos.x;
     const tubeY = centerY + pos.y;
     const isFiring = i === firingTube;
 
-    // Tube outer ring
-    ctx.fillStyle = isFiring ? '#4a3a30' : '#2a2a30';
-    ctx.beginPath();
-    ctx.arc(tubeX, tubeY, tubeRadius * 1.3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Tube interior
-    if (isFiring) {
-      // Muzzle flash inside tube
-      const flashIntensity = 0.5 + 0.5 * Math.sin(time * 50);
-      const flashGradient = ctx.createRadialGradient(tubeX, tubeY, 0, tubeX, tubeY, tubeRadius);
-      flashGradient.addColorStop(0, `rgba(255, 200, 100, ${flashIntensity})`);
-      flashGradient.addColorStop(0.5, `rgba(255, 150, 50, ${flashIntensity * 0.5})`);
-      flashGradient.addColorStop(1, 'rgba(100, 50, 20, 0.3)');
-      ctx.fillStyle = flashGradient;
-    } else {
-      ctx.fillStyle = '#0a0a10';
-    }
-    ctx.beginPath();
-    ctx.arc(tubeX, tubeY, tubeRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Missile visible (only in non-firing tubes)
-    if (!isFiring) {
-      ctx.fillStyle = '#aa3030';
-      ctx.beginPath();
-      ctx.arc(tubeX, tubeY, tubeRadius * 0.6, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#cc5050';
-      ctx.beginPath();
-      ctx.arc(
-        tubeX - tubeRadius * 0.2,
-        tubeY - tubeRadius * 0.2,
-        tubeRadius * 0.25,
-        0,
-        Math.PI * 2
-      );
-      ctx.fill();
-    }
+    drawMissileTube(ctx, tubeX, tubeY, tubeRadius, isFiring, flashIntensity);
   }
 
-  // Central sensor (red when firing)
-  const sensorPulse = 0.6 + 0.4 * Math.sin(time * 10);
-  ctx.fillStyle = `rgba(255, 100, 100, ${sensorPulse})`;
+  // Central sensor (alert red when firing)
+  const sensorPulse = 0.5 + 0.5 * Math.sin(time * 8);
+  const sensorRadius = cellSize * 0.025;
+
+  ctx.fillStyle = '#2a2a30';
   ctx.beginPath();
-  ctx.arc(centerX, centerY, cellSize * 0.04, 0, Math.PI * 2);
+  ctx.arc(centerX, centerY, sensorRadius * 1.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = `rgba(255, 80, 80, ${sensorPulse * 0.5})`;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, sensorRadius * 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = `rgba(255, 100, 100, ${0.7 + sensorPulse * 0.3})`;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, sensorRadius, 0, Math.PI * 2);
   ctx.fill();
 }
 
@@ -284,7 +475,7 @@ function drawLaunchEffects(
   time: number,
   angle: number
 ): void {
-  const tubeSpacing = cellSize * 0.12;
+  const tubeSpacing = cellSize * 0.1;
   const firingTube = Math.floor(time * 3) % 4;
 
   const tubePositions = [
@@ -298,96 +489,99 @@ function drawLaunchEffects(
   const tubeX = centerX + firingPos.x;
   const tubeY = centerY + firingPos.y;
 
-  // Smoke exhaust from firing tube
-  const smokeCount = 6;
+  // Smoke trail from firing tube
+  const smokeCount = 5;
   for (let i = 0; i < smokeCount; i++) {
-    const smokeOffset = (time * 2 + i * 0.3) % 1;
-    const smokeX = tubeX + Math.cos(angle + Math.PI) * smokeOffset * cellSize * 0.3;
-    const smokeY = tubeY + Math.sin(angle + Math.PI) * smokeOffset * cellSize * 0.3;
-    const smokeAlpha = 0.4 * (1 - smokeOffset);
-    const smokeSize = cellSize * 0.03 + smokeOffset * cellSize * 0.06;
+    const smokeOffset = (time * 2.5 + i * 0.25) % 1;
+    const smokeX = tubeX + Math.cos(angle + Math.PI) * smokeOffset * cellSize * 0.25;
+    const smokeY = tubeY + Math.sin(angle + Math.PI) * smokeOffset * cellSize * 0.25;
+    const smokeAlpha = 0.35 * (1 - smokeOffset);
+    const smokeSize = cellSize * 0.025 + smokeOffset * cellSize * 0.05;
 
-    // Add slight random spread
-    const spreadX = Math.sin(time * 10 + i * 2) * cellSize * 0.02;
-    const spreadY = Math.cos(time * 10 + i * 2) * cellSize * 0.02;
+    const spreadX = Math.sin(time * 12 + i * 2.5) * cellSize * 0.015;
+    const spreadY = Math.cos(time * 12 + i * 2.5) * cellSize * 0.015;
 
-    ctx.fillStyle = `rgba(150, 150, 160, ${smokeAlpha})`;
+    ctx.fillStyle = `rgba(140, 140, 150, ${smokeAlpha})`;
     ctx.beginPath();
     ctx.arc(smokeX + spreadX, smokeY + spreadY, smokeSize, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // Launch flash in direction of target
-  const flashIntensity = 0.7 + 0.3 * Math.sin(time * 40);
-  const flashX = tubeX + Math.cos(angle) * cellSize * 0.1;
-  const flashY = tubeY + Math.sin(angle) * cellSize * 0.1;
+  // Launch flash
+  const flashIntensity = 0.7 + 0.3 * Math.sin(time * 45);
+  const flashX = tubeX + Math.cos(angle) * cellSize * 0.08;
+  const flashY = tubeY + Math.sin(angle) * cellSize * 0.08;
 
-  const flashGradient = ctx.createRadialGradient(
-    flashX,
-    flashY,
-    0,
-    flashX,
-    flashY,
-    cellSize * 0.15
-  );
-  flashGradient.addColorStop(0, `rgba(255, 220, 150, ${flashIntensity})`);
-  flashGradient.addColorStop(0.5, `rgba(255, 150, 50, ${flashIntensity * 0.5})`);
-  flashGradient.addColorStop(1, 'rgba(255, 100, 30, 0)');
+  const flashGradient = ctx.createRadialGradient(flashX, flashY, 0, flashX, flashY, cellSize * 0.12);
+  flashGradient.addColorStop(0, `rgba(255, 230, 180, ${flashIntensity})`);
+  flashGradient.addColorStop(0.4, `rgba(255, 160, 80, ${flashIntensity * 0.6})`);
+  flashGradient.addColorStop(1, 'rgba(255, 100, 40, 0)');
 
   ctx.fillStyle = flashGradient;
   ctx.beginPath();
-  ctx.arc(flashX, flashY, cellSize * 0.15, 0, Math.PI * 2);
+  ctx.arc(flashX, flashY, cellSize * 0.12, 0, Math.PI * 2);
   ctx.fill();
 }
 
-function drawStatusLights(
+function drawStatusIndicators(
   ctx: CanvasRenderingContext2D,
   centerX: number,
   centerY: number,
   cellSize: number,
   time: number,
-  firing: boolean = false
+  alert: boolean = false
 ): void {
-  const lightRadius = cellSize * 0.02;
-  const lightDistance = cellSize * 0.32;
+  const indicatorRadius = cellSize * 0.018;
+  const indicatorDistance = cellSize * 0.35;
 
-  // Four status lights at corners
-  const lightPositions = [
+  // Four corner indicators
+  const positions = [
     { angle: Math.PI * 0.25 },
     { angle: Math.PI * 0.75 },
     { angle: Math.PI * 1.25 },
     { angle: Math.PI * 1.75 },
   ];
 
-  for (let i = 0; i < lightPositions.length; i++) {
-    const { angle } = lightPositions[i];
-    const lightX = centerX + Math.cos(angle) * lightDistance;
-    const lightY = centerY + Math.sin(angle) * lightDistance;
+  for (let i = 0; i < positions.length; i++) {
+    const { angle } = positions[i];
+    const indX = centerX + Math.cos(angle) * indicatorDistance;
+    const indY = centerY + Math.sin(angle) * indicatorDistance;
 
-    // Blink pattern
-    const blinkPhase = (time * 2 + i * 0.5) % 2;
-    const isOn = blinkPhase < 1.5;
+    // Staggered blink pattern
+    const blinkPhase = (time * 2.5 + i * 0.4) % 2;
+    const isOn = blinkPhase < 1.4;
 
-    if (firing) {
-      // Red lights when firing
-      ctx.fillStyle = isOn ? '#ff4040' : '#401010';
+    // Indicator housing
+    ctx.fillStyle = '#1a1a22';
+    ctx.beginPath();
+    ctx.arc(indX, indY, indicatorRadius * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (alert) {
+      // Red alert mode
+      ctx.fillStyle = isOn ? '#ff4545' : '#3a1515';
+      if (isOn) {
+        ctx.fillStyle = 'rgba(255, 70, 70, 0.25)';
+        ctx.beginPath();
+        ctx.arc(indX, indY, indicatorRadius * 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ff4545';
+      }
     } else {
-      // Green lights when idle
-      ctx.fillStyle = isOn ? '#40ff40' : '#104010';
+      // Normal green mode
+      ctx.fillStyle = isOn ? '#45ff55' : '#153a18';
+      if (isOn) {
+        ctx.fillStyle = 'rgba(70, 255, 85, 0.2)';
+        ctx.beginPath();
+        ctx.arc(indX, indY, indicatorRadius * 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#45ff55';
+      }
     }
 
     ctx.beginPath();
-    ctx.arc(lightX, lightY, lightRadius, 0, Math.PI * 2);
+    ctx.arc(indX, indY, indicatorRadius, 0, Math.PI * 2);
     ctx.fill();
-
-    // Glow effect when on
-    if (isOn) {
-      const glowColor = firing ? 'rgba(255, 64, 64, 0.3)' : 'rgba(64, 255, 64, 0.3)';
-      ctx.fillStyle = glowColor;
-      ctx.beginPath();
-      ctx.arc(lightX, lightY, lightRadius * 2.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
   }
 }
 
