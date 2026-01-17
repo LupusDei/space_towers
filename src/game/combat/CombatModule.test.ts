@@ -378,10 +378,10 @@ describe('Laser Tower Damage', () => {
     // First update: tower kills enemy1 (30 damage, 25 health = kill), starts on enemy2
     combatModule.update(0.1);
 
-    const towerInstance = combatModule.getTowerInstance(tower.id);
-    expect(towerInstance).toBeDefined();
-    expect(towerInstance!.kills).toBe(1);
-    expect(towerInstance!.totalDamage).toBeGreaterThan(0);
+    // CombatModule now updates the Engine's tower (via query.getTowerById),
+    // not its internal towerInstances. Check the original tower object.
+    expect(tower.kills).toBe(1);
+    expect(tower.totalDamage).toBeGreaterThan(0);
   });
 });
 

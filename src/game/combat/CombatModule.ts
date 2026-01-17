@@ -420,8 +420,8 @@ class CombatModuleImpl implements GameModule {
   private applyDamage(enemy: Enemy, damage: number, towerId: string): void {
     enemy.health -= damage;
 
-    // Track damage on tower
-    const tower = this.state.towerInstances.get(towerId);
+    // Track damage on tower (use Engine's tower instance, not CombatModule's copy)
+    const tower = this.query?.getTowerById(towerId);
     if (tower && damage > 0) {
       tower.totalDamage += damage;
     }
@@ -447,8 +447,8 @@ class CombatModuleImpl implements GameModule {
   }
 
   private handleEnemyKilled(enemy: Enemy, towerId: string): void {
-    // Track kill on tower
-    const tower = this.state.towerInstances.get(towerId);
+    // Track kill on tower (use Engine's tower instance, not CombatModule's copy)
+    const tower = this.query?.getTowerById(towerId);
     if (tower) {
       tower.kills++;
     }
