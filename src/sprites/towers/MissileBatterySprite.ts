@@ -1,4 +1,4 @@
-// Missile Battery Sprite - Sleek metallic multi-launcher with textured detail
+// Missile Battery Sprite - Sleek metallic multi-launcher with 5 visual tiers
 
 import type { Tower, Point } from '../../game/types';
 import type { TowerSprite, SpriteRenderContext } from '../types';
@@ -7,23 +7,25 @@ export const MissileBatterySprite: TowerSprite = {
   draw(context: SpriteRenderContext, tower: Tower): void {
     const { ctx, cellSize, time } = context;
     const { x, y } = tower.position;
+    const level = Math.min(Math.max(tower.level, 1), 5);
 
     const centerX = x * cellSize + cellSize / 2;
     const centerY = y * cellSize + cellSize / 2;
 
-    // Base platform with metallic finish
-    drawMetallicBase(ctx, centerX, centerY, cellSize);
+    // Base platform with metallic finish (scales with level)
+    drawMetallicBase(ctx, centerX, centerY, cellSize, level);
 
-    // Sleek launcher housing
-    drawLauncherHousing(ctx, centerX, centerY, cellSize, time);
+    // Sleek launcher housing (varies by level)
+    drawLauncherHousing(ctx, centerX, centerY, cellSize, time, level);
 
-    // Status indicators
-    drawStatusIndicators(ctx, centerX, centerY, cellSize, time);
+    // Status indicators (more at higher levels)
+    drawStatusIndicators(ctx, centerX, centerY, cellSize, time, false, level);
   },
 
   drawFiring(context: SpriteRenderContext, tower: Tower, target: Point): void {
     const { ctx, cellSize, time } = context;
     const { x, y } = tower.position;
+    const level = Math.min(Math.max(tower.level, 1), 5);
 
     const centerX = x * cellSize + cellSize / 2;
     const centerY = y * cellSize + cellSize / 2;
@@ -34,16 +36,16 @@ export const MissileBatterySprite: TowerSprite = {
     const angle = Math.atan2(targetY - centerY, targetX - centerX);
 
     // Draw base platform
-    drawMetallicBase(ctx, centerX, centerY, cellSize);
+    drawMetallicBase(ctx, centerX, centerY, cellSize, level);
 
     // Draw launcher with firing effects
-    drawLauncherHousingFiring(ctx, centerX, centerY, cellSize, time, angle);
+    drawLauncherHousingFiring(ctx, centerX, centerY, cellSize, time, angle, level);
 
     // Launch effects
-    drawLaunchEffects(ctx, centerX, centerY, cellSize, time, angle);
+    drawLaunchEffects(ctx, centerX, centerY, cellSize, time, angle, level);
 
     // Status indicators (alert mode)
-    drawStatusIndicators(ctx, centerX, centerY, cellSize, time, true);
+    drawStatusIndicators(ctx, centerX, centerY, cellSize, time, true, level);
   },
 
   drawRange(context: SpriteRenderContext, tower: Tower, isSelected?: boolean): void {
@@ -74,15 +76,49 @@ export const MissileBatterySprite: TowerSprite = {
   },
 };
 
+// Get tube configuration based on level
+function getTubeConfig(level: number): { rows: number; cols: number; spacing: number } {
+  switch (level) {
+    case 1:
+      return { rows: 2, cols: 2, spacing: 0.1 }; // 4 tubes
+    case 2:
+      return { rows: 2, cols: 2, spacing: 0.1 }; // 4 tubes, enhanced
+    case 3:
+      return { rows: 2, cols: 3, spacing: 0.085 }; // 6 tubes
+    case 4:
+      return { rows: 2, cols: 4, spacing: 0.07 }; // 8 tubes
+    case 5:
+      return { rows: 3, cols: 3, spacing: 0.08 }; // 9 tubes
+    default:
+      return { rows: 2, cols: 2, spacing: 0.1 };
+  }
+}
+
 function drawMetallicBase(
   ctx: CanvasRenderingContext2D,
   centerX: number,
   centerY: number,
-  cellSize: number
+  cellSize: number,
+  level: number
 ): void {
-  const baseRadius = cellSize * 0.4;
+  // Base radius increases slightly with level
+  const baseRadius = cellSize * (0.36 + level * 0.008);
 
-  // Outer ring with metallic gradient
+  // Level 5: Add outer glow ring
+  if (level >= 5) {
+    const glowGradient = ctx.createRadialGradient(
+      centerX, centerY, baseRadius * 0.9,
+      centerX, centerY, baseRadius * 1.3
+    );
+    glowGradient.addColorStop(0, 'rgba(255, 100, 50, 0.2)');
+    glowGradient.addColorStop(1, 'rgba(255, 80, 30, 0)');
+    ctx.fillStyle = glowGradient;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, baseRadius * 1.3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Outer ring with metallic gradient (more polished at higher levels)
   const outerGradient = ctx.createRadialGradient(
     centerX - baseRadius * 0.3,
     centerY - baseRadius * 0.3,
@@ -91,19 +127,21 @@ function drawMetallicBase(
     centerY,
     baseRadius
   );
-  outerGradient.addColorStop(0, '#5a5a65');
-  outerGradient.addColorStop(0.4, '#3a3a42');
-  outerGradient.addColorStop(0.8, '#2a2a30');
-  outerGradient.addColorStop(1, '#1a1a20');
+
+  // Color intensity based on level
+  outerGradient.addColorStop(0, `hsl(240, 5%, ${35 + level * 3}%)`);
+  outerGradient.addColorStop(0.4, `hsl(240, 5%, ${25 + level * 2}%)`);
+  outerGradient.addColorStop(0.8, `hsl(240, 5%, ${18 + level * 2}%)`);
+  outerGradient.addColorStop(1, `hsl(240, 5%, ${12 + level}%)`);
 
   ctx.fillStyle = outerGradient;
   ctx.beginPath();
   ctx.arc(centerX, centerY, baseRadius, 0, Math.PI * 2);
   ctx.fill();
 
-  // Metallic rim highlight
-  ctx.strokeStyle = '#6a6a75';
-  ctx.lineWidth = 1.5;
+  // Metallic rim highlight (brighter at higher levels)
+  ctx.strokeStyle = `hsl(240, 5%, ${45 + level * 4}%)`;
+  ctx.lineWidth = 1 + level * 0.2;
   ctx.beginPath();
   ctx.arc(centerX, centerY, baseRadius - 1, Math.PI * 1.1, Math.PI * 1.9);
   ctx.stroke();
@@ -116,27 +154,33 @@ function drawMetallicBase(
     centerX + innerRadius,
     centerY + innerRadius
   );
-  innerGradient.addColorStop(0, '#4a4a52');
-  innerGradient.addColorStop(0.3, '#3a3a42');
-  innerGradient.addColorStop(0.5, '#454550');
-  innerGradient.addColorStop(0.7, '#3a3a42');
-  innerGradient.addColorStop(1, '#4a4a52');
+  innerGradient.addColorStop(0, `hsl(240, 5%, ${32 + level * 2}%)`);
+  innerGradient.addColorStop(0.3, `hsl(240, 5%, ${24 + level * 2}%)`);
+  innerGradient.addColorStop(0.5, `hsl(240, 5%, ${29 + level * 2}%)`);
+  innerGradient.addColorStop(0.7, `hsl(240, 5%, ${24 + level * 2}%)`);
+  innerGradient.addColorStop(1, `hsl(240, 5%, ${32 + level * 2}%)`);
 
   ctx.fillStyle = innerGradient;
   ctx.beginPath();
   ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2);
   ctx.fill();
 
-  // Panel line details (concentric rings)
-  ctx.strokeStyle = '#2a2a30';
+  // Panel line details (more rings at higher levels)
+  ctx.strokeStyle = `hsl(240, 5%, ${18 + level}%)`;
   ctx.lineWidth = 0.5;
   ctx.beginPath();
   ctx.arc(centerX, centerY, innerRadius * 0.85, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Mounting bolts
-  const boltCount = 6;
-  const boltRadius = cellSize * 0.015;
+  if (level >= 3) {
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, innerRadius * 0.6, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Mounting bolts (more at higher levels)
+  const boltCount = 4 + level;
+  const boltRadius = cellSize * (0.012 + level * 0.001);
   const boltDistance = baseRadius * 0.88;
 
   for (let i = 0; i < boltCount; i++) {
@@ -145,7 +189,7 @@ function drawMetallicBase(
     const boltY = centerY + Math.sin(angle) * boltDistance;
 
     // Bolt recess
-    ctx.fillStyle = '#1a1a20';
+    ctx.fillStyle = `hsl(240, 5%, ${12 + level}%)`;
     ctx.beginPath();
     ctx.arc(boltX, boltY, boltRadius * 1.3, 0, Math.PI * 2);
     ctx.fill();
@@ -159,12 +203,28 @@ function drawMetallicBase(
       boltY,
       boltRadius
     );
-    boltGradient.addColorStop(0, '#6a6a72');
-    boltGradient.addColorStop(1, '#3a3a42');
+    boltGradient.addColorStop(0, `hsl(240, 5%, ${45 + level * 3}%)`);
+    boltGradient.addColorStop(1, `hsl(240, 5%, ${25 + level * 2}%)`);
     ctx.fillStyle = boltGradient;
     ctx.beginPath();
     ctx.arc(boltX, boltY, boltRadius, 0, Math.PI * 2);
     ctx.fill();
+  }
+
+  // Level 4+: Add accent lights on base
+  if (level >= 4) {
+    const accentCount = level >= 5 ? 8 : 4;
+    const accentDistance = baseRadius * 0.65;
+    for (let i = 0; i < accentCount; i++) {
+      const angle = (i / accentCount) * Math.PI * 2 + Math.PI / accentCount;
+      const accentX = centerX + Math.cos(angle) * accentDistance;
+      const accentY = centerY + Math.sin(angle) * accentDistance;
+
+      ctx.fillStyle = level >= 5 ? 'rgba(255, 120, 60, 0.6)' : 'rgba(255, 150, 80, 0.4)';
+      ctx.beginPath();
+      ctx.arc(accentX, accentY, cellSize * 0.015, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }
 
@@ -173,11 +233,13 @@ function drawLauncherHousing(
   centerX: number,
   centerY: number,
   cellSize: number,
-  time: number
+  time: number,
+  level: number
 ): void {
-  const housingSize = cellSize * 0.28;
-  const tubeRadius = cellSize * 0.065;
-  const tubeSpacing = cellSize * 0.1;
+  const config = getTubeConfig(level);
+  const housingWidth = cellSize * (0.24 + config.cols * 0.04);
+  const housingHeight = cellSize * (0.24 + config.rows * 0.04);
+  const tubeRadius = cellSize * (0.055 + level * 0.003);
 
   // Main housing with beveled metallic look
   ctx.save();
@@ -185,102 +247,129 @@ function drawLauncherHousing(
   // Housing shadow
   ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
   ctx.fillRect(
-    centerX - housingSize + 2,
-    centerY - housingSize + 2,
-    housingSize * 2,
-    housingSize * 2
+    centerX - housingWidth + 2,
+    centerY - housingHeight + 2,
+    housingWidth * 2,
+    housingHeight * 2
   );
 
-  // Housing body with metallic gradient
+  // Housing body with metallic gradient (more polished at higher levels)
   const housingGradient = ctx.createLinearGradient(
-    centerX - housingSize,
-    centerY - housingSize,
-    centerX + housingSize,
-    centerY + housingSize
+    centerX - housingWidth,
+    centerY - housingHeight,
+    centerX + housingWidth,
+    centerY + housingHeight
   );
-  housingGradient.addColorStop(0, '#5a5a62');
-  housingGradient.addColorStop(0.2, '#4a4a52');
-  housingGradient.addColorStop(0.5, '#3a3a42');
-  housingGradient.addColorStop(0.8, '#4a4a52');
-  housingGradient.addColorStop(1, '#5a5a62');
+  housingGradient.addColorStop(0, `hsl(240, 5%, ${38 + level * 2}%)`);
+  housingGradient.addColorStop(0.2, `hsl(240, 5%, ${32 + level * 2}%)`);
+  housingGradient.addColorStop(0.5, `hsl(240, 5%, ${26 + level * 2}%)`);
+  housingGradient.addColorStop(0.8, `hsl(240, 5%, ${32 + level * 2}%)`);
+  housingGradient.addColorStop(1, `hsl(240, 5%, ${38 + level * 2}%)`);
 
   ctx.fillStyle = housingGradient;
-  ctx.fillRect(centerX - housingSize, centerY - housingSize, housingSize * 2, housingSize * 2);
+  ctx.fillRect(centerX - housingWidth, centerY - housingHeight, housingWidth * 2, housingHeight * 2);
 
   // Top edge highlight
-  ctx.strokeStyle = '#7a7a85';
+  ctx.strokeStyle = `hsl(240, 5%, ${50 + level * 3}%)`;
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(centerX - housingSize, centerY - housingSize);
-  ctx.lineTo(centerX + housingSize, centerY - housingSize);
+  ctx.moveTo(centerX - housingWidth, centerY - housingHeight);
+  ctx.lineTo(centerX + housingWidth, centerY - housingHeight);
   ctx.stroke();
 
   // Left edge highlight
   ctx.beginPath();
-  ctx.moveTo(centerX - housingSize, centerY - housingSize);
-  ctx.lineTo(centerX - housingSize, centerY + housingSize);
+  ctx.moveTo(centerX - housingWidth, centerY - housingHeight);
+  ctx.lineTo(centerX - housingWidth, centerY + housingHeight);
   ctx.stroke();
 
   // Bottom/right shadow edge
-  ctx.strokeStyle = '#2a2a30';
+  ctx.strokeStyle = `hsl(240, 5%, ${18 + level}%)`;
   ctx.beginPath();
-  ctx.moveTo(centerX + housingSize, centerY - housingSize);
-  ctx.lineTo(centerX + housingSize, centerY + housingSize);
-  ctx.lineTo(centerX - housingSize, centerY + housingSize);
+  ctx.moveTo(centerX + housingWidth, centerY - housingHeight);
+  ctx.lineTo(centerX + housingWidth, centerY + housingHeight);
+  ctx.lineTo(centerX - housingWidth, centerY + housingHeight);
   ctx.stroke();
 
   // Panel line details
-  ctx.strokeStyle = '#2a2a32';
+  ctx.strokeStyle = `hsl(240, 5%, ${18 + level}%)`;
   ctx.lineWidth = 0.5;
-  // Horizontal line
-  ctx.beginPath();
-  ctx.moveTo(centerX - housingSize * 0.9, centerY);
-  ctx.lineTo(centerX + housingSize * 0.9, centerY);
-  ctx.stroke();
-  // Vertical line
-  ctx.beginPath();
-  ctx.moveTo(centerX, centerY - housingSize * 0.9);
-  ctx.lineTo(centerX, centerY + housingSize * 0.9);
-  ctx.stroke();
+
+  // Horizontal lines
+  if (level >= 2) {
+    ctx.beginPath();
+    ctx.moveTo(centerX - housingWidth * 0.9, centerY);
+    ctx.lineTo(centerX + housingWidth * 0.9, centerY);
+    ctx.stroke();
+  }
+
+  // Vertical lines (more at higher levels)
+  if (level >= 3) {
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY - housingHeight * 0.9);
+    ctx.lineTo(centerX, centerY + housingHeight * 0.9);
+    ctx.stroke();
+  }
+
+  // Level 4+: Corner reinforcement plates
+  if (level >= 4) {
+    const plateSize = cellSize * 0.04;
+    const corners = [
+      { x: -housingWidth + plateSize, y: -housingHeight + plateSize },
+      { x: housingWidth - plateSize, y: -housingHeight + plateSize },
+      { x: -housingWidth + plateSize, y: housingHeight - plateSize },
+      { x: housingWidth - plateSize, y: housingHeight - plateSize },
+    ];
+
+    for (const corner of corners) {
+      ctx.fillStyle = `hsl(240, 5%, ${35 + level * 2}%)`;
+      ctx.beginPath();
+      ctx.arc(centerX + corner.x, centerY + corner.y, plateSize * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = `hsl(240, 5%, ${45 + level * 2}%)`;
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.arc(centerX + corner.x, centerY + corner.y, plateSize * 0.8, Math.PI, Math.PI * 1.5);
+      ctx.stroke();
+    }
+  }
 
   ctx.restore();
 
-  // 2x2 missile tube arrangement
-  const tubePositions = [
-    { x: -tubeSpacing, y: -tubeSpacing },
-    { x: tubeSpacing, y: -tubeSpacing },
-    { x: -tubeSpacing, y: tubeSpacing },
-    { x: tubeSpacing, y: tubeSpacing },
-  ];
+  // Draw missile tubes in grid
+  const tubePositions = getTubePositions(config, cellSize);
 
   for (const pos of tubePositions) {
     const tubeX = centerX + pos.x;
     const tubeY = centerY + pos.y;
-
-    drawMissileTube(ctx, tubeX, tubeY, tubeRadius, false);
+    drawMissileTube(ctx, tubeX, tubeY, tubeRadius, false, 0, level);
   }
 
-  // Central targeting sensor with pulsing glow
-  const sensorPulse = 0.5 + 0.5 * Math.sin(time * 3);
-  const sensorRadius = cellSize * 0.025;
+  // Central targeting sensor (more advanced at higher levels)
+  drawTargetingSensor(ctx, centerX, centerY, cellSize, time, false, level);
+}
 
-  // Sensor housing
-  ctx.fillStyle = '#2a2a30';
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, sensorRadius * 1.8, 0, Math.PI * 2);
-  ctx.fill();
+function getTubePositions(
+  config: { rows: number; cols: number; spacing: number },
+  cellSize: number
+): { x: number; y: number }[] {
+  const positions: { x: number; y: number }[] = [];
+  const spacing = cellSize * config.spacing;
 
-  // Sensor glow
-  ctx.fillStyle = `rgba(80, 200, 120, ${sensorPulse * 0.4})`;
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, sensorRadius * 2.5, 0, Math.PI * 2);
-  ctx.fill();
+  const startX = -((config.cols - 1) / 2) * spacing;
+  const startY = -((config.rows - 1) / 2) * spacing;
 
-  // Sensor core
-  ctx.fillStyle = `rgba(100, 255, 150, ${0.6 + sensorPulse * 0.4})`;
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, sensorRadius, 0, Math.PI * 2);
-  ctx.fill();
+  for (let row = 0; row < config.rows; row++) {
+    for (let col = 0; col < config.cols; col++) {
+      positions.push({
+        x: startX + col * spacing,
+        y: startY + row * spacing,
+      });
+    }
+  }
+
+  return positions;
 }
 
 function drawMissileTube(
@@ -289,7 +378,8 @@ function drawMissileTube(
   tubeY: number,
   tubeRadius: number,
   isFiring: boolean,
-  flashIntensity: number = 0
+  flashIntensity: number = 0,
+  level: number = 1
 ): void {
   // Tube outer ring with metallic gradient
   const outerGradient = ctx.createRadialGradient(
@@ -300,9 +390,9 @@ function drawMissileTube(
     tubeY,
     tubeRadius * 1.4
   );
-  outerGradient.addColorStop(0, '#5a5a65');
-  outerGradient.addColorStop(0.5, '#3a3a42');
-  outerGradient.addColorStop(1, '#2a2a30');
+  outerGradient.addColorStop(0, `hsl(240, 5%, ${38 + level * 3}%)`);
+  outerGradient.addColorStop(0.5, `hsl(240, 5%, ${26 + level * 2}%)`);
+  outerGradient.addColorStop(1, `hsl(240, 5%, ${18 + level}%)`);
 
   ctx.fillStyle = outerGradient;
   ctx.beginPath();
@@ -310,7 +400,7 @@ function drawMissileTube(
   ctx.fill();
 
   // Tube rim highlight
-  ctx.strokeStyle = '#6a6a72';
+  ctx.strokeStyle = `hsl(240, 5%, ${45 + level * 3}%)`;
   ctx.lineWidth = 0.5;
   ctx.beginPath();
   ctx.arc(tubeX, tubeY, tubeRadius * 1.35, Math.PI * 1.2, Math.PI * 1.8);
@@ -344,7 +434,7 @@ function drawMissileTube(
 
   // Missile visible inside tube (only when not firing)
   if (!isFiring) {
-    // Missile body gradient
+    // Missile body gradient (more intense red at higher levels)
     const missileGradient = ctx.createRadialGradient(
       tubeX - tubeRadius * 0.2,
       tubeY - tubeRadius * 0.2,
@@ -353,9 +443,11 @@ function drawMissileTube(
       tubeY,
       tubeRadius * 0.65
     );
-    missileGradient.addColorStop(0, '#dd5555');
-    missileGradient.addColorStop(0.5, '#bb3535');
-    missileGradient.addColorStop(1, '#992525');
+
+    const redIntensity = 180 + level * 15;
+    missileGradient.addColorStop(0, `rgb(${redIntensity + 40}, ${55 + level * 5}, ${55 + level * 5})`);
+    missileGradient.addColorStop(0.5, `rgb(${redIntensity}, ${35 + level * 3}, ${35 + level * 3})`);
+    missileGradient.addColorStop(1, `rgb(${redIntensity - 30}, ${25 + level * 2}, ${25 + level * 2})`);
 
     ctx.fillStyle = missileGradient;
     ctx.beginPath();
@@ -363,10 +455,81 @@ function drawMissileTube(
     ctx.fill();
 
     // Missile tip highlight
-    ctx.fillStyle = '#ff7070';
+    ctx.fillStyle = `rgb(255, ${100 + level * 8}, ${100 + level * 8})`;
     ctx.beginPath();
     ctx.arc(tubeX - tubeRadius * 0.15, tubeY - tubeRadius * 0.15, tubeRadius * 0.2, 0, Math.PI * 2);
     ctx.fill();
+  }
+}
+
+function drawTargetingSensor(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  cellSize: number,
+  time: number,
+  alert: boolean,
+  level: number
+): void {
+  const sensorPulse = 0.5 + 0.5 * Math.sin(time * (2 + level * 0.5));
+  const sensorRadius = cellSize * (0.02 + level * 0.003);
+
+  // Level 5: Multi-sensor array
+  if (level >= 5) {
+    const subSensorPositions = [
+      { x: -cellSize * 0.06, y: 0 },
+      { x: cellSize * 0.06, y: 0 },
+      { x: 0, y: -cellSize * 0.06 },
+      { x: 0, y: cellSize * 0.06 },
+    ];
+
+    for (const pos of subSensorPositions) {
+      const subX = centerX + pos.x;
+      const subY = centerY + pos.y;
+
+      ctx.fillStyle = '#1a1a22';
+      ctx.beginPath();
+      ctx.arc(subX, subY, sensorRadius * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = alert
+        ? `rgba(255, 80, 80, ${sensorPulse * 0.6})`
+        : `rgba(80, 200, 120, ${sensorPulse * 0.5})`;
+      ctx.beginPath();
+      ctx.arc(subX, subY, sensorRadius * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Main sensor housing
+  ctx.fillStyle = '#2a2a30';
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, sensorRadius * 1.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Sensor glow
+  const glowColor = alert ? '255, 80, 80' : '80, 200, 120';
+  ctx.fillStyle = `rgba(${glowColor}, ${sensorPulse * (0.3 + level * 0.05)})`;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, sensorRadius * (2 + level * 0.3), 0, Math.PI * 2);
+  ctx.fill();
+
+  // Sensor core
+  const coreColor = alert
+    ? `rgba(255, 100, 100, ${0.6 + sensorPulse * 0.4})`
+    : `rgba(100, 255, 150, ${0.6 + sensorPulse * 0.4})`;
+  ctx.fillStyle = coreColor;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, sensorRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Level 3+: Sensor ring
+  if (level >= 3) {
+    ctx.strokeStyle = alert ? 'rgba(255, 100, 100, 0.5)' : 'rgba(100, 255, 150, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, sensorRadius * 1.5, 0, Math.PI * 2);
+    ctx.stroke();
   }
 }
 
@@ -376,67 +539,63 @@ function drawLauncherHousingFiring(
   centerY: number,
   cellSize: number,
   time: number,
-  _angle: number
+  _angle: number,
+  level: number
 ): void {
-  const housingSize = cellSize * 0.28;
-  const tubeRadius = cellSize * 0.065;
-  const tubeSpacing = cellSize * 0.1;
+  const config = getTubeConfig(level);
+  const housingWidth = cellSize * (0.24 + config.cols * 0.04);
+  const housingHeight = cellSize * (0.24 + config.rows * 0.04);
+  const tubeRadius = cellSize * (0.055 + level * 0.003);
 
   // Housing with same metallic styling
   ctx.save();
 
   ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
   ctx.fillRect(
-    centerX - housingSize + 2,
-    centerY - housingSize + 2,
-    housingSize * 2,
-    housingSize * 2
+    centerX - housingWidth + 2,
+    centerY - housingHeight + 2,
+    housingWidth * 2,
+    housingHeight * 2
   );
 
   const housingGradient = ctx.createLinearGradient(
-    centerX - housingSize,
-    centerY - housingSize,
-    centerX + housingSize,
-    centerY + housingSize
+    centerX - housingWidth,
+    centerY - housingHeight,
+    centerX + housingWidth,
+    centerY + housingHeight
   );
-  housingGradient.addColorStop(0, '#5a5a62');
-  housingGradient.addColorStop(0.2, '#4a4a52');
-  housingGradient.addColorStop(0.5, '#3a3a42');
-  housingGradient.addColorStop(0.8, '#4a4a52');
-  housingGradient.addColorStop(1, '#5a5a62');
+  housingGradient.addColorStop(0, `hsl(240, 5%, ${38 + level * 2}%)`);
+  housingGradient.addColorStop(0.2, `hsl(240, 5%, ${32 + level * 2}%)`);
+  housingGradient.addColorStop(0.5, `hsl(240, 5%, ${26 + level * 2}%)`);
+  housingGradient.addColorStop(0.8, `hsl(240, 5%, ${32 + level * 2}%)`);
+  housingGradient.addColorStop(1, `hsl(240, 5%, ${38 + level * 2}%)`);
 
   ctx.fillStyle = housingGradient;
-  ctx.fillRect(centerX - housingSize, centerY - housingSize, housingSize * 2, housingSize * 2);
+  ctx.fillRect(centerX - housingWidth, centerY - housingHeight, housingWidth * 2, housingHeight * 2);
 
   // Edge highlights and shadows
-  ctx.strokeStyle = '#7a7a85';
+  ctx.strokeStyle = `hsl(240, 5%, ${50 + level * 3}%)`;
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(centerX - housingSize, centerY - housingSize);
-  ctx.lineTo(centerX + housingSize, centerY - housingSize);
-  ctx.moveTo(centerX - housingSize, centerY - housingSize);
-  ctx.lineTo(centerX - housingSize, centerY + housingSize);
+  ctx.moveTo(centerX - housingWidth, centerY - housingHeight);
+  ctx.lineTo(centerX + housingWidth, centerY - housingHeight);
+  ctx.moveTo(centerX - housingWidth, centerY - housingHeight);
+  ctx.lineTo(centerX - housingWidth, centerY + housingHeight);
   ctx.stroke();
 
-  ctx.strokeStyle = '#2a2a30';
+  ctx.strokeStyle = `hsl(240, 5%, ${18 + level}%)`;
   ctx.beginPath();
-  ctx.moveTo(centerX + housingSize, centerY - housingSize);
-  ctx.lineTo(centerX + housingSize, centerY + housingSize);
-  ctx.lineTo(centerX - housingSize, centerY + housingSize);
+  ctx.moveTo(centerX + housingWidth, centerY - housingHeight);
+  ctx.lineTo(centerX + housingWidth, centerY + housingHeight);
+  ctx.lineTo(centerX - housingWidth, centerY + housingHeight);
   ctx.stroke();
 
   ctx.restore();
 
   // Determine which tube is firing
-  const firingTube = Math.floor(time * 3) % 4;
+  const tubePositions = getTubePositions(config, cellSize);
+  const firingTube = Math.floor(time * (2 + level * 0.5)) % tubePositions.length;
   const flashIntensity = 0.6 + 0.4 * Math.sin(time * 50);
-
-  const tubePositions = [
-    { x: -tubeSpacing, y: -tubeSpacing },
-    { x: tubeSpacing, y: -tubeSpacing },
-    { x: -tubeSpacing, y: tubeSpacing },
-    { x: tubeSpacing, y: tubeSpacing },
-  ];
 
   for (let i = 0; i < tubePositions.length; i++) {
     const pos = tubePositions[i];
@@ -444,27 +603,11 @@ function drawLauncherHousingFiring(
     const tubeY = centerY + pos.y;
     const isFiring = i === firingTube;
 
-    drawMissileTube(ctx, tubeX, tubeY, tubeRadius, isFiring, flashIntensity);
+    drawMissileTube(ctx, tubeX, tubeY, tubeRadius, isFiring, flashIntensity, level);
   }
 
   // Central sensor (alert red when firing)
-  const sensorPulse = 0.5 + 0.5 * Math.sin(time * 8);
-  const sensorRadius = cellSize * 0.025;
-
-  ctx.fillStyle = '#2a2a30';
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, sensorRadius * 1.8, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = `rgba(255, 80, 80, ${sensorPulse * 0.5})`;
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, sensorRadius * 2.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = `rgba(255, 100, 100, ${0.7 + sensorPulse * 0.3})`;
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, sensorRadius, 0, Math.PI * 2);
-  ctx.fill();
+  drawTargetingSensor(ctx, centerX, centerY, cellSize, time, true, level);
 }
 
 function drawLaunchEffects(
@@ -473,30 +616,25 @@ function drawLaunchEffects(
   centerY: number,
   cellSize: number,
   time: number,
-  angle: number
+  angle: number,
+  level: number
 ): void {
-  const tubeSpacing = cellSize * 0.1;
-  const firingTube = Math.floor(time * 3) % 4;
-
-  const tubePositions = [
-    { x: -tubeSpacing, y: -tubeSpacing },
-    { x: tubeSpacing, y: -tubeSpacing },
-    { x: -tubeSpacing, y: tubeSpacing },
-    { x: tubeSpacing, y: tubeSpacing },
-  ];
+  const config = getTubeConfig(level);
+  const tubePositions = getTubePositions(config, cellSize);
+  const firingTube = Math.floor(time * (2 + level * 0.5)) % tubePositions.length;
 
   const firingPos = tubePositions[firingTube];
   const tubeX = centerX + firingPos.x;
   const tubeY = centerY + firingPos.y;
 
-  // Smoke trail from firing tube
-  const smokeCount = 5;
+  // Smoke trail from firing tube (more smoke at higher levels)
+  const smokeCount = 4 + level;
   for (let i = 0; i < smokeCount; i++) {
     const smokeOffset = (time * 2.5 + i * 0.25) % 1;
     const smokeX = tubeX + Math.cos(angle + Math.PI) * smokeOffset * cellSize * 0.25;
     const smokeY = tubeY + Math.sin(angle + Math.PI) * smokeOffset * cellSize * 0.25;
-    const smokeAlpha = 0.35 * (1 - smokeOffset);
-    const smokeSize = cellSize * 0.025 + smokeOffset * cellSize * 0.05;
+    const smokeAlpha = (0.3 + level * 0.02) * (1 - smokeOffset);
+    const smokeSize = cellSize * (0.02 + level * 0.003) + smokeOffset * cellSize * 0.05;
 
     const spreadX = Math.sin(time * 12 + i * 2.5) * cellSize * 0.015;
     const spreadY = Math.cos(time * 12 + i * 2.5) * cellSize * 0.015;
@@ -507,19 +645,20 @@ function drawLaunchEffects(
     ctx.fill();
   }
 
-  // Launch flash
+  // Launch flash (bigger at higher levels)
   const flashIntensity = 0.7 + 0.3 * Math.sin(time * 45);
   const flashX = tubeX + Math.cos(angle) * cellSize * 0.08;
   const flashY = tubeY + Math.sin(angle) * cellSize * 0.08;
+  const flashSize = cellSize * (0.1 + level * 0.01);
 
-  const flashGradient = ctx.createRadialGradient(flashX, flashY, 0, flashX, flashY, cellSize * 0.12);
+  const flashGradient = ctx.createRadialGradient(flashX, flashY, 0, flashX, flashY, flashSize);
   flashGradient.addColorStop(0, `rgba(255, 230, 180, ${flashIntensity})`);
   flashGradient.addColorStop(0.4, `rgba(255, 160, 80, ${flashIntensity * 0.6})`);
   flashGradient.addColorStop(1, 'rgba(255, 100, 40, 0)');
 
   ctx.fillStyle = flashGradient;
   ctx.beginPath();
-  ctx.arc(flashX, flashY, cellSize * 0.12, 0, Math.PI * 2);
+  ctx.arc(flashX, flashY, flashSize, 0, Math.PI * 2);
   ctx.fill();
 }
 
@@ -529,26 +668,22 @@ function drawStatusIndicators(
   centerY: number,
   cellSize: number,
   time: number,
-  alert: boolean = false
+  alert: boolean = false,
+  level: number = 1
 ): void {
-  const indicatorRadius = cellSize * 0.018;
-  const indicatorDistance = cellSize * 0.35;
+  const indicatorRadius = cellSize * (0.015 + level * 0.001);
+  const indicatorDistance = cellSize * (0.33 + level * 0.01);
 
-  // Four corner indicators
-  const positions = [
-    { angle: Math.PI * 0.25 },
-    { angle: Math.PI * 0.75 },
-    { angle: Math.PI * 1.25 },
-    { angle: Math.PI * 1.75 },
-  ];
+  // Indicator count increases with level
+  const indicatorCount = Math.min(4 + level, 8);
 
-  for (let i = 0; i < positions.length; i++) {
-    const { angle } = positions[i];
+  for (let i = 0; i < indicatorCount; i++) {
+    const angle = (i / indicatorCount) * Math.PI * 2 + Math.PI / 4;
     const indX = centerX + Math.cos(angle) * indicatorDistance;
     const indY = centerY + Math.sin(angle) * indicatorDistance;
 
-    // Staggered blink pattern
-    const blinkPhase = (time * 2.5 + i * 0.4) % 2;
+    // Staggered blink pattern (faster at higher levels)
+    const blinkPhase = (time * (2 + level * 0.3) + i * 0.4) % 2;
     const isOn = blinkPhase < 1.4;
 
     // Indicator housing
@@ -559,23 +694,23 @@ function drawStatusIndicators(
 
     if (alert) {
       // Red alert mode
-      ctx.fillStyle = isOn ? '#ff4545' : '#3a1515';
+      ctx.fillStyle = isOn ? `rgb(255, ${60 + level * 5}, ${60 + level * 5})` : '#3a1515';
       if (isOn) {
-        ctx.fillStyle = 'rgba(255, 70, 70, 0.25)';
+        ctx.fillStyle = `rgba(255, 70, 70, ${0.2 + level * 0.02})`;
         ctx.beginPath();
         ctx.arc(indX, indY, indicatorRadius * 3, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#ff4545';
+        ctx.fillStyle = `rgb(255, ${60 + level * 5}, ${60 + level * 5})`;
       }
     } else {
-      // Normal green mode
-      ctx.fillStyle = isOn ? '#45ff55' : '#153a18';
+      // Normal green mode (brighter at higher levels)
+      ctx.fillStyle = isOn ? `rgb(${60 + level * 8}, 255, ${70 + level * 8})` : '#153a18';
       if (isOn) {
-        ctx.fillStyle = 'rgba(70, 255, 85, 0.2)';
+        ctx.fillStyle = `rgba(70, 255, 85, ${0.15 + level * 0.02})`;
         ctx.beginPath();
         ctx.arc(indX, indY, indicatorRadius * 3, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#45ff55';
+        ctx.fillStyle = `rgb(${60 + level * 8}, 255, ${70 + level * 8})`;
       }
     }
 
