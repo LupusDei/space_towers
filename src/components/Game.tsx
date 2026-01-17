@@ -171,9 +171,6 @@ export default function Game() {
       // Render gold numbers (kill rewards)
       drawAllGoldNumbers(renderContext);
 
-      // Render HUD overlay
-      renderHUD(ctx!, state);
-
       // DEBUG: Show enemy count prominently
       ctx!.fillStyle = 'yellow';
       ctx!.font = 'bold 20px monospace';
@@ -382,28 +379,4 @@ function renderHitscanEffects(context: SpriteRenderContext, towers: Tower[]): vo
       // (The TeslaCoilSprite already handles multi-target in some way)
     }
   }
-}
-
-function renderHUD(ctx: CanvasRenderingContext2D, state: ReturnType<typeof engine.getSnapshot>): void {
-  const padding = 10;
-  const fontSize = 16;
-
-  ctx.font = `${fontSize}px monospace`;
-  ctx.textBaseline = 'top';
-
-  // Background for HUD (smaller since credits moved to TowerPanel)
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-  ctx.fillRect(padding - 5, padding - 5, 200, 65);
-
-  // Lives
-  ctx.fillStyle = '#FF6666';
-  ctx.fillText(`Lives: ${state.lives}`, padding, padding);
-
-  // Wave
-  ctx.fillStyle = '#66FF66';
-  ctx.fillText(`Wave: ${state.wave}`, padding, padding + fontSize + 5);
-
-  // Phase
-  ctx.fillStyle = '#6666FF';
-  ctx.fillText(`Phase: ${state.phase}`, padding, padding + (fontSize + 5) * 2);
 }
