@@ -429,3 +429,109 @@ describe('Damage calculation', () => {
     expect(enemy.health).toBe(20);
   });
 });
+
+describe('Target validation - mid-targeting death', () => {
+  beforeEach(() => {
+    eventBus.clear();
+    combatModule.destroy();
+  });
+
+  it('should not create hitscan effect when target is removed before firing', () => {
+    const tower = createMockTower({ type: TowerType.LASER, damage: 10 });
+    const enemy = createMockEnemy({ id: 'enemy_1', health: 100 });
+
+    // Track whether getEnemyById was called and simulate enemy removal
+    let enemyRemoved = false;
+    const enemies = [enemy];
+
+    const query: QueryInterface = {
+      getTowers: () => [tower],
+      getEnemies: () => (enemyRemoved ? [] : enemies),
+      getProjectiles: () => [],
+      getTowerById: (id: string) => (id === tower.id ? tower : undefined),
+      // Simulate target being removed after targeting but before firing
+      getEnemyById: () => {
+        // First call returns the enemy (for targeting), subsequent calls return undefined
+        if (!enemyRemoved) {
+          enemyRemoved = true;
+          return undefined; // Target was removed by another tower
+        }
+        return undefined;
+      },
+      getEnemiesInRange: () => (enemyRemoved ? [] : enemies),
+      getEnemiesAlongPath: () => (enemyRemoved ? [] : enemies),
+      getPath: () => [],
+      getCell: () => 'empty' as const,
+      getTowerAt: () => undefined,
+      getGameState: () => ({
+        phase: 'combat' as const,
+        wave: 1,
+        lives: 20,
+        credits: 200,
+        score: 0,
+        towers: new Map([[tower.id, tower]]),
+        enemies: new Map(enemyRemoved ? [] : [[enemy.id, enemy]]),
+        projectiles: new Map(),
+        grid: [],
+        path: [],
+        selectedTower: null,
+        selectedTowerType: null,
+        isPaused: false,
+      }),
+    };
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    // No hitscan effects should be created since target was removed
+    const effects = combatModule.getHitscanEffects();
+    expect(effects.length).toBe(0);
+  });
+
+  it('should not fire at position (0,0) when target is pooled', () => {
+    const tower = createMockTower({ type: TowerType.LASER, damage: 10 });
+    const enemy = createMockEnemy({ id: 'enemy_1', health: 100, position: { x: 200, y: 200 } });
+
+    // Simulate enemy being reset to pool (position becomes 0,0)
+    const resetEnemy = { ...enemy, position: { x: 0, y: 0 } };
+
+    const query: QueryInterface = {
+      getTowers: () => [tower],
+      getEnemies: () => [enemy],
+      getProjectiles: () => [],
+      getTowerById: (id: string) => (id === tower.id ? tower : undefined),
+      // Return undefined to simulate target removed from game
+      getEnemyById: () => undefined,
+      getEnemiesInRange: () => [enemy],
+      getEnemiesAlongPath: () => [enemy],
+      getPath: () => [],
+      getCell: () => 'empty' as const,
+      getTowerAt: () => undefined,
+      getGameState: () => ({
+        phase: 'combat' as const,
+        wave: 1,
+        lives: 20,
+        credits: 200,
+        score: 0,
+        towers: new Map([[tower.id, tower]]),
+        enemies: new Map([[enemy.id, resetEnemy]]),
+        projectiles: new Map(),
+        grid: [],
+        path: [],
+        selectedTower: null,
+        selectedTowerType: null,
+        isPaused: false,
+      }),
+    };
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    // Verify no effect points to (0,0) - the bug symptom
+    const effects = combatModule.getHitscanEffects();
+    for (const effect of effects) {
+      expect(effect.targetPosition.x).not.toBe(0);
+      expect(effect.targetPosition.y).not.toBe(0);
+    }
+  });
+});
