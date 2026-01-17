@@ -12,74 +12,194 @@ export const TeslaCoilSprite: TowerSprite = {
     const centerY = y * cellSize + cellSize / 2;
     const baseRadius = cellSize * 0.35;
 
-    // Base platform
-    ctx.fillStyle = '#2a2a3a';
+    // === METALLIC BASE PLATFORM ===
+    // Base shadow for depth
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
     ctx.beginPath();
-    ctx.ellipse(
-      centerX,
-      centerY + baseRadius * 0.6,
-      baseRadius,
-      baseRadius * 0.3,
-      0,
-      0,
-      Math.PI * 2
-    );
+    ctx.ellipse(centerX + 2, centerY + baseRadius * 0.65, baseRadius * 1.05, baseRadius * 0.35, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#4a4a6a';
-    ctx.lineWidth = 2;
+
+    // Base platform with metallic gradient
+    const baseGradient = ctx.createLinearGradient(
+      centerX - baseRadius, centerY,
+      centerX + baseRadius, centerY + baseRadius * 0.6
+    );
+    baseGradient.addColorStop(0, '#4a4a5a');
+    baseGradient.addColorStop(0.3, '#3a3a4a');
+    baseGradient.addColorStop(0.7, '#2a2a3a');
+    baseGradient.addColorStop(1, '#1a1a2a');
+    ctx.fillStyle = baseGradient;
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY + baseRadius * 0.6, baseRadius, baseRadius * 0.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Base rim highlight
+    ctx.strokeStyle = '#6a6a7a';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY + baseRadius * 0.6, baseRadius, baseRadius * 0.3, 0, Math.PI, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = '#2a2a3a';
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY + baseRadius * 0.6, baseRadius, baseRadius * 0.3, 0, 0, Math.PI);
     ctx.stroke();
 
-    // Coil body (cylindrical with windings)
-    const coilHeight = cellSize * 0.5;
-    const coilWidth = baseRadius * 0.5;
-    const coilTop = centerY - coilHeight * 0.5;
-    const coilBottom = centerY + baseRadius * 0.3;
+    // === COIL TOWER BODY ===
+    const coilHeight = cellSize * 0.55;
+    const coilWidthBottom = baseRadius * 0.55;
+    const coilWidthTop = baseRadius * 0.35;
+    const coilTop = centerY - coilHeight * 0.55;
+    const coilBottom = centerY + baseRadius * 0.25;
 
-    // Coil core
-    ctx.fillStyle = '#3a3a4a';
-    ctx.fillRect(centerX - coilWidth / 2, coilTop, coilWidth, coilBottom - coilTop);
+    // Tapered metallic core with gradient
+    const coreGradient = ctx.createLinearGradient(
+      centerX - coilWidthBottom / 2, centerY,
+      centerX + coilWidthBottom / 2, centerY
+    );
+    coreGradient.addColorStop(0, '#2a2a3a');
+    coreGradient.addColorStop(0.2, '#4a4a5a');
+    coreGradient.addColorStop(0.5, '#5a5a6a');
+    coreGradient.addColorStop(0.8, '#4a4a5a');
+    coreGradient.addColorStop(1, '#2a2a3a');
 
-    // Coil windings
-    ctx.strokeStyle = '#7a5a2a';
-    ctx.lineWidth = 2;
-    const windingCount = 8;
+    ctx.fillStyle = coreGradient;
+    ctx.beginPath();
+    ctx.moveTo(centerX - coilWidthBottom / 2, coilBottom);
+    ctx.lineTo(centerX - coilWidthTop / 2, coilTop);
+    ctx.lineTo(centerX + coilWidthTop / 2, coilTop);
+    ctx.lineTo(centerX + coilWidthBottom / 2, coilBottom);
+    ctx.closePath();
+    ctx.fill();
+
+    // Core edge highlights
+    ctx.strokeStyle = '#6a6a7a';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(centerX - coilWidthBottom / 2, coilBottom);
+    ctx.lineTo(centerX - coilWidthTop / 2, coilTop);
+    ctx.stroke();
+
+    // === COPPER WINDINGS ===
+    const windingCount = 10;
     for (let i = 0; i < windingCount; i++) {
-      const windY = coilTop + (coilBottom - coilTop) * (i / windingCount);
+      const t = i / windingCount;
+      const windY = coilTop + (coilBottom - coilTop) * t;
+      const windWidth = coilWidthTop + (coilWidthBottom - coilWidthTop) * t;
+
+      // Winding gradient for 3D copper look
+      const copperGradient = ctx.createLinearGradient(
+        centerX - windWidth / 2 - 3, windY,
+        centerX + windWidth / 2 + 3, windY
+      );
+      copperGradient.addColorStop(0, '#5a3a1a');
+      copperGradient.addColorStop(0.3, '#b87333');
+      copperGradient.addColorStop(0.5, '#da8a44');
+      copperGradient.addColorStop(0.7, '#b87333');
+      copperGradient.addColorStop(1, '#5a3a1a');
+
+      ctx.strokeStyle = copperGradient;
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.moveTo(centerX - coilWidth / 2 - 2, windY);
-      ctx.lineTo(centerX + coilWidth / 2 + 2, windY);
+      ctx.moveTo(centerX - windWidth / 2 - 2, windY);
+      ctx.lineTo(centerX + windWidth / 2 + 2, windY);
+      ctx.stroke();
+
+      // Subtle highlight on top of winding
+      ctx.strokeStyle = 'rgba(255, 200, 150, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(centerX - windWidth / 2, windY - 1);
+      ctx.lineTo(centerX + windWidth / 2, windY - 1);
       ctx.stroke();
     }
 
-    // Top electrode (sphere)
-    const electrodeRadius = baseRadius * 0.25;
-    const electrodeY = coilTop - electrodeRadius * 0.5;
+    // === CERAMIC INSULATORS ===
+    const insulatorPositions = [0.25, 0.5, 0.75];
+    for (const pos of insulatorPositions) {
+      const insY = coilTop + (coilBottom - coilTop) * pos;
+      const insWidth = coilWidthTop + (coilWidthBottom - coilWidthTop) * pos;
 
-    // Electrode glow
+      // Ceramic ring
+      ctx.fillStyle = '#e8e0d0';
+      ctx.beginPath();
+      ctx.ellipse(centerX, insY, insWidth / 2 + 4, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Ring shading
+      ctx.strokeStyle = '#a09080';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(centerX, insY, insWidth / 2 + 4, 3, 0, 0, Math.PI);
+      ctx.stroke();
+    }
+
+    // === TOP ELECTRODE ===
+    const electrodeRadius = baseRadius * 0.28;
+    const electrodeY = coilTop - electrodeRadius * 0.3;
+
+    // Electrode glow (pulsing)
     const glowIntensity = 0.3 + 0.2 * Math.sin(time * 0.005);
-    const gradient = ctx.createRadialGradient(
-      centerX,
-      electrodeY,
-      0,
-      centerX,
-      electrodeY,
-      electrodeRadius * 2
+    const glowGradient = ctx.createRadialGradient(
+      centerX, electrodeY, 0,
+      centerX, electrodeY, electrodeRadius * 2.5
     );
-    gradient.addColorStop(0, `rgba(100, 180, 255, ${glowIntensity})`);
-    gradient.addColorStop(1, 'rgba(100, 180, 255, 0)');
-    ctx.fillStyle = gradient;
+    glowGradient.addColorStop(0, `rgba(100, 180, 255, ${glowIntensity})`);
+    glowGradient.addColorStop(0.5, `rgba(80, 140, 220, ${glowIntensity * 0.5})`);
+    glowGradient.addColorStop(1, 'rgba(60, 120, 200, 0)');
+    ctx.fillStyle = glowGradient;
     ctx.beginPath();
-    ctx.arc(centerX, electrodeY, electrodeRadius * 2, 0, Math.PI * 2);
+    ctx.arc(centerX, electrodeY, electrodeRadius * 2.5, 0, Math.PI * 2);
     ctx.fill();
 
-    // Electrode sphere
-    ctx.fillStyle = '#6ab4ff';
+    // Electrode sphere with metallic gradient
+    const sphereGradient = ctx.createRadialGradient(
+      centerX - electrodeRadius * 0.3, electrodeY - electrodeRadius * 0.3, 0,
+      centerX, electrodeY, electrodeRadius
+    );
+    sphereGradient.addColorStop(0, '#c0e0ff');
+    sphereGradient.addColorStop(0.3, '#8ac0f0');
+    sphereGradient.addColorStop(0.7, '#5a90d0');
+    sphereGradient.addColorStop(1, '#3a60a0');
+    ctx.fillStyle = sphereGradient;
     ctx.beginPath();
     ctx.arc(centerX, electrodeY, electrodeRadius, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#8ad4ff';
+
+    // Electrode highlight
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.beginPath();
+    ctx.arc(centerX - electrodeRadius * 0.3, electrodeY - electrodeRadius * 0.3, electrodeRadius * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Electrode rim
+    ctx.strokeStyle = '#7ab0e0';
     ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(centerX, electrodeY, electrodeRadius, 0, Math.PI * 2);
     ctx.stroke();
+
+    // === SUPPORT STRUTS ===
+    const strutCount = 3;
+    for (let i = 0; i < strutCount; i++) {
+      const angle = (i / strutCount) * Math.PI * 2 - Math.PI / 2;
+      const strutX = Math.cos(angle) * baseRadius * 0.7;
+      const strutY = Math.sin(angle) * baseRadius * 0.2;
+
+      ctx.strokeStyle = '#5a5a6a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(centerX + strutX, centerY + baseRadius * 0.5 + strutY);
+      ctx.lineTo(centerX + strutX * 0.3, coilBottom);
+      ctx.stroke();
+
+      // Strut highlight
+      ctx.strokeStyle = '#7a7a8a';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(centerX + strutX - 1, centerY + baseRadius * 0.5 + strutY);
+      ctx.lineTo(centerX + strutX * 0.3 - 1, coilBottom);
+      ctx.stroke();
+    }
 
     // Subtle idle sparks
     drawIdleSparks(ctx, centerX, electrodeY, electrodeRadius, time);
@@ -93,11 +213,12 @@ export const TeslaCoilSprite: TowerSprite = {
     this.draw(context, tower);
 
     const centerX = x * cellSize + cellSize / 2;
+    const centerY = y * cellSize + cellSize / 2;
     const baseRadius = cellSize * 0.35;
-    const coilHeight = cellSize * 0.5;
-    const coilTop = y * cellSize + cellSize / 2 - coilHeight * 0.5;
-    const electrodeRadius = baseRadius * 0.25;
-    const electrodeY = coilTop - electrodeRadius * 0.5;
+    const coilHeight = cellSize * 0.55;
+    const coilTop = centerY - coilHeight * 0.55;
+    const electrodeRadius = baseRadius * 0.28;
+    const electrodeY = coilTop - electrodeRadius * 0.3;
 
     const targetX = target.x * cellSize + cellSize / 2;
     const targetY = target.y * cellSize + cellSize / 2;
