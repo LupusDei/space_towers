@@ -315,10 +315,17 @@ export interface TowerStats {
   damage: number;
   range: number;
   fireRate: number;
-  upgradeCost: number;
+  // Leveling system
+  maxLevel: number;
+  upgradeCosts: number[]; // Cost to upgrade to each level (index 0 = cost for level 2)
   damagePerLevel: number;
   rangePerLevel: number;
-  fireRatePerLevel: number;
+  fireRatePerLevel: number; // Negative = faster (lower cooldown)
+  // Special stats (optional, tower-specific)
+  splashRadius?: number; // Missile tower base splash radius (cells)
+  splashRadiusPerLevel?: number; // Missile tower splash increase per level
+  chainCount?: number; // Tesla tower base chain targets
+  chainCountPerLevel?: number; // Tesla tower chain increase per level
 }
 
 // ============================================================================

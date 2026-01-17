@@ -69,10 +69,12 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     damage: 5,
     range: 150,
     fireRate: 0.5, // seconds between shots
-    upgradeCost: 30,
-    damagePerLevel: 5,
+    // Leveling: cheap, fast upgrades
+    maxLevel: 5,
+    upgradeCosts: [30, 45, 70, 100], // Total to max: 245
+    damagePerLevel: 3,
     rangePerLevel: 10,
-    fireRatePerLevel: -0.05, // faster = lower cooldown
+    fireRatePerLevel: -0.03, // faster = lower cooldown
   },
 
   [TowerType.MISSILE]: {
@@ -82,10 +84,15 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     damage: 20,
     range: 200,
     fireRate: 2.0,
-    upgradeCost: 60,
-    damagePerLevel: 20,
+    // Leveling: expensive but powerful AoE
+    maxLevel: 5,
+    upgradeCosts: [60, 90, 135, 200], // Total to max: 485
+    damagePerLevel: 15,
     rangePerLevel: 15,
     fireRatePerLevel: -0.1,
+    // Special: splash damage
+    splashRadius: 1.5, // cells
+    splashRadiusPerLevel: 0.25,
   },
 
   [TowerType.TESLA]: {
@@ -95,10 +102,15 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     damage: 8,
     range: 120,
     fireRate: 0.8,
-    upgradeCost: 45,
-    damagePerLevel: 8,
-    rangePerLevel: 8,
-    fireRatePerLevel: -0.08,
+    // Leveling: chain lightning specialist
+    maxLevel: 5,
+    upgradeCosts: [45, 70, 105, 155], // Total to max: 375
+    damagePerLevel: 6,
+    rangePerLevel: 10,
+    fireRatePerLevel: -0.05,
+    // Special: chain lightning
+    chainCount: 2, // base chain targets
+    chainCountPerLevel: 1, // +1 chain per level (max 6 at level 5)
   },
 
   [TowerType.CANNON]: {
@@ -108,10 +120,12 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     damage: 30,
     range: 175,
     fireRate: 2.5,
-    upgradeCost: 75,
-    damagePerLevel: 30,
+    // Leveling: heavy single-target damage
+    maxLevel: 5,
+    upgradeCosts: [75, 115, 170, 250], // Total to max: 610
+    damagePerLevel: 25,
     rangePerLevel: 12,
-    fireRatePerLevel: -0.15,
+    fireRatePerLevel: -0.12,
   },
 };
 
