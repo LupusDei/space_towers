@@ -139,17 +139,6 @@ export default function Game() {
       // Render enemies
       const enemiesArray = Array.from(state.enemies.values());
       for (const enemy of enemiesArray) {
-        // DEBUG: Draw red rectangle at enemy position to verify coordinates
-        // Enemy position is in pixels, add cellSize/2 to get center like sprites do
-        const debugX = enemy.position.x + GAME_CONFIG.CELL_SIZE / 2;
-        const debugY = enemy.position.y + GAME_CONFIG.CELL_SIZE / 2;
-        ctx!.fillStyle = 'red';
-        ctx!.fillRect(debugX - 15, debugY - 15, 30, 30);
-        // Also draw a text label showing enemy id
-        ctx!.fillStyle = 'white';
-        ctx!.font = '10px monospace';
-        ctx!.fillText(enemy.id, debugX - 20, debugY + 25);
-
         renderEnemy(renderContext, enemy);
       }
 
@@ -173,12 +162,6 @@ export default function Game() {
 
       // Render HUD overlay
       renderHUD(ctx!, state);
-
-      // DEBUG: Show enemy count prominently
-      ctx!.fillStyle = 'yellow';
-      ctx!.font = 'bold 20px monospace';
-      ctx!.fillText(`DEBUG: ${state.enemies.size} enemies, ${state.towers.size} towers`, 220, 30);
-      ctx!.fillText(`Phase: ${state.phase}, Lives: ${state.lives}, Time: ${timeRef.current.toFixed(1)}s`, 220, 55);
 
       animationFrameId = requestAnimationFrame(render);
     }
