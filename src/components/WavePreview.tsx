@@ -69,7 +69,7 @@ export default function WavePreview({ wave, phase }: WavePreviewProps) {
               <span className={styles.enemyCount}>x{enemy.count}</span>
             </div>
             <div className={styles.enemyStats}>
-              HP: {enemy.hp}  Speed: {formatSpeed(enemy.speed)}
+              {enemy.hp}hp • {formatSpeed(enemy.speed)}
             </div>
           </div>
         ))}
