@@ -788,6 +788,7 @@ class GameEngine {
   addProjectile(projectile: Projectile): void {
     this.state.projectiles.set(projectile.id, projectile);
     this.projectilesCacheDirty = true;
+    this.stateNotifier.notify();
   }
 
   addCredits(amount: number): void {

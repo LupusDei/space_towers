@@ -744,6 +744,33 @@ describe('Engine Integration', () => {
       expect(snapshot2).not.toBe(snapshot1);
       expect(snapshot2.credits).toBe(credits1 + 100);
     });
+
+    it('invalidates cache when addProjectile is called', () => {
+      engine.startGame();
+
+      const snapshot1 = engine.getSnapshot();
+      expect(snapshot1.projectiles.size).toBe(0);
+
+      // Add a projectile directly
+      engine.addProjectile({
+        id: 'test_proj_1',
+        sourceId: 'tower_1',
+        targetId: 'enemy_1',
+        position: { x: 100, y: 100 },
+        velocity: { x: 0, y: 0 },
+        damage: 10,
+        speed: 400,
+        piercing: false,
+        aoe: 0,
+      });
+
+      const snapshot2 = engine.getSnapshot();
+
+      // Cache should be invalidated - new snapshot with projectile
+      expect(snapshot2).not.toBe(snapshot1);
+      expect(snapshot2.projectiles.size).toBe(1);
+      expect(snapshot2.projectiles.has('test_proj_1')).toBe(true);
+    });
   });
 
   // ==========================================================================
