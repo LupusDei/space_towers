@@ -93,12 +93,7 @@ export default function Game() {
     let animationFrameId: number;
     let lastTime = performance.now();
 
-    let frameCount = 0;
     function render(currentTime: number) {
-      frameCount++;
-      if (frameCount % 60 === 0) {
-        console.log('[Game.tsx render] Frame:', frameCount, 'Time:', timeRef.current.toFixed(2));
-      }
       const dt = (currentTime - lastTime) / 1000;
       lastTime = currentTime;
       timeRef.current += dt;
@@ -132,9 +127,6 @@ export default function Game() {
 
       // Render towers
       const towersArray = Array.from(state.towers.values());
-      if (towersArray.length > 0 && Math.random() < 0.01) { // Log occasionally to reduce spam
-        console.log('Towers to render:', towersArray.length, towersArray.map(t => ({ id: t.id, pos: t.position, type: t.type })));
-      }
       const hoveredTowerNow = hoveredTowerRef.current;
       for (const tower of towersArray) {
         const isSelected = state.selectedTower === tower.id;
@@ -144,9 +136,6 @@ export default function Game() {
 
       // Render enemies
       const enemiesArray = Array.from(state.enemies.values());
-      if (enemiesArray.length > 0 && frameCount % 60 === 0) {
-        console.log('Enemies to render:', enemiesArray.length, enemiesArray.map(e => ({ id: e.id, pos: e.position, health: e.health })));
-      }
       for (const enemy of enemiesArray) {
         // DEBUG: Draw red rectangle at enemy position to verify coordinates
         // Enemy position is in pixels, add cellSize/2 to get center like sprites do
@@ -164,9 +153,6 @@ export default function Game() {
 
       // Render projectiles
       const projectilesArray = Array.from(state.projectiles.values());
-      if (projectilesArray.length > 0 && frameCount % 60 === 0) {
-        console.log('Projectiles to render:', projectilesArray.length, projectilesArray.map(p => ({ id: p.id, pos: p.position })));
-      }
       for (const projectile of projectilesArray) {
         renderProjectile(renderContext, projectile);
       }
