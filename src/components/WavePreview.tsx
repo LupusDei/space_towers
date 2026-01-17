@@ -63,12 +63,14 @@ export default function WavePreview({ wave, phase }: WavePreviewProps) {
             key={enemy.type}
             className={`${styles.enemyRow} ${enemy.type === EnemyType.BOSS ? styles.bossEnemy : ''}`}
           >
-            <span className={styles.enemyIcon}>{getEnemyIcon(enemy.type)}</span>
-            <span className={styles.enemyName}>{enemy.name}</span>
-            <span className={styles.enemyCount}>x{enemy.count}</span>
-            <span className={styles.enemyStats}>
+            <div className={styles.enemyMainLine}>
+              <span className={styles.enemyIcon}>{getEnemyIcon(enemy.type)}</span>
+              <span className={styles.enemyName}>{enemy.name}</span>
+              <span className={styles.enemyCount}>x{enemy.count}</span>
+            </div>
+            <div className={styles.enemyStats}>
               {enemy.hp}hp • {enemy.armor}arm • {formatSpeed(enemy.speed)}
-            </span>
+            </div>
           </div>
         ))}
       </div>
