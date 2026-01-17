@@ -114,7 +114,7 @@ export class InputHandler {
   }
 
   /**
-   * Handle right-click - tower selling
+   * Handle right-click - tower selling or cancel placement
    */
   handleContextMenu(clientX: number, clientY: number): void {
     const cell = this.getGridCell(clientX, clientY);
@@ -124,6 +124,9 @@ export class InputHandler {
     if (tower) {
       const command = new SellTowerCommand(tower.id);
       command.execute();
+    } else {
+      // Right-click on empty cell - deselect tower type (cancel placement mode)
+      engine.setSelectedTowerType(null);
     }
   }
 }
