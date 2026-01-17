@@ -242,10 +242,15 @@ class CombatModuleImpl implements GameModule {
   private handleHitscanFire(tower: Tower, target: Enemy, currentTime: number): void {
     if (!this.query) return;
 
+    // Validate target still exists - it may have been killed by another tower
+    // in the same update loop and released back to the pool (position reset to 0,0)
+    const validTarget = this.query.getEnemyById(target.id);
+    if (!validTarget) return;
+
     if (tower.type === TT.LASER) {
-      this.fireLaser(tower, target, currentTime);
+      this.fireLaser(tower, validTarget, currentTime);
     } else if (tower.type === TT.TESLA) {
-      this.fireTesla(tower, target, currentTime);
+      this.fireTesla(tower, validTarget, currentTime);
     }
   }
 
