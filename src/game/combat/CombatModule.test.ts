@@ -332,6 +332,31 @@ describe('Laser Tower Damage', () => {
 
     expect(removedEnemyId).toBe(enemy.id);
   });
+
+  it('should award credits when enemy is killed', () => {
+    const tower = createMockTower({ type: TowerType.LASER, damage: 100 });
+    const enemy = createMockEnemy({ health: 50, armor: 0, reward: 25 });
+    let addedCredits = 0;
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {
+        // Simulate what the real pool does: reset enemy reward to 0
+        enemy.reward = 0;
+      },
+      addCredits: (amount: number) => {
+        addedCredits = amount;
+      },
+      getTime: () => 0,
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    // Credits should be awarded with the original reward value (25), not the reset value (0)
+    expect(addedCredits).toBe(25);
+  });
 });
 
 describe('Combat Constants', () => {

@@ -451,14 +451,17 @@ class CombatModuleImpl implements GameModule {
 
     console.log(`[Kill] Enemy ${enemy.type} killed by tower ${towerId} → +$${enemy.reward}`);
 
+    // Save reward before removing enemy (removeEnemy releases to pool which resets reward to 0)
+    const reward = enemy.reward;
+
+    // Emit kill event before removing (enemy object is reset when released to pool)
+    eventBus.emit(createEvent('ENEMY_KILLED', { enemy, towerId, reward }));
+
     // Remove enemy from game
     this.commands!.removeEnemy(enemy.id);
 
-    // Award credits and score
-    this.commands!.addCredits(enemy.reward);
-
-    // Emit kill event
-    eventBus.emit(createEvent('ENEMY_KILLED', { enemy, towerId, reward: enemy.reward }));
+    // Award credits using saved reward value
+    this.commands!.addCredits(reward);
   }
 
   // ==========================================================================
