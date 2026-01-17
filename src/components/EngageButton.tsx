@@ -62,6 +62,7 @@ const baseButtonStyle: React.CSSProperties = {
   transition: 'all 0.3s ease',
   position: 'relative',
   overflow: 'hidden',
+  whiteSpace: 'nowrap',
 };
 
 const enabledStyle: React.CSSProperties = {
