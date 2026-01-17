@@ -4,12 +4,6 @@ import type { Enemy } from '../../game/types';
 import type { EnemySprite, SpriteRenderContext } from '../types';
 import { drawHealthBar } from '../effects/HealthBar';
 
-// Track health for damage flash detection
-const lastHealthMap = new Map<string, number>();
-const damageFlashMap = new Map<string, number>();
-
-const FLASH_DURATION = 150; // ms
-
 export const AssaultBotSprite: EnemySprite = {
   draw(context: SpriteRenderContext, enemy: Enemy): void {
     const { ctx, cellSize, time } = context;
@@ -29,23 +23,13 @@ export const AssaultBotSprite: EnemySprite = {
     const rightLegOffset = Math.sin(walkCycle + Math.PI) * 4;
     const armSwing = Math.sin(walkCycle) * 0.3;
 
-    // Check for damage flash
-    const lastHealth = lastHealthMap.get(enemy.id);
-    if (lastHealth !== undefined && enemy.health < lastHealth) {
-      damageFlashMap.set(enemy.id, time);
-    }
-    lastHealthMap.set(enemy.id, enemy.health);
-
-    const flashTime = damageFlashMap.get(enemy.id) || 0;
-    const isFlashing = time - flashTime < FLASH_DURATION;
-
     ctx.save();
 
     // Yellow/orange color scheme
-    const bodyColor = isFlashing ? '#FFFFFF' : '#FF8C00'; // Dark orange
-    const accentColor = isFlashing ? '#FFFFFF' : '#FFD700'; // Gold
-    const darkColor = isFlashing ? '#FFFFFF' : '#B8860B'; // Dark goldenrod
-    const metalColor = isFlashing ? '#FFFFFF' : '#555555';
+    const bodyColor = '#FF8C00'; // Dark orange
+    const accentColor = '#FFD700'; // Gold
+    const darkColor = '#B8860B'; // Dark goldenrod
+    const metalColor = '#555555';
 
     // Draw legs (behind body)
     ctx.fillStyle = metalColor;
@@ -133,9 +117,9 @@ export const AssaultBotSprite: EnemySprite = {
     );
 
     // Visor (glowing yellow eye slit)
-    ctx.fillStyle = isFlashing ? '#FFFFFF' : '#FFFF00';
+    ctx.fillStyle = '#FFFF00';
     ctx.shadowColor = '#FFFF00';
-    ctx.shadowBlur = isFlashing ? 0 : 4;
+    ctx.shadowBlur = 4;
     ctx.fillRect(
       centerX - bodyWidth / 6,
       centerY - bodyHeight / 2 - cellSize * 0.1,

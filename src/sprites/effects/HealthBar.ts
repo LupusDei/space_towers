@@ -174,7 +174,6 @@ export function drawBossHealthBar(
     offsetY: number;
     segments?: number;
     glowColor?: string;
-    isFlashing?: boolean;
   }
 ): void {
   // Get smoothly interpolated health
@@ -218,11 +217,11 @@ export function drawBossHealthBar(
   ctx.fillRect(barX, barY, config.width * healthPercent, config.height);
 
   // Health bar border with glow
-  if (config.glowColor && !config.isFlashing) {
+  if (config.glowColor) {
     ctx.shadowBlur = 5;
     ctx.shadowColor = config.glowColor;
   }
-  ctx.strokeStyle = config.isFlashing ? '#FFFFFF' : '#FF00FF';
+  ctx.strokeStyle = '#FF00FF';
   ctx.lineWidth = 2;
   ctx.strokeRect(barX, barY, config.width, config.height);
 

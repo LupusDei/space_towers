@@ -8,7 +8,6 @@ import { drawHealthBar } from '../effects/HealthBar';
 const DRONE_GREEN = '#00ff88';
 const DRONE_GREEN_DARK = '#00aa55';
 const DRONE_ACCENT = '#88ffcc';
-const DAMAGE_FLASH_COLOR = '#ffffff';
 
 // Animation constants
 const ROTATION_SPEED = 4; // radians per second
@@ -16,15 +15,6 @@ const PULSE_SPEED = 8; // pulses per second
 const PULSE_AMPLITUDE = 0.15; // size variation
 
 export class ScoutDroneSprite implements EnemySprite {
-  private damageFlashMap = new Map<string, number>();
-
-  /**
-   * Trigger damage flash for an enemy
-   */
-  triggerDamageFlash(enemyId: string): void {
-    this.damageFlashMap.set(enemyId, performance.now());
-  }
-
   draw(context: SpriteRenderContext, enemy: Enemy): void {
     const { ctx, cellSize, time } = context;
     const { position, health, maxHealth, id } = enemy;
@@ -43,16 +33,12 @@ export class ScoutDroneSprite implements EnemySprite {
     // Rotation animation
     const rotation = time * ROTATION_SPEED;
 
-    // Check for damage flash
-    const flashTime = this.damageFlashMap.get(id);
-    const isFlashing = flashTime !== undefined && performance.now() - flashTime < 100;
-
     ctx.save();
     ctx.translate(centerX, centerY);
     ctx.rotate(rotation);
 
     // Draw triangular drone body
-    this.drawTriangle(ctx, size, isFlashing);
+    this.drawTriangle(ctx, size);
 
     // Draw center accent
     this.drawCenterAccent(ctx, size * 0.3);
@@ -68,14 +54,9 @@ export class ScoutDroneSprite implements EnemySprite {
         height: 4,
       },
     });
-
-    // Clean up old flash entries
-    if (flashTime !== undefined && performance.now() - flashTime > 100) {
-      this.damageFlashMap.delete(id);
-    }
   }
 
-  private drawTriangle(ctx: CanvasRenderingContext2D, size: number, isFlashing: boolean): void {
+  private drawTriangle(ctx: CanvasRenderingContext2D, size: number): void {
     ctx.beginPath();
 
     // Triangular shape pointing up (before rotation)
@@ -88,19 +69,15 @@ export class ScoutDroneSprite implements EnemySprite {
     ctx.lineTo(baseX, baseY); // Bottom right
     ctx.closePath();
 
-    // Fill with gradient or flash color
-    if (isFlashing) {
-      ctx.fillStyle = DAMAGE_FLASH_COLOR;
-    } else {
-      const gradient = ctx.createLinearGradient(0, tipY, 0, baseY);
-      gradient.addColorStop(0, DRONE_GREEN);
-      gradient.addColorStop(1, DRONE_GREEN_DARK);
-      ctx.fillStyle = gradient;
-    }
+    // Fill with gradient
+    const gradient = ctx.createLinearGradient(0, tipY, 0, baseY);
+    gradient.addColorStop(0, DRONE_GREEN);
+    gradient.addColorStop(1, DRONE_GREEN_DARK);
+    ctx.fillStyle = gradient;
     ctx.fill();
 
     // Outline
-    ctx.strokeStyle = isFlashing ? DAMAGE_FLASH_COLOR : DRONE_ACCENT;
+    ctx.strokeStyle = DRONE_ACCENT;
     ctx.lineWidth = 2;
     ctx.stroke();
   }

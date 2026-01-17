@@ -270,7 +270,7 @@ describe('drawBossHealthBar', () => {
     expect(segmentCount).toBe(9);
   });
 
-  it('should apply glow effect when not flashing', () => {
+  it('should apply glow effect when glowColor is provided', () => {
     let glowApplied = false;
     Object.defineProperty(ctx, 'shadowBlur', {
       set: (val: number) => {
@@ -284,29 +284,8 @@ describe('drawBossHealthBar', () => {
       height: 10,
       offsetY: -50,
       glowColor: '#FF00FF',
-      isFlashing: false,
     });
 
     expect(glowApplied).toBe(true);
-  });
-
-  it('should not apply glow when flashing', () => {
-    let glowApplied = false;
-    Object.defineProperty(ctx, 'shadowBlur', {
-      set: (val: number) => {
-        if (val > 0) glowApplied = true;
-      },
-      get: () => 0,
-    });
-
-    drawBossHealthBar(ctx, 'boss_3', 200, 200, 500, 500, 0, {
-      width: 100,
-      height: 10,
-      offsetY: -50,
-      glowColor: '#FF00FF',
-      isFlashing: true,
-    });
-
-    expect(glowApplied).toBe(false);
   });
 });
