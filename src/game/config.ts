@@ -91,7 +91,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
   [TowerType.TESLA]: {
     type: TowerType.TESLA,
     name: 'Tesla Tower',
-    cost: 38,
+    cost: 40,
     damage: 8,
     range: 120,
     fireRate: 0.8,
@@ -104,7 +104,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
   [TowerType.CANNON]: {
     type: TowerType.CANNON,
     name: 'Cannon Tower',
-    cost: 63,
+    cost: 60,
     damage: 30,
     range: 175,
     fireRate: 2.5,

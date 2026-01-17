@@ -35,8 +35,10 @@ export default function Game() {
   const hoveredTowerRef = useRef<Tower | null>(null);
 
   // Keep refs in sync with state
-  hoveredCellRef.current = hoveredCell;
-  hoveredTowerRef.current = hoveredTower;
+  useEffect(() => {
+    hoveredCellRef.current = hoveredCell;
+    hoveredTowerRef.current = hoveredTower;
+  }, [hoveredCell, hoveredTower]);
 
 
   // Handle mouse move for hover effect - delegates to InputHandler
