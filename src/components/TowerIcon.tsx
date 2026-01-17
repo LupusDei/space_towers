@@ -50,6 +50,8 @@ export default function TowerIcon({ type, size = 40 }: TowerIconProps) {
       fireRate: 0,
       lastFired: 0,
       target: null,
+      kills: 0,
+      totalDamage: 0,
     };
 
     let lastTime = performance.now();

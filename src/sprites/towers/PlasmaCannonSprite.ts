@@ -1,32 +1,53 @@
 // Plasma Cannon Sprite - Heavy cannon with purple/pink glow
+// Supports 5 visual tiers based on tower level
 
 import type { Tower, Point } from '../../game/types';
 import type { TowerSprite, SpriteRenderContext } from '../types';
+
+// Level-based color palettes (progressively more vibrant)
+const LEVEL_COLORS = {
+  1: { base: '#3d2d45', accent: '#5a4068', glow: '#ff66ff', highlight: '#9a78b8' },
+  2: { base: '#4a3555', accent: '#6a5078', glow: '#ff77ff', highlight: '#aa88c8' },
+  3: { base: '#553d65', accent: '#7a6088', glow: '#ff88ff', highlight: '#bb99d8' },
+  4: { base: '#604575', accent: '#8a7098', glow: '#ff99ff', highlight: '#ccaae8' },
+  5: { base: '#6b4d85', accent: '#9a80a8', glow: '#ffaaff', highlight: '#ddbcf8' },
+};
+
+function getLevelColors(level: number) {
+  const clampedLevel = Math.max(1, Math.min(5, level)) as 1 | 2 | 3 | 4 | 5;
+  return LEVEL_COLORS[clampedLevel];
+}
 
 export const PlasmaCannonSprite: TowerSprite = {
   draw(context: SpriteRenderContext, tower: Tower): void {
     const { ctx, cellSize, time } = context;
     const { x, y } = tower.position;
+    const level = tower.level;
+    const colors = getLevelColors(level);
 
     const centerX = x * cellSize + cellSize / 2;
     const centerY = y * cellSize + cellSize / 2;
 
+    // Level-based size scaling (subtle increase)
+    const sizeScale = 1 + (level - 1) * 0.02;
+
     // Heavy industrial base platform with metallic gradient
+    const baseWidth = cellSize * 0.4 * sizeScale;
     const baseGradient = ctx.createLinearGradient(
-      centerX - cellSize * 0.4,
+      centerX - baseWidth,
       centerY + cellSize * 0.1,
-      centerX - cellSize * 0.4,
+      centerX - baseWidth,
       centerY + cellSize * 0.35
     );
-    baseGradient.addColorStop(0, '#3d2d45');
+    baseGradient.addColorStop(0, colors.base);
     baseGradient.addColorStop(0.3, '#2a2030');
     baseGradient.addColorStop(0.7, '#1a1520');
     baseGradient.addColorStop(1, '#2a2030');
     ctx.fillStyle = baseGradient;
     ctx.beginPath();
-    ctx.rect(centerX - cellSize * 0.4, centerY + cellSize * 0.1, cellSize * 0.8, cellSize * 0.25);
+    ctx.rect(centerX - baseWidth, centerY + cellSize * 0.1, baseWidth * 2, cellSize * 0.25);
     ctx.fill();
-    ctx.strokeStyle = '#5a4068';
+    ctx.strokeStyle = colors.accent;
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -34,9 +55,14 @@ export const PlasmaCannonSprite: TowerSprite = {
     ctx.strokeStyle = 'rgba(150, 120, 170, 0.4)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(centerX - cellSize * 0.4, centerY + cellSize * 0.1);
-    ctx.lineTo(centerX + cellSize * 0.4, centerY + cellSize * 0.1);
+    ctx.moveTo(centerX - baseWidth, centerY + cellSize * 0.1);
+    ctx.lineTo(centerX + baseWidth, centerY + cellSize * 0.1);
     ctx.stroke();
+
+    // Level 3+: Side armor plates
+    if (level >= 3) {
+      drawArmorPlates(ctx, centerX, centerY, cellSize, colors, level);
+    }
 
     // Side supports with metallic sheen
     const supportGradient = ctx.createLinearGradient(
@@ -91,7 +117,7 @@ export const PlasmaCannonSprite: TowerSprite = {
     ctx.beginPath();
     ctx.rect(centerX - cellSize * 0.25, centerY - cellSize * 0.25, cellSize * 0.5, cellSize * 0.4);
     ctx.fill();
-    ctx.strokeStyle = '#7a5898';
+    ctx.strokeStyle = colors.highlight;
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -113,119 +139,36 @@ export const PlasmaCannonSprite: TowerSprite = {
     ctx.lineTo(centerX + cellSize * 0.25, centerY - cellSize * 0.25);
     ctx.stroke();
 
-    // Heavy barrel with metallic gradient
-    const barrelLength = cellSize * 0.35;
-    const barrelWidth = cellSize * 0.18;
-    const barrelGradient = ctx.createLinearGradient(
-      centerX - barrelWidth / 2,
-      0,
-      centerX + barrelWidth / 2,
-      0
-    );
-    barrelGradient.addColorStop(0, '#4a3858');
-    barrelGradient.addColorStop(0.25, '#6a5888');
-    barrelGradient.addColorStop(0.5, '#7a68a8');
-    barrelGradient.addColorStop(0.75, '#6a5888');
-    barrelGradient.addColorStop(1, '#4a3858');
-    ctx.fillStyle = barrelGradient;
-    ctx.fillRect(
-      centerX - barrelWidth / 2,
-      centerY - cellSize * 0.25 - barrelLength,
-      barrelWidth,
-      barrelLength
-    );
-    ctx.strokeStyle = '#8a6898';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(
-      centerX - barrelWidth / 2,
-      centerY - cellSize * 0.25 - barrelLength,
-      barrelWidth,
-      barrelLength
-    );
+    // Heavy barrel with metallic gradient (scales with level)
+    const barrelLength = cellSize * (0.35 + (level - 1) * 0.02);
+    const barrelWidth = cellSize * (0.18 + (level - 1) * 0.01);
 
-    // Barrel rings with metallic effect (industrial detail)
-    const ringY1 = centerY - cellSize * 0.3;
-    const ringY2 = centerY - cellSize * 0.45;
-
-    // Ring shadows
-    ctx.strokeStyle = '#3a2848';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(centerX - barrelWidth / 2 - 2, ringY1 + 1);
-    ctx.lineTo(centerX + barrelWidth / 2 + 2, ringY1 + 1);
-    ctx.moveTo(centerX - barrelWidth / 2 - 2, ringY2 + 1);
-    ctx.lineTo(centerX + barrelWidth / 2 + 2, ringY2 + 1);
-    ctx.stroke();
-
-    // Ring highlights
-    ctx.strokeStyle = '#9a78b8';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(centerX - barrelWidth / 2 - 2, ringY1);
-    ctx.lineTo(centerX + barrelWidth / 2 + 2, ringY1);
-    ctx.moveTo(centerX - barrelWidth / 2 - 2, ringY2);
-    ctx.lineTo(centerX + barrelWidth / 2 + 2, ringY2);
-    ctx.stroke();
-
-    // Rivets/bolts for texture
-    ctx.fillStyle = '#7a5898';
-    const rivetSize = cellSize * 0.025;
-    const rivetPositions = [
-      { x: centerX - cellSize * 0.2, y: centerY - cellSize * 0.2 },
-      { x: centerX + cellSize * 0.2, y: centerY - cellSize * 0.2 },
-      { x: centerX - cellSize * 0.2, y: centerY + cellSize * 0.1 },
-      { x: centerX + cellSize * 0.2, y: centerY + cellSize * 0.1 },
-    ];
-    for (const rivet of rivetPositions) {
-      ctx.beginPath();
-      ctx.arc(rivet.x, rivet.y, rivetSize, 0, Math.PI * 2);
-      ctx.fill();
-      // Rivet highlight
-      ctx.fillStyle = 'rgba(180, 150, 200, 0.5)';
-      ctx.beginPath();
-      ctx.arc(rivet.x - rivetSize * 0.3, rivet.y - rivetSize * 0.3, rivetSize * 0.4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#7a5898';
+    // Level 4+: Draw dual barrel
+    if (level >= 4) {
+      drawDualBarrel(ctx, centerX, centerY, cellSize, barrelLength, barrelWidth, colors, level);
+    } else {
+      drawSingleBarrel(ctx, centerX, centerY, cellSize, barrelLength, barrelWidth, colors, level);
     }
 
-    // Plasma core glow (pulsing)
-    const glowIntensity = 0.4 + 0.2 * Math.sin(time * 3);
+    // Rivets/bolts for texture (more rivets at higher levels)
+    drawRivets(ctx, centerX, centerY, cellSize, level);
+
+    // Plasma core glow (pulsing) - intensity scales with level
+    const baseGlowIntensity = 0.4 + (level - 1) * 0.05;
+    const glowIntensity = baseGlowIntensity + 0.2 * Math.sin(time * 3);
     const coreY = centerY - cellSize * 0.05;
-    const gradient = ctx.createRadialGradient(centerX, coreY, 0, centerX, coreY, cellSize * 0.3);
-    gradient.addColorStop(0, `rgba(255, 100, 255, ${glowIntensity})`);
-    gradient.addColorStop(0.5, `rgba(200, 50, 200, ${glowIntensity * 0.5})`);
-    gradient.addColorStop(1, 'rgba(150, 0, 150, 0)');
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(centerX, coreY, cellSize * 0.3, 0, Math.PI * 2);
-    ctx.fill();
 
-    // Plasma core (bright center with inner glow)
-    const coreGradient = ctx.createRadialGradient(centerX, coreY, 0, centerX, coreY, cellSize * 0.1);
-    coreGradient.addColorStop(0, '#ffffff');
-    coreGradient.addColorStop(0.4, '#ff88ff');
-    coreGradient.addColorStop(1, '#ff66ff');
-    ctx.fillStyle = coreGradient;
-    ctx.beginPath();
-    ctx.arc(centerX, coreY, cellSize * 0.08, 0, Math.PI * 2);
-    ctx.fill();
+    // Level 5: Triple glow cores
+    if (level === 5) {
+      drawTripleCore(ctx, centerX, coreY, cellSize, glowIntensity, colors);
+    } else {
+      drawSingleCore(ctx, centerX, coreY, cellSize, glowIntensity, colors);
+    }
 
-    // Barrel tip with metallic rim
-    const tipY = centerY - cellSize * 0.25 - barrelLength;
-    ctx.strokeStyle = '#9a78b8';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(centerX, tipY, barrelWidth / 2 + 1, Math.PI, 0);
-    ctx.stroke();
-
-    // Barrel tip glow
-    const tipGlow = ctx.createRadialGradient(centerX, tipY, 0, centerX, tipY, cellSize * 0.15);
-    tipGlow.addColorStop(0, `rgba(255, 150, 255, ${glowIntensity * 0.6})`);
-    tipGlow.addColorStop(1, 'rgba(200, 50, 200, 0)');
-    ctx.fillStyle = tipGlow;
-    ctx.beginPath();
-    ctx.arc(centerX, tipY, cellSize * 0.15, 0, Math.PI * 2);
-    ctx.fill();
+    // Level 2+: Additional energy vents
+    if (level >= 2) {
+      drawEnergyVents(ctx, centerX, centerY, cellSize, time, colors, level);
+    }
   },
 
   drawFiring(context: SpriteRenderContext, tower: Tower, target: Point): void {
@@ -358,5 +301,325 @@ export const PlasmaCannonSprite: TowerSprite = {
     ctx.setLineDash([]);
   },
 };
+
+// Helper function: Draw single barrel (levels 1-3)
+function drawSingleBarrel(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  cellSize: number,
+  barrelLength: number,
+  barrelWidth: number,
+  colors: { highlight: string },
+  level: number
+): void {
+  const barrelGradient = ctx.createLinearGradient(
+    centerX - barrelWidth / 2,
+    0,
+    centerX + barrelWidth / 2,
+    0
+  );
+  barrelGradient.addColorStop(0, '#4a3858');
+  barrelGradient.addColorStop(0.25, '#6a5888');
+  barrelGradient.addColorStop(0.5, '#7a68a8');
+  barrelGradient.addColorStop(0.75, '#6a5888');
+  barrelGradient.addColorStop(1, '#4a3858');
+  ctx.fillStyle = barrelGradient;
+  ctx.fillRect(
+    centerX - barrelWidth / 2,
+    centerY - cellSize * 0.25 - barrelLength,
+    barrelWidth,
+    barrelLength
+  );
+  ctx.strokeStyle = colors.highlight;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(
+    centerX - barrelWidth / 2,
+    centerY - cellSize * 0.25 - barrelLength,
+    barrelWidth,
+    barrelLength
+  );
+
+  // Barrel rings (more rings at higher levels)
+  const ringCount = Math.min(level + 1, 3);
+  for (let i = 0; i < ringCount; i++) {
+    const ringY = centerY - cellSize * (0.3 + i * 0.12);
+    // Ring shadow
+    ctx.strokeStyle = '#3a2848';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(centerX - barrelWidth / 2 - 2, ringY + 1);
+    ctx.lineTo(centerX + barrelWidth / 2 + 2, ringY + 1);
+    ctx.stroke();
+    // Ring highlight
+    ctx.strokeStyle = colors.highlight;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(centerX - barrelWidth / 2 - 2, ringY);
+    ctx.lineTo(centerX + barrelWidth / 2 + 2, ringY);
+    ctx.stroke();
+  }
+
+  // Barrel tip glow
+  const tipY = centerY - cellSize * 0.25 - barrelLength;
+  ctx.strokeStyle = colors.highlight;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(centerX, tipY, barrelWidth / 2 + 1, Math.PI, 0);
+  ctx.stroke();
+}
+
+// Helper function: Draw dual barrel (levels 4-5)
+function drawDualBarrel(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  cellSize: number,
+  barrelLength: number,
+  barrelWidth: number,
+  colors: { highlight: string; glow: string },
+  level: number
+): void {
+  const separation = cellSize * 0.08;
+  const singleWidth = barrelWidth * 0.6;
+
+  // Draw two barrels
+  for (const offset of [-separation, separation]) {
+    const bx = centerX + offset;
+    const barrelGradient = ctx.createLinearGradient(
+      bx - singleWidth / 2,
+      0,
+      bx + singleWidth / 2,
+      0
+    );
+    barrelGradient.addColorStop(0, '#4a3858');
+    barrelGradient.addColorStop(0.25, '#6a5888');
+    barrelGradient.addColorStop(0.5, '#7a68a8');
+    barrelGradient.addColorStop(0.75, '#6a5888');
+    barrelGradient.addColorStop(1, '#4a3858');
+    ctx.fillStyle = barrelGradient;
+    ctx.fillRect(
+      bx - singleWidth / 2,
+      centerY - cellSize * 0.25 - barrelLength,
+      singleWidth,
+      barrelLength
+    );
+    ctx.strokeStyle = colors.highlight;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(
+      bx - singleWidth / 2,
+      centerY - cellSize * 0.25 - barrelLength,
+      singleWidth,
+      barrelLength
+    );
+
+    // Barrel rings
+    const ringCount = level >= 5 ? 3 : 2;
+    for (let i = 0; i < ringCount; i++) {
+      const ringY = centerY - cellSize * (0.3 + i * 0.1);
+      ctx.strokeStyle = colors.highlight;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(bx - singleWidth / 2 - 1, ringY);
+      ctx.lineTo(bx + singleWidth / 2 + 1, ringY);
+      ctx.stroke();
+    }
+
+    // Barrel tip
+    const tipY = centerY - cellSize * 0.25 - barrelLength;
+    ctx.strokeStyle = colors.highlight;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(bx, tipY, singleWidth / 2 + 1, Math.PI, 0);
+    ctx.stroke();
+  }
+
+  // Connecting bridge between barrels
+  ctx.fillStyle = '#5a4868';
+  ctx.fillRect(
+    centerX - separation - singleWidth / 2,
+    centerY - cellSize * 0.28,
+    separation * 2 + singleWidth,
+    cellSize * 0.06
+  );
+}
+
+// Helper function: Draw rivets
+function drawRivets(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  cellSize: number,
+  level: number
+): void {
+  const rivetSize = cellSize * 0.025;
+  const baseRivets = [
+    { x: centerX - cellSize * 0.2, y: centerY - cellSize * 0.2 },
+    { x: centerX + cellSize * 0.2, y: centerY - cellSize * 0.2 },
+    { x: centerX - cellSize * 0.2, y: centerY + cellSize * 0.1 },
+    { x: centerX + cellSize * 0.2, y: centerY + cellSize * 0.1 },
+  ];
+
+  // Add more rivets at higher levels
+  const extraRivets =
+    level >= 3
+      ? [
+          { x: centerX, y: centerY - cellSize * 0.2 },
+          { x: centerX, y: centerY + cellSize * 0.1 },
+        ]
+      : [];
+
+  const allRivets = [...baseRivets, ...extraRivets];
+
+  for (const rivet of allRivets) {
+    ctx.fillStyle = '#7a5898';
+    ctx.beginPath();
+    ctx.arc(rivet.x, rivet.y, rivetSize, 0, Math.PI * 2);
+    ctx.fill();
+    // Rivet highlight
+    ctx.fillStyle = 'rgba(180, 150, 200, 0.5)';
+    ctx.beginPath();
+    ctx.arc(rivet.x - rivetSize * 0.3, rivet.y - rivetSize * 0.3, rivetSize * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// Helper function: Draw single plasma core
+function drawSingleCore(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  coreY: number,
+  cellSize: number,
+  glowIntensity: number,
+  colors: { glow: string }
+): void {
+  // Outer glow
+  const gradient = ctx.createRadialGradient(centerX, coreY, 0, centerX, coreY, cellSize * 0.3);
+  gradient.addColorStop(0, `rgba(255, 100, 255, ${glowIntensity})`);
+  gradient.addColorStop(0.5, `rgba(200, 50, 200, ${glowIntensity * 0.5})`);
+  gradient.addColorStop(1, 'rgba(150, 0, 150, 0)');
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(centerX, coreY, cellSize * 0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Bright center
+  const coreGradient = ctx.createRadialGradient(centerX, coreY, 0, centerX, coreY, cellSize * 0.1);
+  coreGradient.addColorStop(0, '#ffffff');
+  coreGradient.addColorStop(0.4, '#ff88ff');
+  coreGradient.addColorStop(1, colors.glow);
+  ctx.fillStyle = coreGradient;
+  ctx.beginPath();
+  ctx.arc(centerX, coreY, cellSize * 0.08, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// Helper function: Draw triple plasma cores (level 5)
+function drawTripleCore(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  coreY: number,
+  cellSize: number,
+  glowIntensity: number,
+  colors: { glow: string }
+): void {
+  const corePositions = [
+    { x: centerX, y: coreY },
+    { x: centerX - cellSize * 0.12, y: coreY + cellSize * 0.08 },
+    { x: centerX + cellSize * 0.12, y: coreY + cellSize * 0.08 },
+  ];
+
+  // Combined outer glow
+  const outerGradient = ctx.createRadialGradient(centerX, coreY, 0, centerX, coreY, cellSize * 0.4);
+  outerGradient.addColorStop(0, `rgba(255, 150, 255, ${glowIntensity * 0.8})`);
+  outerGradient.addColorStop(0.5, `rgba(200, 80, 200, ${glowIntensity * 0.4})`);
+  outerGradient.addColorStop(1, 'rgba(150, 0, 150, 0)');
+  ctx.fillStyle = outerGradient;
+  ctx.beginPath();
+  ctx.arc(centerX, coreY, cellSize * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Individual cores
+  for (const pos of corePositions) {
+    const coreGradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, cellSize * 0.07);
+    coreGradient.addColorStop(0, '#ffffff');
+    coreGradient.addColorStop(0.4, '#ffaaff');
+    coreGradient.addColorStop(1, colors.glow);
+    ctx.fillStyle = coreGradient;
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, cellSize * 0.055, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// Helper function: Draw armor plates (level 3+)
+function drawArmorPlates(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  cellSize: number,
+  colors: { accent: string; highlight: string },
+  level: number
+): void {
+  const plateWidth = cellSize * 0.08;
+  const plateHeight = cellSize * 0.2;
+  const plateOffset = cellSize * 0.42;
+
+  // Left plate
+  ctx.fillStyle = colors.accent;
+  ctx.fillRect(centerX - plateOffset - plateWidth, centerY - cellSize * 0.15, plateWidth, plateHeight);
+  ctx.strokeStyle = colors.highlight;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(centerX - plateOffset - plateWidth, centerY - cellSize * 0.15, plateWidth, plateHeight);
+
+  // Right plate
+  ctx.fillRect(centerX + plateOffset, centerY - cellSize * 0.15, plateWidth, plateHeight);
+  ctx.strokeRect(centerX + plateOffset, centerY - cellSize * 0.15, plateWidth, plateHeight);
+
+  // Level 5: Additional top armor
+  if (level === 5) {
+    const topPlateWidth = cellSize * 0.3;
+    const topPlateHeight = cellSize * 0.05;
+    ctx.fillStyle = colors.accent;
+    ctx.fillRect(centerX - topPlateWidth / 2, centerY - cellSize * 0.28, topPlateWidth, topPlateHeight);
+    ctx.strokeStyle = colors.highlight;
+    ctx.strokeRect(centerX - topPlateWidth / 2, centerY - cellSize * 0.28, topPlateWidth, topPlateHeight);
+  }
+}
+
+// Helper function: Draw energy vents (level 2+)
+function drawEnergyVents(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  cellSize: number,
+  time: number,
+  _colors: { glow: string },
+  level: number
+): void {
+  const ventPulse = 0.3 + 0.3 * Math.sin(time * 4);
+  const ventPositions = [
+    { x: centerX - cellSize * 0.3, y: centerY + cellSize * 0.05 },
+    { x: centerX + cellSize * 0.3, y: centerY + cellSize * 0.05 },
+  ];
+
+  // Level 4+: Add extra vents
+  if (level >= 4) {
+    ventPositions.push(
+      { x: centerX - cellSize * 0.35, y: centerY - cellSize * 0.1 },
+      { x: centerX + cellSize * 0.35, y: centerY - cellSize * 0.1 }
+    );
+  }
+
+  for (const vent of ventPositions) {
+    const ventGradient = ctx.createRadialGradient(vent.x, vent.y, 0, vent.x, vent.y, cellSize * 0.06);
+    ventGradient.addColorStop(0, `rgba(255, 150, 255, ${ventPulse})`);
+    ventGradient.addColorStop(1, 'rgba(200, 50, 200, 0)');
+    ctx.fillStyle = ventGradient;
+    ctx.beginPath();
+    ctx.arc(vent.x, vent.y, cellSize * 0.06, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
 
 export default PlasmaCannonSprite;

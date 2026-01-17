@@ -22,6 +22,8 @@ function createMockTower(overrides: Partial<Tower> = {}): Tower {
     fireRate: 0.5,
     lastFired: 0,
     target: null,
+    kills: 0,
+    totalDamage: 0,
     ...overrides,
   };
 }
@@ -356,6 +358,30 @@ describe('Laser Tower Damage', () => {
 
     // Credits should be awarded with the original reward value (25), not the reset value (0)
     expect(addedCredits).toBe(25);
+  });
+
+  it('should track kills and damage on tower', () => {
+    const tower = createMockTower({ type: TowerType.LASER, damage: 30 });
+    const enemy1 = createMockEnemy({ id: 'enemy_1', health: 25, armor: 0 });
+    const enemy2 = createMockEnemy({ id: 'enemy_2', health: 50, armor: 0, position: { x: 230, y: 230 } });
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+    };
+
+    const query = createMockQuery([tower], [enemy1, enemy2]);
+    combatModule.init(query, commands);
+
+    // First update: tower kills enemy1 (30 damage, 25 health = kill), starts on enemy2
+    combatModule.update(0.1);
+
+    const towerInstance = combatModule.getTowerInstance(tower.id);
+    expect(towerInstance).toBeDefined();
+    expect(towerInstance!.kills).toBe(1);
+    expect(towerInstance!.totalDamage).toBeGreaterThan(0);
   });
 });
 

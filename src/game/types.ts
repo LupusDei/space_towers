@@ -64,6 +64,8 @@ export interface Tower {
   fireRate: number;
   lastFired: number;
   target: string | null;
+  kills: number;
+  totalDamage: number;
 }
 
 export interface Enemy {
