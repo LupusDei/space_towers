@@ -134,7 +134,7 @@ export const ENEMY_STATS: Record<EnemyType, EnemyStats> = {
     name: 'Fighter',
     health: 60,
     speed: 60,
-    armor: 5,
+    armor: 0,
     reward: 20,
   },
 
@@ -143,7 +143,7 @@ export const ENEMY_STATS: Record<EnemyType, EnemyStats> = {
     name: 'Tank',
     health: 200,
     speed: 30,
-    armor: 20,
+    armor: 0,
     reward: 50,
   },
 
@@ -161,7 +161,7 @@ export const ENEMY_STATS: Record<EnemyType, EnemyStats> = {
     name: 'Boss',
     health: 500,
     speed: 25,
-    armor: 30,
+    armor: 0,
     reward: 200,
   },
 };
