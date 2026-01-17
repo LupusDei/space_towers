@@ -222,6 +222,8 @@ function renderTowerPreview(
     fireRate: stats.fireRate,
     lastFired: 0,
     target: null,
+    kills: 0,
+    totalDamage: 0,
   };
 
   // Draw range preview (always show, dimmer if invalid)

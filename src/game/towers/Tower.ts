@@ -17,6 +17,8 @@ export class Tower implements TowerData {
   fireRate: number;
   lastFired: number;
   target: string | null;
+  kills: number;
+  totalDamage: number;
 
   /** Time remaining until tower can fire again (seconds) */
   private cooldownRemaining: number;
@@ -33,6 +35,8 @@ export class Tower implements TowerData {
     this.fireRate = stats.fireRate;
     this.lastFired = 0;
     this.target = null;
+    this.kills = 0;
+    this.totalDamage = 0;
     this.cooldownRemaining = 0; // Ready to fire immediately
   }
 
@@ -119,6 +123,8 @@ export class Tower implements TowerData {
       fireRate: this.fireRate,
       lastFired: this.lastFired,
       target: this.target,
+      kills: this.kills,
+      totalDamage: this.totalDamage,
     };
   }
 }

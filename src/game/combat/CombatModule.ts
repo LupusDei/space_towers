@@ -417,8 +417,14 @@ class CombatModuleImpl implements GameModule {
    * This split is intentional - projectile towers need Engine to track travel time,
    * while hitscan towers deal instant damage without projectiles.
    */
-  private applyDamage(enemy: Enemy, damage: number, _towerId: string): void {
+  private applyDamage(enemy: Enemy, damage: number, towerId: string): void {
     enemy.health -= damage;
+
+    // Track damage on tower
+    const tower = this.state.towerInstances.get(towerId);
+    if (tower && damage > 0) {
+      tower.totalDamage += damage;
+    }
 
     // Request damage number visual effect
     if (damage > 0 && this.commands) {
@@ -436,11 +442,17 @@ class CombatModuleImpl implements GameModule {
     }
 
     if (enemy.health <= 0) {
-      this.handleEnemyKilled(enemy, _towerId);
+      this.handleEnemyKilled(enemy, towerId);
     }
   }
 
   private handleEnemyKilled(enemy: Enemy, towerId: string): void {
+    // Track kill on tower
+    const tower = this.state.towerInstances.get(towerId);
+    if (tower) {
+      tower.kills++;
+    }
+
     // Request explosion visual effect
     const currentTime = this.commands!.getTime();
     const deathPos = {
