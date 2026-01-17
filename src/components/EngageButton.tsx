@@ -85,6 +85,8 @@ const disabledStyle: React.CSSProperties = {
   cursor: 'not-allowed',
   pointerEvents: 'none',
   animation: 'battle-pulse 1.5s ease-in-out infinite',
+  fontSize: typography.fontSize.sm,
+  letterSpacing: '0px',
 };
 
 export default function EngageButton({ phase, onEngage }: EngageButtonProps) {
