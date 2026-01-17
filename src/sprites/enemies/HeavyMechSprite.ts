@@ -4,12 +4,6 @@ import type { Enemy } from '../../game/types';
 import type { EnemySprite, SpriteRenderContext } from '../types';
 import { drawHealthBar } from '../effects/HealthBar';
 
-// Track health for damage flash detection
-const lastHealthMap = new Map<string, number>();
-const damageFlashMap = new Map<string, number>();
-
-const FLASH_DURATION = 150; // ms
-
 export const HeavyMechSprite: EnemySprite = {
   draw(context: SpriteRenderContext, enemy: Enemy): void {
     const { ctx, cellSize, time } = context;
@@ -28,22 +22,12 @@ export const HeavyMechSprite: EnemySprite = {
     const leftLegOffset = Math.sin(stompCycle) * 3;
     const rightLegOffset = Math.sin(stompCycle + Math.PI) * 3;
 
-    // Check for damage flash
-    const lastHealth = lastHealthMap.get(enemy.id);
-    if (lastHealth !== undefined && enemy.health < lastHealth) {
-      damageFlashMap.set(enemy.id, time);
-    }
-    lastHealthMap.set(enemy.id, enemy.health);
-
-    const flashTime = damageFlashMap.get(enemy.id) || 0;
-    const isFlashing = time - flashTime < FLASH_DURATION;
-
     ctx.save();
 
     // Base colors (red color scheme)
-    const bodyColor = isFlashing ? '#FFFFFF' : '#8B0000'; // Dark red, white when flashing
-    const accentColor = isFlashing ? '#FFFFFF' : '#FF4444'; // Lighter red accent
-    const metalColor = isFlashing ? '#FFFFFF' : '#444444'; // Metal gray
+    const bodyColor = '#8B0000'; // Dark red
+    const accentColor = '#FF4444'; // Lighter red accent
+    const metalColor = '#444444'; // Metal gray
 
     // Draw legs (behind body)
     ctx.fillStyle = metalColor;
@@ -103,7 +87,7 @@ export const HeavyMechSprite: EnemySprite = {
     ctx.fillRect(centerX - bodyWidth / 6, centerY - bodyHeight / 2 - 8, bodyWidth / 3, 10);
 
     // Cockpit visor (glowing red eye)
-    ctx.fillStyle = isFlashing ? '#FFFFFF' : '#FF0000';
+    ctx.fillStyle = '#FF0000';
     ctx.fillRect(centerX - bodyWidth / 8, centerY - bodyHeight / 2 - 6, bodyWidth / 4, 4);
 
     // Draw shoulder armor

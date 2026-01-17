@@ -4,12 +4,6 @@ import type { Enemy } from '../../game/types';
 import type { EnemySprite, SpriteRenderContext } from '../types';
 import { drawBossHealthBar } from '../effects/HealthBar';
 
-// Track health for damage flash detection
-const lastHealthMap = new Map<string, number>();
-const damageFlashMap = new Map<string, number>();
-
-const FLASH_DURATION = 150; // ms
-
 // Boss color scheme - menacing purple/magenta
 const BOSS_PRIMARY = '#9B30FF'; // Purple
 const BOSS_SECONDARY = '#FF00FF'; // Magenta
@@ -39,54 +33,38 @@ export const BossSprite: EnemySprite = {
     // Slow movement animation
     const bobOffset = Math.sin(time / 300) * 3;
 
-    // Check for damage flash
-    const lastHealth = lastHealthMap.get(enemy.id);
-    if (lastHealth !== undefined && enemy.health < lastHealth) {
-      damageFlashMap.set(enemy.id, time);
-    }
-    lastHealthMap.set(enemy.id, enemy.health);
-
-    const flashTime = damageFlashMap.get(enemy.id) || 0;
-    const isFlashing = time - flashTime < FLASH_DURATION;
-
     ctx.save();
 
     // Apply pulsing scale
     const scaledWidth = bodyWidth * pulseScale;
     const scaledHeight = bodyHeight * pulseScale;
 
-    // Colors (white when flashing)
-    const primaryColor = isFlashing ? '#FFFFFF' : BOSS_PRIMARY;
-    const secondaryColor = isFlashing ? '#FFFFFF' : BOSS_SECONDARY;
-    const darkColor = isFlashing ? '#FFFFFF' : BOSS_DARK;
-    const eyeColor = isFlashing ? '#FFFFFF' : BOSS_EYE;
+    // Colors
+    const primaryColor = BOSS_PRIMARY;
+    const secondaryColor = BOSS_SECONDARY;
+    const darkColor = BOSS_DARK;
+    const eyeColor = BOSS_EYE;
 
     // Draw glowing aura effect (multiple layers for intensity)
-    if (!isFlashing) {
-      ctx.shadowBlur = glowIntensity;
-      ctx.shadowColor = BOSS_GLOW;
-    }
+    ctx.shadowBlur = glowIntensity;
+    ctx.shadowColor = BOSS_GLOW;
 
     // Outer aura ring
     ctx.beginPath();
     ctx.arc(centerX, centerY + bobOffset, scaledWidth * 0.7, 0, Math.PI * 2);
-    ctx.strokeStyle = isFlashing
-      ? '#FFFFFF'
-      : `rgba(255, 0, 255, ${0.3 + Math.sin(pulseCycle) * 0.2})`;
+    ctx.strokeStyle = `rgba(255, 0, 255, ${0.3 + Math.sin(pulseCycle) * 0.2})`;
     ctx.lineWidth = 4;
     ctx.stroke();
 
     // Second aura ring
     ctx.beginPath();
     ctx.arc(centerX, centerY + bobOffset, scaledWidth * 0.6, 0, Math.PI * 2);
-    ctx.strokeStyle = isFlashing
-      ? '#FFFFFF'
-      : `rgba(155, 48, 255, ${0.4 + Math.sin(pulseCycle + Math.PI / 2) * 0.2})`;
+    ctx.strokeStyle = `rgba(155, 48, 255, ${0.4 + Math.sin(pulseCycle + Math.PI / 2) * 0.2})`;
     ctx.lineWidth = 3;
     ctx.stroke();
 
     // Reset shadow for main body
-    ctx.shadowBlur = isFlashing ? 0 : glowIntensity * 0.5;
+    ctx.shadowBlur = glowIntensity * 0.5;
 
     // Draw main body (large hexagonal armored form)
     ctx.fillStyle = primaryColor;
@@ -175,10 +153,8 @@ export const BossSprite: EnemySprite = {
     const eyeHeight = headHeight * 0.3;
 
     // Eye glow effect
-    if (!isFlashing) {
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = eyeColor;
-    }
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = eyeColor;
 
     // Left eye
     ctx.fillStyle = eyeColor;
@@ -257,7 +233,6 @@ export const BossSprite: EnemySprite = {
       offsetY: -scaledHeight / 2 - headHeight - 25 + bobOffset,
       segments: 10,
       glowColor: BOSS_GLOW,
-      isFlashing,
     });
 
     ctx.restore();
