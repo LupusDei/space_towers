@@ -7,9 +7,9 @@ function getSpecialEffect(type: TowerType): string | null {
     case TowerType.LASER:
       return 'Hitscan';
     case TowerType.MISSILE:
-      return `Splash ${COMBAT_CONFIG.MISSILE_SPLASH_RADIUS} cells`;
+      return `Splash ${COMBAT_CONFIG.MISSILE_SPLASH_RADIUS}`;
     case TowerType.TESLA:
-      return `Chain ${COMBAT_CONFIG.TESLA_MAX_CHAIN} targets`;
+      return `Chain ×${COMBAT_CONFIG.TESLA_MAX_CHAIN}`;
     default:
       return null;
   }
@@ -64,41 +64,45 @@ export default function TowerPanel({
         <span style={styles.creditsValue}>${credits}</span>
       </div>
       <div style={styles.header}>Towers</div>
-      <div style={styles.towerGrid}>
+      <div style={styles.towerList}>
         {towerTypes.map((type) => {
           const stats = TOWER_STATS[type];
           const canAfford = credits >= stats.cost;
           const isSelected = selectedTowerType === type;
-
-          const dps = (stats.damage / stats.fireRate).toFixed(1);
+          const dps = (stats.damage / stats.fireRate).toFixed(0);
+          const special = getSpecialEffect(type);
 
           return (
             <button
               key={type}
               style={{
-                ...styles.towerButton,
-                ...(isSelected ? styles.towerButtonSelected : {}),
-                ...(canAfford ? {} : styles.towerButtonDisabled),
+                ...styles.towerRow,
+                ...(isSelected ? styles.towerRowSelected : {}),
+                ...(canAfford ? {} : styles.towerRowDisabled),
               }}
               disabled={!canAfford}
               onClick={() => onSelectTowerType(isSelected ? null : type)}
             >
-              <div style={styles.iconContainer}>
-                <TowerIcon type={type} size={36} />
+              <div style={styles.rowIcon}>
+                <TowerIcon type={type} size={28} />
               </div>
-              <div style={styles.towerName}>{stats.name}</div>
-              <div style={styles.towerStats}>
-                <span style={styles.statItem}>DMG: {stats.damage}</span>
-                <span style={styles.statItem}>DPS: {dps}</span>
-                <span style={styles.statItem}>RNG: {stats.range}</span>
-                {getSpecialEffect(type) && (
-                  <span style={styles.specialEffect}>{getSpecialEffect(type)}</span>
-                )}
+              <div style={styles.rowInfo}>
+                <div style={styles.rowName}>{stats.name}</div>
+                <div style={styles.rowStats}>
+                  <span style={styles.stat}>{stats.damage}dmg</span>
+                  <span style={styles.statSep}>·</span>
+                  <span style={styles.stat}>{dps}dps</span>
+                  <span style={styles.statSep}>·</span>
+                  <span style={styles.stat}>{stats.range}rng</span>
+                  {special && (
+                    <>
+                      <span style={styles.statSep}>·</span>
+                      <span style={styles.statSpecial}>{special}</span>
+                    </>
+                  )}
+                </div>
               </div>
-              <div style={styles.towerCost}>
-                <span style={styles.creditIcon}>$</span>
-                {stats.cost}
-              </div>
+              <div style={styles.rowCost}>${stats.cost}</div>
             </button>
           );
         })}
@@ -123,134 +127,149 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacing.md,
-    padding: spacing.md,
+    gap: spacing.sm,
+    padding: spacing.sm,
     backgroundColor: 'rgba(10, 10, 26, 0.9)',
     borderRadius: '8px',
     border: `1px solid ${colors.accent}33`,
+    maxWidth: '280px',
   },
   creditsDisplay: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.md,
+    padding: spacing.sm,
     backgroundColor: 'rgba(255, 215, 0, 0.1)',
     borderRadius: '6px',
     border: `1px solid ${colors.credits}44`,
   },
   creditsLabel: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.xs,
     color: colors.text.secondary,
     textTransform: 'uppercase',
     letterSpacing: '1px',
   },
   creditsValue: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: typography.fontSize.xl,
+    fontSize: typography.fontSize.lg,
     fontWeight: typography.fontWeight.bold,
     color: colors.credits,
   },
   header: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: typography.fontSize.lg,
+    fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.bold,
     color: colors.text.primary,
     textTransform: 'uppercase',
     letterSpacing: '2px',
   },
-  towerGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: spacing.sm,
-  },
-  towerButton: {
+  towerList: {
     display: 'flex',
     flexDirection: 'column',
+    gap: '4px',
+    maxHeight: '320px',
+    overflowY: 'auto',
+    paddingRight: '4px',
+  },
+  towerRow: {
+    display: 'flex',
     alignItems: 'center',
-    gap: '2px',
-    padding: spacing.sm,
+    gap: spacing.sm,
+    padding: '6px 8px',
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    border: `1px solid ${colors.accent}66`,
-    borderRadius: '6px',
+    border: `1px solid ${colors.accent}44`,
+    borderRadius: '4px',
     cursor: 'pointer',
     transition: 'all 0.15s ease',
     fontFamily: typography.fontFamily.base,
+    textAlign: 'left',
+    minHeight: '44px',
   },
-  towerButtonSelected: {
+  towerRowSelected: {
     backgroundColor: `${colors.accent}22`,
     borderColor: colors.accent,
-    boxShadow: `0 0 12px ${colors.accent}44`,
+    boxShadow: `0 0 8px ${colors.accent}44`,
   },
-  towerButtonDisabled: {
+  towerRowDisabled: {
     opacity: 0.4,
     cursor: 'not-allowed',
     borderColor: colors.text.muted,
   },
-  iconContainer: {
+  rowIcon: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: '2px',
+    flexShrink: 0,
+    width: '32px',
   },
-  towerName: {
+  rowInfo: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1px',
+  },
+  rowName: {
     fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.medium,
     color: colors.text.primary,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
-  towerStats: {
+  rowStats: {
     display: 'flex',
-    flexDirection: 'column',
     alignItems: 'center',
-    gap: '1px',
+    flexWrap: 'wrap',
+    gap: '2px',
     fontSize: '10px',
     color: colors.text.secondary,
     fontFamily: typography.fontFamily.mono,
   },
-  statItem: {
+  stat: {
     whiteSpace: 'nowrap',
   },
-  specialEffect: {
-    whiteSpace: 'nowrap',
+  statSep: {
+    color: colors.text.muted,
+  },
+  statSpecial: {
     color: colors.accent,
     fontStyle: 'italic',
   },
-  towerCost: {
+  rowCost: {
     fontSize: typography.fontSize.xs,
     color: colors.credits,
     fontFamily: typography.fontFamily.mono,
     fontWeight: typography.fontWeight.bold,
-    marginTop: '2px',
-  },
-  creditIcon: {
-    marginRight: '2px',
+    flexShrink: 0,
   },
   sellSection: {
-    marginTop: spacing.sm,
-    paddingTop: spacing.md,
+    marginTop: spacing.xs,
+    paddingTop: spacing.sm,
     borderTop: `1px solid ${colors.text.muted}`,
     display: 'flex',
     flexDirection: 'column',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   sellHeader: {
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.xs,
     color: colors.text.secondary,
     textTransform: 'uppercase',
     letterSpacing: '1px',
   },
   selectedTowerInfo: {
-    fontSize: typography.fontSize.md,
+    fontSize: typography.fontSize.sm,
     color: colors.text.primary,
   },
   sellButton: {
-    padding: `${spacing.sm} ${spacing.md}`,
+    padding: `${spacing.xs} ${spacing.sm}`,
     backgroundColor: colors.danger,
     border: 'none',
-    borderRadius: '6px',
+    borderRadius: '4px',
     color: colors.text.primary,
     fontFamily: typography.fontFamily.mono,
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.bold,
     cursor: 'pointer',
     transition: 'all 0.15s ease',
