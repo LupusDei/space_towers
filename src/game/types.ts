@@ -39,6 +39,7 @@ export const TowerType = {
   TESLA: 'tesla',
   CANNON: 'cannon',
   GRAVITY: 'gravity',
+  STORM: 'storm',
 } as const;
 export type TowerType = (typeof TowerType)[keyof typeof TowerType];
 
@@ -329,6 +330,8 @@ export interface TowerStats {
   splashRadiusPerLevel?: number; // Missile tower splash increase per level
   chainCount?: number; // Tesla tower base chain targets
   chainCountPerLevel?: number; // Tesla tower chain increase per level
+  stormDuration?: number; // Storm tower effect duration (seconds)
+  stormDurationPerLevel?: number; // Storm tower duration increase per level
 }
 
 // ============================================================================

@@ -142,6 +142,24 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     rangePerLevel: 8,
     fireRatePerLevel: -0.05,
   },
+
+  [TowerType.STORM]: {
+    type: TowerType.STORM,
+    name: 'Storm Tower',
+    cost: 100,
+    damage: 10, // damage per second during storm
+    range: 200,
+    fireRate: 4.0, // cooldown between storms
+    // Leveling: area denial tower
+    maxLevel: 5,
+    upgradeCosts: [120, 180, 270, 400], // Total to max: 970
+    damagePerLevel: 5,
+    rangePerLevel: 15,
+    fireRatePerLevel: -0.2,
+    // Special: storm duration
+    stormDuration: 3.0, // seconds
+    stormDurationPerLevel: 0.5, // +0.5s per level
+  },
 };
 
 // ============================================================================

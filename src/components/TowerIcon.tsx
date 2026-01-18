@@ -13,6 +13,7 @@ const towerSprites: Record<TowerType, typeof LaserTurretSprite> = {
   [TowerType.TESLA]: TeslaCoilSprite,
   [TowerType.CANNON]: PlasmaCannonSprite,
   [TowerType.GRAVITY]: LaserTurretSprite, // TODO: Replace with GravityWellSprite
+  [TowerType.STORM]: TeslaCoilSprite, // TODO: Replace with StormSpire sprite
 };
 
 // Tower type to color mapping for background glow
@@ -22,6 +23,7 @@ const towerColors: Record<TowerType, string> = {
   [TowerType.TESLA]: '#FFFF00',
   [TowerType.CANNON]: '#FF44FF',
   [TowerType.GRAVITY]: '#9944FF',
+  [TowerType.STORM]: '#44AAFF',
 };
 
 interface TowerIconProps {
