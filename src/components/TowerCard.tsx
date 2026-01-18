@@ -1,0 +1,194 @@
+import { TowerType } from '../game/types';
+import { TOWER_STATS, COMBAT_CONFIG } from '../game/config';
+import { colors, spacing, typography } from '../styles/theme';
+import TowerIcon from './TowerIcon';
+
+function getSpecialEffect(type: TowerType): string | null {
+  switch (type) {
+    case TowerType.LASER:
+      return 'Hitscan';
+    case TowerType.MISSILE:
+      return `Splash ${COMBAT_CONFIG.MISSILE_SPLASH_RADIUS}`;
+    case TowerType.TESLA:
+      return `Chain ×${COMBAT_CONFIG.TESLA_MAX_CHAIN}`;
+    default:
+      return null;
+  }
+}
+
+export interface TowerCardProps {
+  type: TowerType;
+  locked?: boolean;
+  selected?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+}
+
+export default function TowerCard({
+  type,
+  locked = false,
+  selected = false,
+  disabled = false,
+  onClick,
+}: TowerCardProps) {
+  const stats = TOWER_STATS[type];
+  const dps = (stats.damage / stats.fireRate).toFixed(0);
+  const special = getSpecialEffect(type);
+  const isInteractive = !locked && !disabled && onClick;
+
+  return (
+    <div
+      style={{
+        ...styles.card,
+        ...(selected ? styles.cardSelected : {}),
+        ...(locked ? styles.cardLocked : {}),
+        ...(disabled ? styles.cardDisabled : {}),
+        ...(isInteractive ? styles.cardInteractive : {}),
+      }}
+      onClick={isInteractive ? onClick : undefined}
+      role={isInteractive ? 'button' : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
+      onKeyDown={
+        isInteractive
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
+    >
+      <div style={styles.iconContainer}>
+        <TowerIcon type={type} size={48} />
+        {locked && <div style={styles.lockOverlay}>🔒</div>}
+      </div>
+
+      <div style={styles.info}>
+        <div style={styles.name}>{stats.name}</div>
+
+        <div style={styles.statsRow}>
+          <span style={styles.stat}>{stats.damage} dmg</span>
+          <span style={styles.statSep}>·</span>
+          <span style={styles.stat}>{stats.range} rng</span>
+          <span style={styles.statSep}>·</span>
+          <span style={styles.stat}>{stats.fireRate}s</span>
+        </div>
+
+        <div style={styles.statsRow}>
+          <span style={styles.statDps}>{dps} DPS</span>
+          {special && (
+            <>
+              <span style={styles.statSep}>·</span>
+              <span style={styles.statSpecial}>{special}</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div style={styles.cost}>
+        <span style={styles.costValue}>${stats.cost}</span>
+      </div>
+    </div>
+  );
+}
+
+const styles: Record<string, React.CSSProperties> = {
+  card: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.sm,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    border: `1px solid ${colors.accent}44`,
+    borderRadius: '6px',
+    fontFamily: typography.fontFamily.base,
+    minHeight: '64px',
+  },
+  cardSelected: {
+    backgroundColor: `${colors.accent}22`,
+    borderColor: colors.accent,
+    boxShadow: `0 0 8px ${colors.accent}44`,
+  },
+  cardLocked: {
+    opacity: 0.5,
+    filter: 'grayscale(0.5)',
+  },
+  cardDisabled: {
+    opacity: 0.4,
+    cursor: 'not-allowed',
+  },
+  cardInteractive: {
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  iconContainer: {
+    position: 'relative',
+    flexShrink: 0,
+    width: '48px',
+    height: '48px',
+  },
+  lockOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: '4px',
+    fontSize: typography.fontSize.lg,
+  },
+  info: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+  },
+  name: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.text.primary,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  statsRow: {
+    display: 'flex',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '4px',
+    fontSize: typography.fontSize.xs,
+    color: colors.text.secondary,
+    fontFamily: typography.fontFamily.mono,
+  },
+  stat: {
+    whiteSpace: 'nowrap',
+  },
+  statSep: {
+    color: colors.text.muted,
+  },
+  statDps: {
+    color: colors.success,
+    fontWeight: typography.fontWeight.medium,
+  },
+  statSpecial: {
+    color: colors.accent,
+    fontStyle: 'italic',
+  },
+  cost: {
+    flexShrink: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+  },
+  costValue: {
+    fontSize: typography.fontSize.md,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.credits,
+    fontFamily: typography.fontFamily.mono,
+  },
+};
