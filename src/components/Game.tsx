@@ -14,6 +14,7 @@ import { getTowerSprite, getEnemySprite } from '../sprites/SpriteRegistry';
 import { drawAllDamageNumbers, spawnDamageNumber } from '../sprites/effects/DamageNumberSprite';
 import { drawAllGoldNumbers, spawnGoldNumber } from '../sprites/effects/GoldNumberSprite';
 import { explosionManager } from '../sprites/effects/ExplosionSprite';
+import { gravityPulseManager } from '../sprites/effects/GravityPulseSprite';
 
 // Import projectile sprites
 import { MissileSprite } from '../sprites/projectiles/MissileSprite';
@@ -91,6 +92,9 @@ export default function Game() {
     const unsubGoldNumber = eventBus.on('GOLD_NUMBER_REQUESTED', (event) => {
       spawnGoldNumber(event.payload.amount, event.payload.position, event.payload.time);
     });
+    const unsubGravityPulse = eventBus.on('GRAVITY_PULSE_REQUESTED', (event) => {
+      gravityPulseManager.spawn(event.payload.position, event.payload.time);
+    });
 
     // Start the game automatically for now
     engine.startGame();
@@ -157,6 +161,9 @@ export default function Game() {
       // Render explosions
       explosionManager.drawAll(renderContext);
 
+      // Render gravity pulses
+      gravityPulseManager.drawAll(renderContext);
+
       // Render damage numbers
       drawAllDamageNumbers(renderContext);
 
@@ -173,6 +180,7 @@ export default function Game() {
       unsubDamageNumber();
       unsubExplosion();
       unsubGoldNumber();
+      unsubGravityPulse();
     };
   }, []); // Empty deps - only run once on mount
 

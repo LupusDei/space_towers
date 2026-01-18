@@ -70,6 +70,10 @@ function isProjectileTower(type: TowerType): boolean {
   return type === TT.MISSILE || type === TT.CANNON;
 }
 
+function isGravityTower(type: TowerType): boolean {
+  return type === TT.GRAVITY;
+}
+
 function towerPositionToPixels(position: Point): Point {
   return {
     x: position.x * GAME_CONFIG.CELL_SIZE + GAME_CONFIG.CELL_SIZE / 2,
@@ -230,6 +234,8 @@ class CombatModuleImpl implements GameModule {
           this.handleHitscanFire(towerData, target, currentTime);
         } else if (isProjectileTower(towerData.type)) {
           this.handleProjectileFire(towerData, target, currentTime);
+        } else if (isGravityTower(towerData.type)) {
+          this.handleGravityFire(towerData, target, currentTime);
         }
       }
     }
@@ -338,6 +344,47 @@ class CombatModuleImpl implements GameModule {
           targetId: target.id,
           towerType: tower.type,
           position: towerPositionToPixels(tower.position),
+          velocity: { x: 0, y: 0 },
+          damage: tower.damage,
+          speed: 0,
+          piercing: false,
+          aoe: 0,
+        },
+      })
+    );
+  }
+
+  // ==========================================================================
+  // Gravity Tower
+  // ==========================================================================
+
+  private handleGravityFire(tower: Tower, target: Enemy, currentTime: number): void {
+    // Validate target still exists
+    const validTarget = this.query?.getEnemyById(target.id);
+    if (!validTarget) return;
+
+    // Apply instant damage (Gravity tower is hitscan-like)
+    const damage = calculateDamage(tower.damage, validTarget.armor);
+    this.applyDamage(validTarget, damage, tower.id);
+
+    // Emit gravity pulse visual effect
+    const towerPixelPos = towerPositionToPixels(tower.position);
+    eventBus.emit(
+      createEvent('GRAVITY_PULSE_REQUESTED', {
+        position: towerPixelPos,
+        time: currentTime,
+      })
+    );
+
+    // Emit projectile fired event (for audio/other systems)
+    eventBus.emit(
+      createEvent('PROJECTILE_FIRED', {
+        projectile: {
+          id: `gravity_${tower.id}_${currentTime}`,
+          sourceId: tower.id,
+          targetId: target.id,
+          towerType: tower.type,
+          position: towerPixelPos,
           velocity: { x: 0, y: 0 },
           damage: tower.damage,
           speed: 0,
