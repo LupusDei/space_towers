@@ -29,6 +29,7 @@ import { Tower as TowerClass } from './towers/Tower';
 import { createWaveController, type WaveController } from './enemies/Wave';
 import { combatModule } from './combat/CombatModule';
 import { createSpatialHash, type SpatialHash } from './SpatialHash';
+import { StormEffect } from './entities/StormEffect';
 import {
   StateNotifier,
   GameLoopManager,
@@ -49,6 +50,7 @@ interface EngineState {
   towers: Map<string, Tower>;
   enemies: Map<string, Enemy>;
   projectiles: Map<string, Projectile>;
+  stormEffects: Map<string, StormEffect>;
   selectedTower: string | null;
   selectedTowerType: TowerType | null;
   isPaused: boolean;
@@ -153,6 +155,7 @@ class GameEngine {
       towers: new Map(),
       enemies: new Map(),
       projectiles: new Map(),
+      stormEffects: new Map(),
       selectedTower: null,
       selectedTowerType: null,
       isPaused: false,
@@ -769,6 +772,8 @@ class GameEngine {
       addCredits: (amount) => this.addCredits(amount),
       getTime: () => this.getTime(),
       applySlow: (enemyId, multiplier, duration) => this.applySlow(enemyId, multiplier, duration),
+      addStormEffect: (position, radius, duration, damagePerSecond) =>
+        this.addStormEffect(position, radius, duration, damagePerSecond),
     };
   }
 
@@ -863,6 +868,31 @@ class GameEngine {
       enemy.slowMultiplier = multiplier;
       enemy.slowEndTime = newEndTime;
     }
+  }
+
+  /**
+   * Add a storm effect at the specified position.
+   * @param position - Position in pixels
+   * @param radius - Radius of the storm effect
+   * @param duration - Duration in seconds
+   * @param damagePerSecond - Damage dealt per second to enemies in the storm
+   */
+  addStormEffect(position: Point, radius: number, duration: number, damagePerSecond: number): void {
+    const storm = new StormEffect();
+    const stormId = `storm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // StormEffect uses seconds for time, so convert from Engine's milliseconds
+    const startTimeSeconds = this.state.time / 1000;
+    storm.init(stormId, position, startTimeSeconds, radius, duration, damagePerSecond);
+    this.state.stormEffects.set(stormId, storm);
+    this.stateNotifier.notify();
+  }
+
+  /**
+   * Get all active storm effects.
+   * @returns Array of active storm effects
+   */
+  getStormEffects(): StormEffect[] {
+    return Array.from(this.state.stormEffects.values());
   }
 
   spendCredits(amount: number): boolean {

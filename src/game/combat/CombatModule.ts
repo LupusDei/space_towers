@@ -16,7 +16,7 @@ import { Tower as TowerClass } from '../towers/Tower';
 import { findTarget, findSniperTarget, findChainTargets, getEnemiesInSplash } from '../towers/Targeting';
 import { projectilePool } from '../pools';
 import { eventBus, createEvent } from '../events';
-import { GAME_CONFIG, COMBAT_CONFIG } from '../config';
+import { GAME_CONFIG, COMBAT_CONFIG, TOWER_STATS } from '../config';
 
 // ============================================================================
 // Visual Effect Tracking
@@ -76,6 +76,10 @@ function isGravityTower(type: TowerType): boolean {
 
 function isSniperTower(type: TowerType): boolean {
   return type === TT.SNIPER;
+}
+
+function isStormTower(type: TowerType): boolean {
+  return type === TT.STORM;
 }
 
 function towerPositionToPixels(position: Point): Point {
@@ -251,6 +255,8 @@ class CombatModuleImpl implements GameModule {
           this.handleGravityFire(towerData, target, currentTime);
         } else if (isSniperTower(towerData.type)) {
           this.handleSniperFire(towerData, target, currentTime);
+        } else if (isStormTower(towerData.type)) {
+          this.handleStormFire(towerData, target, currentTime);
         }
       }
     }
@@ -466,6 +472,47 @@ class CombatModuleImpl implements GameModule {
           speed: 0,
           piercing: false,
           aoe: 0,
+        },
+      })
+    );
+  }
+
+  // ==========================================================================
+  // Storm Tower
+  // ==========================================================================
+
+  private handleStormFire(tower: Tower, target: Enemy, currentTime: number): void {
+    if (!this.commands) return;
+
+    // Get storm stats from tower config
+    const stats = TOWER_STATS[tower.type];
+    const duration = stats.stormDuration ?? 3.0;
+    const damagePerSecond = tower.damage;
+
+    // Storm spawns at target's position (enemy position is in pixels)
+    const stormPosition = { ...target.position };
+
+    // Calculate storm radius from tower range (convert to pixels)
+    // Use a smaller radius than tower range for the actual storm effect
+    const stormRadius = tower.range * 0.5;
+
+    // Create storm effect via Engine
+    this.commands.addStormEffect(stormPosition, stormRadius, duration, damagePerSecond);
+
+    // Emit projectile fired event (for audio/other systems)
+    eventBus.emit(
+      createEvent('PROJECTILE_FIRED', {
+        projectile: {
+          id: `storm_${tower.id}_${currentTime}`,
+          sourceId: tower.id,
+          targetId: target.id,
+          towerType: tower.type,
+          position: towerPositionToPixels(tower.position),
+          velocity: { x: 0, y: 0 },
+          damage: tower.damage,
+          speed: 0,
+          piercing: false,
+          aoe: stormRadius,
         },
       })
     );

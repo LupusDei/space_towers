@@ -98,6 +98,7 @@ function createMockCommands(): CommandInterface {
     addCredits: () => {},
     getTime: () => 0,
     applySlow: () => {},
+    addStormEffect: () => {},
   };
 }
 
@@ -237,6 +238,7 @@ describe('cleanupVisualEffects', () => {
       addCredits: () => {},
       getTime: () => currentTime,
       applySlow: () => {},
+      addStormEffect: () => {},
     };
     combatModule.init(query, commands);
 
@@ -332,6 +334,7 @@ describe('Laser Tower Damage', () => {
       addCredits: () => {},
       getTime: () => 0,
       applySlow: () => {},
+      addStormEffect: () => {},
     };
 
     const query = createMockQuery([tower], [enemy]);
@@ -357,6 +360,7 @@ describe('Laser Tower Damage', () => {
       },
       getTime: () => 0,
       applySlow: () => {},
+      addStormEffect: () => {},
     };
 
     const query = createMockQuery([tower], [enemy]);
@@ -378,6 +382,7 @@ describe('Laser Tower Damage', () => {
       addCredits: () => {},
       getTime: () => 0,
       applySlow: () => {},
+      addStormEffect: () => {},
     };
 
     const query = createMockQuery([tower], [enemy1, enemy2]);
@@ -442,6 +447,7 @@ describe('Projectile pool tracking', () => {
       addCredits: () => {},
       getTime: () => 0,
       applySlow: () => {},
+      addStormEffect: () => {},
     };
 
     const query = createMockQuery([tower], [enemy]);
@@ -640,6 +646,7 @@ describe('Sniper Tower Firing', () => {
       addCredits: () => {},
       getTime: () => 0,
       applySlow: () => {},
+      addStormEffect: () => {},
     };
 
     const query = createMockQuery([tower], [enemy]);
@@ -816,6 +823,7 @@ describe('Gravity Tower AOE', () => {
       applySlow: (id: string, multiplier: number, duration: number) => {
         slowedEnemies.push({ id, multiplier, duration });
       },
+      addStormEffect: () => {},
     };
 
     const query = createMockQuery([tower], [enemy]);
@@ -852,6 +860,7 @@ describe('Gravity Tower AOE', () => {
       applySlow: (id: string) => {
         slowedEnemies.push(id);
       },
+      addStormEffect: () => {},
     };
 
     const query = createMockQuery([tower], [enemy]);
@@ -886,6 +895,7 @@ describe('Gravity Tower AOE', () => {
       applySlow: (id: string) => {
         slowedEnemies.push(id);
       },
+      addStormEffect: () => {},
     };
 
     const query = createMockQuery([tower], [enemy]);
@@ -918,5 +928,156 @@ describe('Gravity Tower AOE', () => {
 
     expect(pulseEventReceived).toBe(true);
     unsubscribe();
+  });
+});
+
+describe('Storm Tower', () => {
+  beforeEach(() => {
+    eventBus.clear();
+    combatModule.destroy();
+  });
+
+  it('should create storm effect at target position when firing', () => {
+    const tower = createMockTower({
+      type: TowerType.STORM,
+      damage: 10,
+      range: 200,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      position: { x: 220, y: 220 },
+    });
+
+    let stormCreated = false;
+    let stormPosition: { x: number; y: number } | null = null;
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: () => {},
+      addStormEffect: (position: { x: number; y: number }) => {
+        stormCreated = true;
+        stormPosition = { ...position };
+      },
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(stormCreated).toBe(true);
+    expect(stormPosition).toEqual({ x: 220, y: 220 });
+  });
+
+  it('should pass correct storm parameters', () => {
+    const tower = createMockTower({
+      type: TowerType.STORM,
+      damage: 15,
+      range: 200,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      position: { x: 220, y: 220 },
+    });
+
+    let capturedParams: {
+      position: { x: number; y: number };
+      radius: number;
+      duration: number;
+      damagePerSecond: number;
+    } | null = null;
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: () => {},
+      addStormEffect: (
+        position: { x: number; y: number },
+        radius: number,
+        duration: number,
+        damagePerSecond: number
+      ) => {
+        capturedParams = { position, radius, duration, damagePerSecond };
+      },
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(capturedParams).not.toBeNull();
+    expect(capturedParams!.position).toEqual({ x: 220, y: 220 });
+    expect(capturedParams!.radius).toBe(100); // range * 0.5 = 200 * 0.5 = 100
+    expect(capturedParams!.duration).toBe(3.0); // from TOWER_STATS
+    expect(capturedParams!.damagePerSecond).toBe(15); // tower damage
+  });
+
+  it('should emit PROJECTILE_FIRED event when storm is created', () => {
+    const tower = createMockTower({
+      type: TowerType.STORM,
+      damage: 10,
+      range: 200,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      position: { x: 220, y: 220 },
+    });
+
+    let eventReceived = false;
+    let eventTowerType: string | null = null;
+    const unsubscribe = eventBus.on('PROJECTILE_FIRED', (event) => {
+      eventReceived = true;
+      eventTowerType = event.payload.projectile.towerType;
+    });
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(eventReceived).toBe(true);
+    expect(eventTowerType).toBe(TowerType.STORM);
+    unsubscribe();
+  });
+
+  it('should not create storm if no target in range', () => {
+    const tower = createMockTower({
+      type: TowerType.STORM,
+      damage: 10,
+      range: 50, // Small range
+      position: { x: 0, y: 0 },
+    });
+
+    // Enemy far outside range
+    const enemy = createMockEnemy({
+      health: 100,
+      position: { x: 500, y: 500 },
+    });
+
+    let stormCreated = false;
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: () => {},
+      addStormEffect: () => {
+        stormCreated = true;
+      },
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(stormCreated).toBe(false);
   });
 });
