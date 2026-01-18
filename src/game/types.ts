@@ -40,6 +40,7 @@ export const TowerType = {
   CANNON: 'cannon',
   GRAVITY: 'gravity',
   STORM: 'storm',
+  NEEDLE: 'needle',
 } as const;
 export type TowerType = (typeof TowerType)[keyof typeof TowerType];
 
@@ -328,6 +329,8 @@ export interface TowerStats {
   damagePerLevel: number;
   rangePerLevel: number;
   fireRatePerLevel: number; // Negative = faster (lower cooldown)
+  // Unlock system (optional)
+  unlockCost?: number; // Cost in wave credits to unlock this tower
   // Special stats (optional, tower-specific)
   splashRadius?: number; // Missile tower base splash radius (cells)
   splashRadiusPerLevel?: number; // Missile tower splash increase per level

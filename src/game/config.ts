@@ -160,6 +160,23 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     stormDuration: 3.0, // seconds
     stormDurationPerLevel: 0.5, // +0.5s per level
   },
+
+  [TowerType.NEEDLE]: {
+    type: TowerType.NEEDLE,
+    name: 'Needle Tower',
+    cost: 100,
+    damage: 10,
+    range: 100,
+    fireRate: 0.25, // 4 shots per second
+    // Leveling: rapid fire precision tower
+    maxLevel: 5,
+    upgradeCosts: [120, 180, 270, 400], // Total to max: 970
+    damagePerLevel: 5,
+    rangePerLevel: 8,
+    fireRatePerLevel: -0.02,
+    // Unlock cost
+    unlockCost: 20,
+  },
 };
 
 // ============================================================================

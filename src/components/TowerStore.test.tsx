@@ -32,7 +32,9 @@ describe('TowerStore', () => {
       towerTypes.forEach((type) => {
         const stats = TOWER_STATS[type];
         expect(screen.getByText(stats.name)).toBeInTheDocument();
-        expect(screen.getByText(`$${stats.cost}`)).toBeInTheDocument();
+        // Use queryAllByText since multiple towers may have the same cost
+        const costElements = screen.queryAllByText(`$${stats.cost}`);
+        expect(costElements.length).toBeGreaterThan(0);
       });
     });
 
