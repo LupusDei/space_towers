@@ -97,7 +97,7 @@ describe('TowerCard', () => {
   });
 
   describe('locked state', () => {
-    it('should show lock overlay when locked', () => {
+    it('should show lock overlay when locked without onUnlock', () => {
       render(<TowerCard type={TowerType.LASER} locked />);
       expect(screen.getByText('🔒')).toBeInTheDocument();
     });
@@ -141,6 +141,151 @@ describe('TowerCard', () => {
       render(<TowerCard type={TowerType.LASER} unlockCost={15} />);
       expect(screen.getByText(`$${stats.cost}`)).toBeInTheDocument();
       expect(screen.queryByText('UNLOCK')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('unlock button', () => {
+    // Use SNIPER tower which has unlockCost of 10
+    const lockedTowerType = TowerType.SNIPER;
+    const unlockCost = TOWER_STATS[lockedTowerType].unlockCost;
+
+    it('should show unlock button when locked and onUnlock provided', () => {
+      const onUnlock = vi.fn();
+      render(
+        <TowerCard
+          type={lockedTowerType}
+          locked
+          onUnlock={onUnlock}
+          waveCredits={unlockCost}
+        />
+      );
+
+      expect(screen.getByRole('button', { name: /unlock/i })).toBeInTheDocument();
+      expect(screen.getByText('🔓')).toBeInTheDocument();
+      expect(screen.getByText(unlockCost.toString())).toBeInTheDocument();
+    });
+
+    it('should not show unlock button when not locked', () => {
+      const onUnlock = vi.fn();
+      render(
+        <TowerCard
+          type={lockedTowerType}
+          locked={false}
+          onUnlock={onUnlock}
+          waveCredits={unlockCost}
+        />
+      );
+
+      expect(screen.queryByText('🔓')).not.toBeInTheDocument();
+    });
+
+    it('should not show unlock button when locked but no onUnlock callback', () => {
+      render(<TowerCard type={lockedTowerType} locked waveCredits={unlockCost} />);
+
+      expect(screen.queryByText('🔓')).not.toBeInTheDocument();
+      // Should show lock icon instead
+      expect(screen.getByText('🔒')).toBeInTheDocument();
+    });
+
+    it('should call onUnlock when clicked with enough credits', () => {
+      const onUnlock = vi.fn();
+      render(
+        <TowerCard
+          type={lockedTowerType}
+          locked
+          onUnlock={onUnlock}
+          waveCredits={unlockCost}
+        />
+      );
+
+      const unlockButton = screen.getByRole('button', { name: /unlock/i });
+      fireEvent.click(unlockButton);
+
+      expect(onUnlock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call onUnlock when credits exceed unlock cost', () => {
+      const onUnlock = vi.fn();
+      render(
+        <TowerCard
+          type={lockedTowerType}
+          locked
+          onUnlock={onUnlock}
+          waveCredits={unlockCost + 100}
+        />
+      );
+
+      const unlockButton = screen.getByRole('button', { name: /unlock/i });
+      fireEvent.click(unlockButton);
+
+      expect(onUnlock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not call onUnlock when clicked without enough credits', () => {
+      const onUnlock = vi.fn();
+      render(
+        <TowerCard
+          type={lockedTowerType}
+          locked
+          onUnlock={onUnlock}
+          waveCredits={unlockCost - 1}
+        />
+      );
+
+      const unlockButton = screen.getByRole('button', { name: /unlock/i });
+      fireEvent.click(unlockButton);
+
+      expect(onUnlock).not.toHaveBeenCalled();
+    });
+
+    it('should disable button when insufficient credits', () => {
+      const onUnlock = vi.fn();
+      render(
+        <TowerCard
+          type={lockedTowerType}
+          locked
+          onUnlock={onUnlock}
+          waveCredits={0}
+        />
+      );
+
+      const unlockButton = screen.getByRole('button', { name: /unlock/i });
+      expect(unlockButton).toBeDisabled();
+    });
+
+    it('should enable button when sufficient credits', () => {
+      const onUnlock = vi.fn();
+      render(
+        <TowerCard
+          type={lockedTowerType}
+          locked
+          onUnlock={onUnlock}
+          waveCredits={unlockCost}
+        />
+      );
+
+      const unlockButton = screen.getByRole('button', { name: /unlock/i });
+      expect(unlockButton).not.toBeDisabled();
+    });
+
+    it('should not propagate click to card onClick', () => {
+      const onClick = vi.fn();
+      const onUnlock = vi.fn();
+      render(
+        <TowerCard
+          type={lockedTowerType}
+          locked
+          onClick={onClick}
+          onUnlock={onUnlock}
+          waveCredits={unlockCost}
+        />
+      );
+
+      const unlockButton = screen.getByRole('button', { name: /unlock/i });
+      fireEvent.click(unlockButton);
+
+      expect(onUnlock).toHaveBeenCalledTimes(1);
+      expect(onClick).not.toHaveBeenCalled();
     });
   });
 
