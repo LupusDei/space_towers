@@ -171,6 +171,95 @@ describe('Engine Integration', () => {
   });
 
   // ==========================================================================
+  // Allowed Towers Tests
+  // ==========================================================================
+
+  describe('Allowed Towers', () => {
+    beforeEach(() => {
+      engine.startGame();
+    });
+
+    it('allows all towers by default (allowedTowers is null)', () => {
+      expect(engine.getAllowedTowers()).toBeNull();
+      expect(engine.isTowerTypeAllowed(TowerType.LASER)).toBe(true);
+      expect(engine.isTowerTypeAllowed(TowerType.MISSILE)).toBe(true);
+      expect(engine.isTowerTypeAllowed(TowerType.TESLA)).toBe(true);
+      expect(engine.isTowerTypeAllowed(TowerType.CANNON)).toBe(true);
+    });
+
+    it('can set allowed tower types', () => {
+      engine.setAllowedTowers([TowerType.LASER, TowerType.MISSILE]);
+
+      expect(engine.getAllowedTowers()).toEqual([TowerType.LASER, TowerType.MISSILE]);
+    });
+
+    it('restricts isTowerTypeAllowed to specified types', () => {
+      engine.setAllowedTowers([TowerType.LASER, TowerType.MISSILE]);
+
+      expect(engine.isTowerTypeAllowed(TowerType.LASER)).toBe(true);
+      expect(engine.isTowerTypeAllowed(TowerType.MISSILE)).toBe(true);
+      expect(engine.isTowerTypeAllowed(TowerType.TESLA)).toBe(false);
+      expect(engine.isTowerTypeAllowed(TowerType.CANNON)).toBe(false);
+    });
+
+    it('prevents placing disallowed tower types', () => {
+      engine.setAllowedTowers([TowerType.LASER]);
+
+      const position = { x: 5, y: 5 };
+      const missileResult = engine.placeTower(TowerType.MISSILE, position);
+
+      expect(missileResult).toBeNull();
+    });
+
+    it('allows placing allowed tower types', () => {
+      engine.setAllowedTowers([TowerType.LASER, TowerType.MISSILE]);
+
+      const position1 = { x: 5, y: 5 };
+      const laserTower = engine.placeTower(TowerType.LASER, position1);
+
+      const position2 = { x: 6, y: 5 };
+      const missileTower = engine.placeTower(TowerType.MISSILE, position2);
+
+      expect(laserTower).not.toBeNull();
+      expect(missileTower).not.toBeNull();
+    });
+
+    it('can reset to allow all towers by passing null', () => {
+      engine.setAllowedTowers([TowerType.LASER]);
+      expect(engine.isTowerTypeAllowed(TowerType.MISSILE)).toBe(false);
+
+      engine.setAllowedTowers(null);
+      expect(engine.getAllowedTowers()).toBeNull();
+      expect(engine.isTowerTypeAllowed(TowerType.MISSILE)).toBe(true);
+    });
+
+    it('creates a copy of the allowed towers array', () => {
+      const original: TowerType[] = [TowerType.LASER, TowerType.MISSILE];
+      engine.setAllowedTowers(original);
+
+      // Modify original array
+      original.push(TowerType.TESLA);
+
+      // Engine's allowed towers should not be affected
+      expect(engine.getAllowedTowers()).toEqual([TowerType.LASER, TowerType.MISSILE]);
+    });
+
+    it('persists allowed towers across wave transitions', () => {
+      engine.setAllowedTowers([TowerType.LASER]);
+
+      // Place a laser tower
+      engine.placeTower(TowerType.LASER, { x: 5, y: 5 });
+
+      // Start and complete wave (simulated)
+      engine.startWave();
+
+      // Verify allowed towers still set
+      expect(engine.isTowerTypeAllowed(TowerType.LASER)).toBe(true);
+      expect(engine.isTowerTypeAllowed(TowerType.MISSILE)).toBe(false);
+    });
+  });
+
+  // ==========================================================================
   // Tower Selling Tests
   // ==========================================================================
 
