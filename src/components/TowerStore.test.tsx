@@ -12,10 +12,10 @@ vi.mock('./TowerIcon', () => ({
 }));
 
 describe('TowerStore', () => {
-  const mockOnSelectTowerType = vi.fn();
+  const mockOnToggleTowerType = vi.fn();
 
   beforeEach(() => {
-    mockOnSelectTowerType.mockClear();
+    mockOnToggleTowerType.mockClear();
   });
 
   describe('rendering', () => {
@@ -24,8 +24,8 @@ describe('TowerStore', () => {
         <TowerStore
           credits={1000}
           waveCredits={42}
-          selectedTowerType={null}
-          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowerTypes={[]}
+          onToggleTowerType={mockOnToggleTowerType}
         />
       );
 
@@ -44,8 +44,8 @@ describe('TowerStore', () => {
         <TowerStore
           credits={1000}
           waveCredits={42}
-          selectedTowerType={null}
-          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowerTypes={[]}
+          onToggleTowerType={mockOnToggleTowerType}
         />
       );
 
@@ -59,8 +59,8 @@ describe('TowerStore', () => {
         <TowerStore
           credits={1000}
           waveCredits={42}
-          selectedTowerType={null}
-          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowerTypes={[]}
+          onToggleTowerType={mockOnToggleTowerType}
         />
       );
 
@@ -72,101 +72,163 @@ describe('TowerStore', () => {
         <TowerStore
           credits={1000}
           waveCredits={42}
-          selectedTowerType={null}
-          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowerTypes={[]}
+          onToggleTowerType={mockOnToggleTowerType}
         />
       );
 
       expect(screen.getByText('Wave Credits: 42')).toBeInTheDocument();
     });
 
-    it('should display zero Wave Credits', () => {
+    it('should display selection counter', () => {
       render(
         <TowerStore
           credits={1000}
-          waveCredits={0}
-          selectedTowerType={null}
-          onSelectTowerType={mockOnSelectTowerType}
+          waveCredits={42}
+          selectedTowerTypes={[TowerType.LASER, TowerType.MISSILE]}
+          onToggleTowerType={mockOnToggleTowerType}
         />
       );
 
-      expect(screen.getByText('Wave Credits: 0')).toBeInTheDocument();
+      expect(screen.getByText('Selected: 2/4')).toBeInTheDocument();
     });
 
-    it('should update Wave Credits display reactively', () => {
-      const { rerender } = render(
+    it('should display zero selections', () => {
+      render(
         <TowerStore
           credits={1000}
-          waveCredits={50}
-          selectedTowerType={null}
-          onSelectTowerType={mockOnSelectTowerType}
+          waveCredits={42}
+          selectedTowerTypes={[]}
+          onToggleTowerType={mockOnToggleTowerType}
         />
       );
 
-      expect(screen.getByText('Wave Credits: 50')).toBeInTheDocument();
+      expect(screen.getByText('Selected: 0/4')).toBeInTheDocument();
+    });
 
-      // Simulate spending credits by rerendering with new value
-      rerender(
+    it('should display max selections', () => {
+      render(
         <TowerStore
           credits={1000}
-          waveCredits={40}
-          selectedTowerType={null}
-          onSelectTowerType={mockOnSelectTowerType}
+          waveCredits={42}
+          selectedTowerTypes={[TowerType.LASER, TowerType.MISSILE, TowerType.TESLA, TowerType.CANNON]}
+          onToggleTowerType={mockOnToggleTowerType}
         />
       );
 
-      expect(screen.getByText('Wave Credits: 40')).toBeInTheDocument();
-      expect(screen.queryByText('Wave Credits: 50')).not.toBeInTheDocument();
+      expect(screen.getByText('Selected: 4/4')).toBeInTheDocument();
     });
   });
 
   describe('selection', () => {
-    it('should call onSelectTowerType when a tower is clicked', () => {
+    it('should call onToggleTowerType when a tower is clicked', () => {
       render(
         <TowerStore
           credits={1000}
           waveCredits={42}
-          selectedTowerType={null}
-          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowerTypes={[]}
+          onToggleTowerType={mockOnToggleTowerType}
         />
       );
 
       const laserButton = screen.getByRole('button', { name: /Laser Tower/i });
       fireEvent.click(laserButton);
 
-      expect(mockOnSelectTowerType).toHaveBeenCalledWith(TowerType.LASER);
+      expect(mockOnToggleTowerType).toHaveBeenCalledWith(TowerType.LASER);
     });
 
-    it('should deselect when clicking the same tower', () => {
+    it('should call onToggleTowerType to deselect when clicking a selected tower', () => {
       render(
         <TowerStore
           credits={1000}
           waveCredits={42}
-          selectedTowerType={TowerType.LASER}
-          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowerTypes={[TowerType.LASER]}
+          onToggleTowerType={mockOnToggleTowerType}
         />
       );
 
-      const laserButton = screen.getByRole('button', { name: /Laser Tower/i });
+      const laserButton = screen.getByRole('button', { name: /Laser Tower.*selected/i });
       fireEvent.click(laserButton);
 
-      expect(mockOnSelectTowerType).toHaveBeenCalledWith(null);
+      expect(mockOnToggleTowerType).toHaveBeenCalledWith(TowerType.LASER);
     });
 
-    it('should select a different tower when one is already selected', () => {
+    it('should allow selecting multiple towers', () => {
       render(
         <TowerStore
           credits={1000}
           waveCredits={42}
-          selectedTowerType={TowerType.LASER}
-          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowerTypes={[TowerType.LASER]}
+          onToggleTowerType={mockOnToggleTowerType}
         />
       );
 
       const missileButton = screen.getByRole('button', { name: /Missile Tower/i });
       fireEvent.click(missileButton);
 
-      expect(mockOnSelectTowerType).toHaveBeenCalledWith(TowerType.MISSILE);
+      expect(mockOnToggleTowerType).toHaveBeenCalledWith(TowerType.MISSILE);
+    });
+
+    it('should disable unselected towers when max 4 are selected', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={42}
+          selectedTowerTypes={[TowerType.LASER, TowerType.MISSILE, TowerType.TESLA, TowerType.CANNON]}
+          onToggleTowerType={mockOnToggleTowerType}
+        />
+      );
+
+      // Sniper is not selected, should be disabled
+      const sniperButton = screen.getByRole('button', { name: /Sniper Tower/i });
+      expect(sniperButton).toBeDisabled();
+    });
+
+    it('should keep selected towers enabled when max 4 are selected', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={42}
+          selectedTowerTypes={[TowerType.LASER, TowerType.MISSILE, TowerType.TESLA, TowerType.CANNON]}
+          onToggleTowerType={mockOnToggleTowerType}
+        />
+      );
+
+      // Laser is selected, should still be enabled for deselection
+      const laserButton = screen.getByRole('button', { name: /Laser Tower.*selected/i });
+      expect(laserButton).not.toBeDisabled();
+    });
+
+    it('should not call onToggleTowerType when clicking a disabled unselected tower at max', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={42}
+          selectedTowerTypes={[TowerType.LASER, TowerType.MISSILE, TowerType.TESLA, TowerType.CANNON]}
+          onToggleTowerType={mockOnToggleTowerType}
+        />
+      );
+
+      const sniperButton = screen.getByRole('button', { name: /Sniper Tower/i });
+      fireEvent.click(sniperButton);
+
+      expect(mockOnToggleTowerType).not.toHaveBeenCalled();
+    });
+
+    it('should allow deselecting a tower when at max selections', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={42}
+          selectedTowerTypes={[TowerType.LASER, TowerType.MISSILE, TowerType.TESLA, TowerType.CANNON]}
+          onToggleTowerType={mockOnToggleTowerType}
+        />
+      );
+
+      const laserButton = screen.getByRole('button', { name: /Laser Tower.*selected/i });
+      fireEvent.click(laserButton);
+
+      expect(mockOnToggleTowerType).toHaveBeenCalledWith(TowerType.LASER);
     });
   });
 
@@ -176,8 +238,8 @@ describe('TowerStore', () => {
         <TowerStore
           credits={30}
           waveCredits={0}
-          selectedTowerType={null}
-          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowerTypes={[]}
+          onToggleTowerType={mockOnToggleTowerType}
         />
       );
 
@@ -190,29 +252,29 @@ describe('TowerStore', () => {
       expect(missileButton).toBeDisabled();
     });
 
-    it('should not call onSelectTowerType when clicking a disabled tower', () => {
+    it('should not call onToggleTowerType when clicking a disabled tower', () => {
       render(
         <TowerStore
           credits={10}
           waveCredits={0}
-          selectedTowerType={null}
-          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowerTypes={[]}
+          onToggleTowerType={mockOnToggleTowerType}
         />
       );
 
       const laserButton = screen.getByRole('button', { name: /Laser Tower/i });
       fireEvent.click(laserButton);
 
-      expect(mockOnSelectTowerType).not.toHaveBeenCalled();
+      expect(mockOnToggleTowerType).not.toHaveBeenCalled();
     });
 
-    it('should enable all towers when player has enough credits', () => {
+    it('should enable all towers when player has enough credits and not at max selection', () => {
       render(
         <TowerStore
           credits={1000}
           waveCredits={0}
-          selectedTowerType={null}
-          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowerTypes={[]}
+          onToggleTowerType={mockOnToggleTowerType}
         />
       );
 
@@ -220,6 +282,37 @@ describe('TowerStore', () => {
       buttons.forEach((button) => {
         expect(button).not.toBeDisabled();
       });
+    });
+  });
+
+  describe('visual feedback', () => {
+    it('should show visual selection state for selected towers', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={42}
+          selectedTowerTypes={[TowerType.LASER]}
+          onToggleTowerType={mockOnToggleTowerType}
+        />
+      );
+
+      const laserButton = screen.getByRole('button', { name: /Laser Tower.*selected/i });
+      expect(laserButton).toBeInTheDocument();
+    });
+
+    it('should not show selection state for unselected towers', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={42}
+          selectedTowerTypes={[TowerType.LASER]}
+          onToggleTowerType={mockOnToggleTowerType}
+        />
+      );
+
+      // Missile is not selected, so its aria-label should not include "selected"
+      const missileButton = screen.getByRole('button', { name: /Missile Tower - \d+ credits$/i });
+      expect(missileButton).toBeInTheDocument();
     });
   });
 });

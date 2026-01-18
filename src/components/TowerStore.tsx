@@ -6,29 +6,41 @@ import TowerIcon from './TowerIcon';
 interface TowerStoreProps {
   credits: number;
   waveCredits: number;
-  selectedTowerType: TowerType | null;
-  onSelectTowerType: (type: TowerType | null) => void;
+  selectedTowerTypes: TowerType[];
+  onToggleTowerType: (type: TowerType) => void;
 }
+
+const MAX_SELECTIONS = 4;
 
 const towerTypes = Object.values(TowerType) as TowerType[];
 
 export default function TowerStore({
   credits,
   waveCredits,
-  selectedTowerType,
-  onSelectTowerType,
+  selectedTowerTypes,
+  onToggleTowerType,
 }: TowerStoreProps) {
+  const selectionCount = selectedTowerTypes.length;
+  const isMaxSelected = selectionCount >= MAX_SELECTIONS;
+
   return (
     <div style={styles.container}>
       <div style={styles.headerSection}>
         <div style={styles.header}>Tower Store</div>
         <div style={styles.waveCredits}>Wave Credits: {waveCredits}</div>
+        <div style={{
+          ...styles.selectionCounter,
+          color: selectionCount === MAX_SELECTIONS ? colors.success : colors.text.secondary,
+        }}>
+          Selected: {selectionCount}/{MAX_SELECTIONS}
+        </div>
       </div>
       <div style={styles.grid}>
         {towerTypes.map((type) => {
           const stats = TOWER_STATS[type];
           const canAfford = credits >= stats.cost;
-          const isSelected = selectedTowerType === type;
+          const isSelected = selectedTowerTypes.includes(type);
+          const isDisabled = !canAfford || (!isSelected && isMaxSelected);
 
           return (
             <button
@@ -36,11 +48,11 @@ export default function TowerStore({
               style={{
                 ...styles.towerCell,
                 ...(isSelected ? styles.towerCellSelected : {}),
-                ...(canAfford ? {} : styles.towerCellDisabled),
+                ...(isDisabled ? styles.towerCellDisabled : {}),
               }}
-              disabled={!canAfford}
-              onClick={() => onSelectTowerType(isSelected ? null : type)}
-              aria-label={`${stats.name} - ${stats.cost} credits`}
+              disabled={isDisabled}
+              onClick={() => onToggleTowerType(type)}
+              aria-label={`${stats.name} - ${stats.cost} credits${isSelected ? ' (selected)' : ''}`}
             >
               <div style={styles.iconContainer}>
                 <TowerIcon type={type} size={48} />
@@ -92,6 +104,11 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.medium,
     color: colors.credits,
+  },
+  selectionCounter: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.bold,
   },
   grid: {
     display: 'grid',
