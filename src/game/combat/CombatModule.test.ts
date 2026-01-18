@@ -755,3 +755,168 @@ describe('Target validation - mid-targeting death', () => {
     }
   });
 });
+
+describe('Gravity Tower AOE', () => {
+  beforeEach(() => {
+    eventBus.clear();
+    combatModule.destroy();
+  });
+
+  it('should damage all enemies in range with AOE pulse', () => {
+    const tower = createMockTower({
+      type: TowerType.GRAVITY,
+      damage: 5,
+      range: 150,
+      position: { x: 5, y: 5 },
+    });
+
+    // Create multiple enemies within range
+    const enemy1 = createMockEnemy({
+      id: 'enemy_1',
+      health: 100,
+      armor: 0,
+      position: { x: 220, y: 220 }, // Within range
+    });
+    const enemy2 = createMockEnemy({
+      id: 'enemy_2',
+      health: 100,
+      armor: 0,
+      position: { x: 230, y: 230 }, // Within range
+    });
+
+    const query = createMockQuery([tower], [enemy1, enemy2]);
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    // Both enemies should have taken damage
+    expect(enemy1.health).toBe(95); // 100 - 5
+    expect(enemy2.health).toBe(95); // 100 - 5
+  });
+
+  it('should apply slow effect to enemies in range', () => {
+    const tower = createMockTower({
+      type: TowerType.GRAVITY,
+      damage: 5,
+      range: 150,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      armor: 0,
+      position: { x: 220, y: 220 },
+    });
+
+    const slowedEnemies: { id: string; multiplier: number; duration: number }[] = [];
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: (id: string, multiplier: number, duration: number) => {
+        slowedEnemies.push({ id, multiplier, duration });
+      },
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    // Enemy should have slow applied
+    expect(slowedEnemies.length).toBe(1);
+    expect(slowedEnemies[0].id).toBe(enemy.id);
+    expect(slowedEnemies[0].multiplier).toBe(0.5); // 50% slow
+    expect(slowedEnemies[0].duration).toBe(1.0); // 1 second
+  });
+
+  it('should not damage or slow enemies outside range', () => {
+    const tower = createMockTower({
+      type: TowerType.GRAVITY,
+      damage: 5,
+      range: 50, // Small range
+      position: { x: 0, y: 0 },
+    });
+
+    // Enemy far outside range
+    const enemy = createMockEnemy({
+      health: 100,
+      position: { x: 500, y: 500 },
+    });
+
+    const slowedEnemies: string[] = [];
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: (id: string) => {
+        slowedEnemies.push(id);
+      },
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    // Enemy should not have taken damage or slow
+    expect(enemy.health).toBe(100);
+    expect(slowedEnemies.length).toBe(0);
+  });
+
+  it('should not apply slow to enemies killed by the damage', () => {
+    const tower = createMockTower({
+      type: TowerType.GRAVITY,
+      damage: 100, // Lethal damage
+      range: 150,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      health: 50, // Will be killed
+      armor: 0,
+      position: { x: 220, y: 220 },
+    });
+
+    const slowedEnemies: string[] = [];
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: (id: string) => {
+        slowedEnemies.push(id);
+      },
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    // Enemy should be dead (health <= 0), slow should not be applied
+    expect(enemy.health).toBeLessThanOrEqual(0);
+    expect(slowedEnemies.length).toBe(0);
+  });
+
+  it('should emit GRAVITY_PULSE_REQUESTED event', () => {
+    const tower = createMockTower({
+      type: TowerType.GRAVITY,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      position: { x: 220, y: 220 },
+    });
+
+    let pulseEventReceived = false;
+    const unsubscribe = eventBus.on('GRAVITY_PULSE_REQUESTED', () => {
+      pulseEventReceived = true;
+    });
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(pulseEventReceived).toBe(true);
+    unsubscribe();
+  });
+});
