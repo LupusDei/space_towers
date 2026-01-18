@@ -230,6 +230,7 @@ function renderTowerPreview(
     fireRate: stats.fireRate,
     lastFired: 0,
     target: null,
+    targetPosition: null,
     kills: 0,
     totalDamage: 0,
   };

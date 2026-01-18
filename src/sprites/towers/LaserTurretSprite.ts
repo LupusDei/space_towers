@@ -3,6 +3,35 @@
 import type { Tower, Point } from '../../game/types';
 import type { TowerSprite, SpriteRenderContext } from '../types';
 
+/**
+ * Calculate the turret rotation angle toward the target.
+ * Uses atan2 to compute angle from tower to target position.
+ * Falls back to idle rotation if no target is set.
+ */
+function calculateTurretAngle(
+  tower: Tower,
+  centerX: number,
+  centerY: number,
+  cellSize: number,
+  time: number,
+  level: number
+): number {
+  // If tower has a target position, rotate toward it
+  if (tower.targetPosition) {
+    // Target position is in pixels, calculate angle
+    const targetCenterX = tower.targetPosition.x + cellSize / 2;
+    const targetCenterY = tower.targetPosition.y + cellSize / 2;
+    const dx = targetCenterX - centerX;
+    const dy = targetCenterY - centerY;
+    // atan2 gives angle from positive x-axis, add PI/2 to make 0 point up
+    return Math.atan2(dy, dx) + Math.PI / 2;
+  }
+
+  // No target: idle rotation based on time
+  const rotationSpeed = 0.4 + level * 0.1;
+  return time * rotationSpeed;
+}
+
 // Level-based color schemes (progressively more intense)
 const LEVEL_COLORS = [
   // Level 1 - Basic teal
@@ -27,9 +56,12 @@ export const LaserTurretSprite: TowerSprite = {
     const centerX = x * cellSize + cellSize / 2;
     const centerY = y * cellSize + cellSize / 2;
 
+    // Calculate rotation angle toward target (or idle rotation if no target)
+    const angle = calculateTurretAngle(tower, centerX, centerY, cellSize, time, level);
+
     // Draw based on level
     drawBase(ctx, centerX, centerY, cellSize, level, colors);
-    drawTurret(ctx, centerX, centerY, cellSize, time, level, colors);
+    drawTurret(ctx, centerX, centerY, cellSize, time, level, colors, angle);
     drawStatusIndicators(ctx, centerX, centerY, cellSize, time, level, colors);
 
     // Level 3+ get ambient glow
@@ -222,12 +254,9 @@ function drawTurret(
   cellSize: number,
   time: number,
   level: number,
-  colors: typeof LEVEL_COLORS[0]
+  colors: typeof LEVEL_COLORS[0],
+  angle: number
 ): void {
-  // Rotation speed increases with level
-  const rotationSpeed = 0.4 + level * 0.1;
-  const angle = time * rotationSpeed;
-
   ctx.save();
   ctx.translate(centerX, centerY);
   ctx.rotate(angle);

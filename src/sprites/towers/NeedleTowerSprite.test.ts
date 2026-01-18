@@ -54,6 +54,7 @@ function createMockTower(level: number = 1): Tower {
     fireRate: 1,
     lastFired: 0,
     target: null,
+    targetPosition: null,
     kills: 0,
     totalDamage: 0,
   };

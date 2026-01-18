@@ -68,6 +68,7 @@ export interface Tower {
   fireRate: number;
   lastFired: number;
   target: string | null;
+  targetPosition: Point | null;
   kills: number;
   totalDamage: number;
 }
