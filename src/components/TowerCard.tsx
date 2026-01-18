@@ -19,6 +19,7 @@ function getSpecialEffect(type: TowerType): string | null {
 export interface TowerCardProps {
   type: TowerType;
   locked?: boolean;
+  unlockCost?: number;
   selected?: boolean;
   disabled?: boolean;
   onClick?: () => void;
@@ -27,6 +28,7 @@ export interface TowerCardProps {
 export default function TowerCard({
   type,
   locked = false,
+  unlockCost,
   selected = false,
   disabled = false,
   onClick,
@@ -87,7 +89,14 @@ export default function TowerCard({
       </div>
 
       <div style={styles.cost}>
-        <span style={styles.costValue}>${stats.cost}</span>
+        {locked && unlockCost !== undefined ? (
+          <>
+            <span style={styles.unlockLabel}>UNLOCK</span>
+            <span style={styles.unlockCost}>{unlockCost}</span>
+          </>
+        ) : (
+          <span style={styles.costValue}>${stats.cost}</span>
+        )}
       </div>
     </div>
   );
@@ -189,6 +198,19 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: typography.fontSize.md,
     fontWeight: typography.fontWeight.bold,
     color: colors.credits,
+    fontFamily: typography.fontFamily.mono,
+  },
+  unlockLabel: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.text.muted,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  unlockCost: {
+    fontSize: typography.fontSize.md,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.accent,
     fontFamily: typography.fontFamily.mono,
   },
 };
