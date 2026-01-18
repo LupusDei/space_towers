@@ -1,7 +1,7 @@
 import { TowerType } from '../game/types';
 import { TOWER_STATS } from '../game/config';
-import { colors, spacing, typography } from '../styles/theme';
 import TowerIcon from './TowerIcon';
+import styles from '../styles/TowerStore.module.css';
 
 interface TowerStoreProps {
   credits: number;
@@ -17,140 +17,46 @@ export default function TowerStore({
   onSelectTowerType,
 }: TowerStoreProps) {
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>Tower Store</div>
-      <div style={styles.grid}>
+    <div className={styles.container}>
+      <div className={styles.header}>Tower Store</div>
+      <div className={styles.grid}>
         {towerTypes.map((type) => {
           const stats = TOWER_STATS[type];
           const canAfford = credits >= stats.cost;
           const isSelected = selectedTowerType === type;
 
+          const cellClasses = [
+            styles.towerCell,
+            isSelected && styles.towerCellSelected,
+            !canAfford && styles.towerCellDisabled,
+          ]
+            .filter(Boolean)
+            .join(' ');
+
           return (
             <button
               key={type}
-              style={{
-                ...styles.towerCell,
-                ...(isSelected ? styles.towerCellSelected : {}),
-                ...(canAfford ? {} : styles.towerCellDisabled),
-              }}
+              className={cellClasses}
               disabled={!canAfford}
               onClick={() => onSelectTowerType(isSelected ? null : type)}
               aria-label={`${stats.name} - ${stats.cost} credits`}
             >
-              <div style={styles.iconContainer}>
+              <div className={styles.iconContainer}>
                 <TowerIcon type={type} size={48} />
               </div>
-              <div style={styles.towerName}>{stats.name}</div>
-              <div style={styles.towerCost}>${stats.cost}</div>
+              <div className={styles.towerName}>{stats.name}</div>
+              <div className={styles.towerCost}>${stats.cost}</div>
             </button>
           );
         })}
         {/* Empty cells for future towers (grid expands as needed) */}
         {Array.from({ length: Math.max(0, 12 - towerTypes.length) }).map((_, index) => (
-          <div key={`empty-${index}`} style={styles.emptyCell}>
-            <div style={styles.emptyIcon}>?</div>
-            <div style={styles.emptyLabel}>Coming Soon</div>
+          <div key={`empty-${index}`} className={styles.emptyCell}>
+            <div className={styles.emptyIcon}>?</div>
+            <div className={styles.emptyLabel}>Coming Soon</div>
           </div>
         ))}
       </div>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: spacing.sm,
-    padding: spacing.md,
-    backgroundColor: 'rgba(10, 10, 26, 0.95)',
-    borderRadius: '8px',
-    border: `1px solid ${colors.accent}33`,
-  },
-  header: {
-    fontFamily: typography.fontFamily.mono,
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.text.primary,
-    textTransform: 'uppercase',
-    letterSpacing: '2px',
-    textAlign: 'center',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gridTemplateRows: 'repeat(2, 1fr)',
-    gap: spacing.sm,
-  },
-  towerCell: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: spacing.xs,
-    padding: spacing.sm,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    border: `1px solid ${colors.accent}44`,
-    borderRadius: '6px',
-    cursor: 'pointer',
-    transition: 'all 0.15s ease',
-    fontFamily: typography.fontFamily.base,
-    minWidth: '80px',
-    minHeight: '100px',
-  },
-  towerCellSelected: {
-    backgroundColor: `${colors.accent}22`,
-    borderColor: colors.accent,
-    boxShadow: `0 0 12px ${colors.accent}44`,
-  },
-  towerCellDisabled: {
-    opacity: 0.4,
-    cursor: 'not-allowed',
-    borderColor: colors.text.muted,
-  },
-  iconContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '56px',
-    height: '56px',
-  },
-  towerName: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.text.primary,
-    textAlign: 'center',
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    maxWidth: '100%',
-  },
-  towerCost: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.bold,
-    fontFamily: typography.fontFamily.mono,
-    color: colors.credits,
-  },
-  emptyCell: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    padding: spacing.sm,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    border: `1px dashed ${colors.text.muted}`,
-    borderRadius: '6px',
-    minWidth: '80px',
-    minHeight: '100px',
-  },
-  emptyIcon: {
-    fontSize: typography.fontSize.xl,
-    color: colors.text.muted,
-    fontFamily: typography.fontFamily.mono,
-  },
-  emptyLabel: {
-    fontSize: typography.fontSize.xs,
-    color: colors.text.muted,
-    fontStyle: 'italic',
-  },
-};

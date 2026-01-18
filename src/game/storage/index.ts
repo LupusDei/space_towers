@@ -15,4 +15,4 @@ export {
   loadProgress,
   saveProgress,
   unlockTower,
-} from './ProgressService';
+} from './progressService';
