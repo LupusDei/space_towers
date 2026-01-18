@@ -8,8 +8,11 @@ export {
 } from './StorageService';
 
 export {
+  ProgressService,
+  getProgressService,
+  createProgressService,
+  getDefaultProgress,
   loadProgress,
   saveProgress,
-  clearProgress,
-  getDefaultProgress,
-} from './progressService';
+  unlockTower,
+} from './ProgressService';
