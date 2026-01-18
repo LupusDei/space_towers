@@ -45,8 +45,8 @@ export default function TowerStore({
             </button>
           );
         })}
-        {/* Empty cells for future towers (8-cell grid) */}
-        {Array.from({ length: 8 - towerTypes.length }).map((_, index) => (
+        {/* Empty cells for future towers (grid expands as needed) */}
+        {Array.from({ length: Math.max(0, 12 - towerTypes.length) }).map((_, index) => (
           <div key={`empty-${index}`} style={styles.emptyCell}>
             <div style={styles.emptyIcon}>?</div>
             <div style={styles.emptyLabel}>Coming Soon</div>

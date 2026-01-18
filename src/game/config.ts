@@ -174,13 +174,27 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     damage: 50,
     range: 350,
     fireRate: 2.0,
-    unlockCost: 10, // Requires 10 wave credits to unlock
-    // Leveling: long-range precision
+    unlockCost: 10,
     maxLevel: 5,
-    upgradeCosts: [85, 130, 195, 290], // Total to max: 700
+    upgradeCosts: [85, 130, 195, 290],
     damagePerLevel: 35,
     rangePerLevel: 25,
     fireRatePerLevel: -0.1,
+  },
+
+  [TowerType.NEEDLE]: {
+    type: TowerType.NEEDLE,
+    name: 'Needle Tower',
+    cost: 100,
+    damage: 10,
+    range: 100,
+    fireRate: 0.25,
+    unlockCost: 20,
+    maxLevel: 5,
+    upgradeCosts: [120, 180, 270, 400],
+    damagePerLevel: 5,
+    rangePerLevel: 8,
+    fireRatePerLevel: -0.02,
   },
 };
 
