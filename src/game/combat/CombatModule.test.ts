@@ -535,6 +535,120 @@ describe('Damage calculation', () => {
   });
 });
 
+describe('Sniper Tower Firing', () => {
+  beforeEach(() => {
+    eventBus.clear();
+    combatModule.destroy();
+  });
+
+  it('should apply instant damage when sniper fires', () => {
+    const tower = createMockTower({ type: TowerType.SNIPER, damage: 50 });
+    const enemy = createMockEnemy({ health: 100, armor: 0 });
+    const query = createMockQuery([tower], [enemy]);
+    const commands = createMockCommands();
+
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(enemy.health).toBe(50); // 100 - 50 damage
+  });
+
+  it('should create hitscan effect when sniper fires', () => {
+    const tower = createMockTower({ type: TowerType.SNIPER, damage: 50 });
+    const enemy = createMockEnemy({ health: 100 });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    const effects = combatModule.getHitscanEffects();
+    expect(effects.length).toBeGreaterThan(0);
+    expect(effects[0].type).toBe('sniper');
+  });
+
+  it('should prioritize highest HP enemy', () => {
+    const tower = createMockTower({ type: TowerType.SNIPER, damage: 50, range: 300 });
+    const lowHpEnemy = createMockEnemy({
+      id: 'enemy_low',
+      health: 30,
+      position: { x: 220, y: 220 },
+      pathIndex: 5, // Further along path
+    });
+    const highHpEnemy = createMockEnemy({
+      id: 'enemy_high',
+      health: 200,
+      position: { x: 230, y: 230 },
+      pathIndex: 1, // Closer to start
+    });
+
+    const query = createMockQuery([tower], [lowHpEnemy, highHpEnemy]);
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    // Sniper should target high HP enemy (200 HP) not low HP enemy (30 HP)
+    // High HP enemy should take damage
+    expect(highHpEnemy.health).toBe(150); // 200 - 50
+    expect(lowHpEnemy.health).toBe(30); // Unchanged
+  });
+
+  it('should use path progress as tiebreaker when HP is equal', () => {
+    const tower = createMockTower({ type: TowerType.SNIPER, damage: 50, range: 300 });
+    const enemyNearStart = createMockEnemy({
+      id: 'enemy_near',
+      health: 100,
+      position: { x: 220, y: 220 },
+      pathIndex: 1,
+    });
+    const enemyFarther = createMockEnemy({
+      id: 'enemy_far',
+      health: 100,
+      position: { x: 230, y: 230 },
+      pathIndex: 5,
+    });
+
+    const query = createMockQuery([tower], [enemyNearStart, enemyFarther]);
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    // Same HP, should target enemy further along path
+    expect(enemyFarther.health).toBe(50); // 100 - 50
+    expect(enemyNearStart.health).toBe(100); // Unchanged
+  });
+
+  it('should reduce damage by armor', () => {
+    const tower = createMockTower({ type: TowerType.SNIPER, damage: 50 });
+    const enemy = createMockEnemy({ health: 100, armor: 10 });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(enemy.health).toBe(60); // 100 - (50 - 10) = 60
+  });
+
+  it('should kill enemy when damage exceeds health', () => {
+    const tower = createMockTower({ type: TowerType.SNIPER, damage: 100 });
+    const enemy = createMockEnemy({ health: 50, armor: 0 });
+    let removedEnemyId: string | null = null;
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: (id: string) => {
+        removedEnemyId = id;
+      },
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(removedEnemyId).toBe(enemy.id);
+  });
+});
+
 describe('Target validation - mid-targeting death', () => {
   beforeEach(() => {
     eventBus.clear();

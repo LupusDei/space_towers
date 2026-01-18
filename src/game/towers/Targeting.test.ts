@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { findTarget, findChainTargets, getEnemiesInSplash } from './Targeting';
+import { findTarget, findSniperTarget, findChainTargets, getEnemiesInSplash } from './Targeting';
 import { GAME_CONFIG } from '../config';
 import type { Tower, Enemy, Point, QueryInterface, GameState, CellState } from '../types';
 import { TowerType, EnemyType } from '../types';
@@ -99,6 +99,65 @@ describe('findTarget', () => {
     const query = createMockQuery([]);
 
     const result = findTarget(tower, query);
+    expect(result).toBeNull();
+  });
+});
+
+describe('findSniperTarget', () => {
+  it('returns null when no enemies in range', () => {
+    const tower = createTower({ position: { x: 0, y: 0 }, range: 100 });
+    const enemies = [createEnemy({ position: { x: 500, y: 500 } })];
+    const query = createMockQuery(enemies);
+
+    const result = findSniperTarget(tower, query);
+    expect(result).toBeNull();
+  });
+
+  it('returns the only enemy when one is in range', () => {
+    const tower = createTower({ position: { x: 0, y: 0 }, range: 150 });
+    const enemy = createEnemy({ id: 'enemy-1', position: { x: 100, y: 0 } });
+    const query = createMockQuery([enemy]);
+
+    const result = findSniperTarget(tower, query);
+    expect(result).toEqual(enemy);
+  });
+
+  it('returns enemy with highest HP when multiple in range', () => {
+    const tower = createTower({ position: { x: 0, y: 0 }, range: 200 });
+    const lowHp = createEnemy({ id: 'low', position: { x: 50, y: 0 }, health: 30 });
+    const highHp = createEnemy({ id: 'high', position: { x: 100, y: 0 }, health: 200 });
+    const medHp = createEnemy({ id: 'med', position: { x: 150, y: 0 }, health: 100 });
+    const query = createMockQuery([lowHp, highHp, medHp]);
+
+    const result = findSniperTarget(tower, query);
+    expect(result?.id).toBe('high');
+  });
+
+  it('uses path progress as tiebreaker when HP is equal', () => {
+    const tower = createTower({ position: { x: 0, y: 0 }, range: 200 });
+    const enemyNear = createEnemy({ id: 'near', position: { x: 50, y: 0 }, health: 100, pathIndex: 2 });
+    const enemyFar = createEnemy({ id: 'far', position: { x: 100, y: 0 }, health: 100, pathIndex: 7 });
+    const query = createMockQuery([enemyNear, enemyFar]);
+
+    const result = findSniperTarget(tower, query);
+    expect(result?.id).toBe('far'); // Same HP, but further along path
+  });
+
+  it('prioritizes HP over path progress', () => {
+    const tower = createTower({ position: { x: 0, y: 0 }, range: 200 });
+    const lowHpFar = createEnemy({ id: 'lowfar', position: { x: 50, y: 0 }, health: 30, pathIndex: 10 });
+    const highHpNear = createEnemy({ id: 'highnear', position: { x: 100, y: 0 }, health: 200, pathIndex: 1 });
+    const query = createMockQuery([lowHpFar, highHpNear]);
+
+    const result = findSniperTarget(tower, query);
+    expect(result?.id).toBe('highnear'); // Higher HP wins despite lower path index
+  });
+
+  it('returns null when enemies array is empty', () => {
+    const tower = createTower();
+    const query = createMockQuery([]);
+
+    const result = findSniperTarget(tower, query);
     expect(result).toBeNull();
   });
 });
