@@ -342,3 +342,14 @@ export interface EnemyStats {
   armor: number;
   reward: number;
 }
+
+// ============================================================================
+// Player Progress (Persistence)
+// ============================================================================
+
+export interface UserProgress {
+  waveCredits: number;
+  unlockedTowers: TowerType[];
+  highestWaveCompleted: number;
+  lastSelectedLoadout: TowerType[] | null;
+}
