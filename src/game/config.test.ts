@@ -97,6 +97,87 @@ describe('TOWER_STATS', () => {
     });
   });
 
+  describe('STORM tower', () => {
+    const stormStats = TOWER_STATS[TowerType.STORM];
+
+    it('should have correct cost', () => {
+      expect(stormStats.cost).toBe(100);
+    });
+
+    it('should have correct damage (damage per second during storm)', () => {
+      expect(stormStats.damage).toBe(10);
+    });
+
+    it('should have correct range (storm radius)', () => {
+      expect(stormStats.range).toBe(200);
+    });
+
+    it('should have correct fire rate (cooldown between storms)', () => {
+      expect(stormStats.fireRate).toBe(4.0);
+    });
+
+    it('should have correct type', () => {
+      expect(stormStats.type).toBe(TowerType.STORM);
+    });
+
+    it('should have correct name', () => {
+      expect(stormStats.name).toBe('Storm Tower');
+    });
+
+    describe('storm-specific stats', () => {
+      it('should have storm duration', () => {
+        expect(stormStats.stormDuration).toBe(3.0);
+      });
+
+      it('should have storm duration per level', () => {
+        expect(stormStats.stormDurationPerLevel).toBe(0.5);
+      });
+    });
+
+    describe('level-up stats', () => {
+      it('should have correct damage per level', () => {
+        expect(stormStats.damagePerLevel).toBe(5);
+      });
+
+      it('should have correct range per level (storm radius increase)', () => {
+        expect(stormStats.rangePerLevel).toBe(15);
+      });
+
+      it('should have correct fire rate per level', () => {
+        expect(stormStats.fireRatePerLevel).toBe(-0.2);
+      });
+
+      it('should have correct upgrade costs', () => {
+        expect(stormStats.upgradeCosts).toEqual([120, 180, 270, 400]);
+      });
+
+      it('should scale storm duration correctly at max level', () => {
+        // Level 5: 3.0 + (4 * 0.5) = 5.0s duration
+        const maxLevelDuration =
+          stormStats.stormDuration! + (stormStats.maxLevel - 1) * stormStats.stormDurationPerLevel!;
+        expect(maxLevelDuration).toBe(5.0);
+      });
+
+      it('should scale storm radius correctly at max level', () => {
+        // Level 5: 200 + (4 * 15) = 260 radius
+        const maxLevelRadius = stormStats.range + (stormStats.maxLevel - 1) * stormStats.rangePerLevel;
+        expect(maxLevelRadius).toBe(260);
+      });
+
+      it('should have meaningful damage at max level', () => {
+        // Level 5: 10 + (4 * 5) = 30 damage per second
+        const maxLevelDamage = stormStats.damage + (stormStats.maxLevel - 1) * stormStats.damagePerLevel;
+        expect(maxLevelDamage).toBe(30);
+      });
+
+      it('should have faster storm spawn at max level', () => {
+        // Level 5: 4.0 + (4 * -0.2) = 3.2s cooldown
+        const maxLevelFireRate = stormStats.fireRate + (stormStats.maxLevel - 1) * stormStats.fireRatePerLevel;
+        expect(maxLevelFireRate).toBeCloseTo(3.2, 2);
+      });
+    });
+  });
+
   describe('all tower types', () => {
     const towerTypes = Object.values(TowerType) as TowerType[];
 

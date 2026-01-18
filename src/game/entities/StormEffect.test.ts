@@ -183,4 +183,135 @@ describe('StormEffect', () => {
       expect(storm.isActive).toBe(false);
     });
   });
+
+  describe('multiple enemies in storm', () => {
+    it('should correctly identify multiple points within the storm radius', () => {
+      storm.init('storm_1', { x: 100, y: 100 }, 0);
+
+      // Multiple enemy positions within radius
+      const enemyPositions = [
+        { x: 100, y: 100 }, // center
+        { x: 120, y: 100 }, // right
+        { x: 80, y: 100 }, // left
+        { x: 100, y: 120 }, // below
+        { x: 100, y: 80 }, // above
+        { x: 135, y: 135 }, // diagonal (within ~50 radius)
+      ];
+
+      // All should be inside
+      for (const pos of enemyPositions) {
+        expect(storm.containsPoint(pos)).toBe(true);
+      }
+    });
+
+    it('should correctly reject multiple points outside the storm radius', () => {
+      storm.init('storm_1', { x: 100, y: 100 }, 0);
+
+      // Multiple enemy positions outside radius
+      const outsidePositions = [
+        { x: 200, y: 100 }, // far right
+        { x: 0, y: 100 }, // far left
+        { x: 100, y: 200 }, // far below
+        { x: 100, y: 0 }, // far above
+        { x: 160, y: 160 }, // diagonal outside
+      ];
+
+      // All should be outside
+      for (const pos of outsidePositions) {
+        expect(storm.containsPoint(pos)).toBe(false);
+      }
+    });
+
+    it('should handle mixed positions (some inside, some outside)', () => {
+      storm.init('storm_1', { x: 100, y: 100 }, 0);
+
+      const positions = [
+        { x: 100, y: 100, expected: true }, // center
+        { x: 200, y: 100, expected: false }, // outside
+        { x: 120, y: 100, expected: true }, // inside
+        { x: 160, y: 160, expected: false }, // outside diagonal
+        { x: 135, y: 135, expected: true }, // inside diagonal
+      ];
+
+      for (const { x, y, expected } of positions) {
+        expect(storm.containsPoint({ x, y })).toBe(expected);
+      }
+    });
+
+    it('should calculate damage for multiple enemies over time', () => {
+      storm.init('storm_1', { x: 100, y: 100 }, 0);
+
+      // Simulate tick damage for 3 enemies over 1 second
+      const deltaTime = 0.016; // ~60fps
+      const ticksPerSecond = Math.floor(1 / deltaTime);
+      const numEnemies = 3;
+
+      let totalDamage = 0;
+      for (let i = 0; i < ticksPerSecond; i++) {
+        totalDamage += storm.calculateDamage(deltaTime) * numEnemies;
+      }
+
+      // Should be approximately 10 dps * 3 enemies = 30 damage per second
+      expect(totalDamage).toBeCloseTo(30, 0);
+    });
+  });
+
+  describe('level-up radius behavior', () => {
+    it('should apply level 1 radius correctly (base radius)', () => {
+      // Base Storm tower radius is 200 (from range stat)
+      // Using 50 as a simplified base radius for entity tests
+      storm.init('storm_1', { x: 100, y: 100 }, 0, 50); // radius = 50
+
+      expect(storm.containsPoint({ x: 150, y: 100 })).toBe(true); // exactly on edge
+      expect(storm.containsPoint({ x: 151, y: 100 })).toBe(false); // just outside
+    });
+
+    it('should apply larger radius at higher levels', () => {
+      // Simulating level 3: base 50 + (2 * 15) = 80 radius
+      storm.init('storm_1', { x: 100, y: 100 }, 0, 80);
+
+      // Points that would be outside at level 1 but inside at level 3
+      expect(storm.containsPoint({ x: 170, y: 100 })).toBe(true); // inside at 80 radius
+      expect(storm.containsPoint({ x: 180, y: 100 })).toBe(true); // exactly on edge at 80
+      expect(storm.containsPoint({ x: 181, y: 100 })).toBe(false); // just outside
+    });
+
+    it('should apply max level radius (level 5)', () => {
+      // Simulating level 5: base 50 + (4 * 15) = 110 radius
+      storm.init('storm_1', { x: 100, y: 100 }, 0, 110);
+
+      // Points that would be outside at lower levels
+      expect(storm.containsPoint({ x: 200, y: 100 })).toBe(true); // inside at 110
+      expect(storm.containsPoint({ x: 210, y: 100 })).toBe(true); // exactly on edge at 110
+      expect(storm.containsPoint({ x: 211, y: 100 })).toBe(false); // just outside
+    });
+
+    it('should apply level-scaled damage correctly', () => {
+      // Level 1 storm: 10 dps
+      const level1Storm = new StormEffect();
+      level1Storm.init('storm_1', { x: 0, y: 0 }, 0, 50, 3, 10);
+      expect(level1Storm.calculateDamage(1)).toBe(10);
+
+      // Level 5 storm: 10 + (4 * 5) = 30 dps
+      const level5Storm = new StormEffect();
+      level5Storm.init('storm_5', { x: 0, y: 0 }, 0, 110, 5, 30);
+      expect(level5Storm.calculateDamage(1)).toBe(30);
+    });
+
+    it('should apply level-scaled duration correctly', () => {
+      // Level 1 storm: 3.0s duration
+      const level1Storm = new StormEffect();
+      level1Storm.init('storm_1', { x: 0, y: 0 }, 0, 50, 3.0, 10);
+      expect(level1Storm.getRemainingDuration(0)).toBe(3.0);
+      expect(level1Storm.isExpired(2.9)).toBe(false);
+      expect(level1Storm.isExpired(3.0)).toBe(true);
+
+      // Level 5 storm: 3.0 + (4 * 0.5) = 5.0s duration
+      const level5Storm = new StormEffect();
+      level5Storm.init('storm_5', { x: 0, y: 0 }, 0, 110, 5.0, 30);
+      expect(level5Storm.getRemainingDuration(0)).toBe(5.0);
+      expect(level5Storm.isExpired(4.9)).toBe(false);
+      expect(level5Storm.isExpired(5.0)).toBe(true);
+    });
+  });
 });
