@@ -54,6 +54,8 @@ interface EngineState {
   isPaused: boolean;
   time: number;
   towersPlacedThisRound: Set<string>;
+  /** Tower types allowed for building. null = all towers allowed (backward compatible) */
+  allowedTowers: TowerType[] | null;
 }
 
 // ============================================================================
@@ -156,6 +158,7 @@ class GameEngine {
       isPaused: false,
       time: 0,
       towersPlacedThisRound: new Set(),
+      allowedTowers: null, // null = all towers allowed
     };
   }
 
@@ -882,6 +885,37 @@ class GameEngine {
     this.stateNotifier.notify();
   }
 
+  /**
+   * Set the tower types allowed for building during this game session.
+   * Call this before startGame() to restrict which towers the player can place.
+   * @param types - Array of allowed tower types. Pass null to allow all towers.
+   */
+  setAllowedTowers(types: TowerType[] | null): void {
+    this.state.allowedTowers = types ? [...types] : null;
+    this.stateNotifier.notify();
+  }
+
+  /**
+   * Get the currently allowed tower types.
+   * @returns Array of allowed types, or null if all towers are allowed.
+   */
+  getAllowedTowers(): TowerType[] | null {
+    return this.state.allowedTowers;
+  }
+
+  /**
+   * Check if a tower type is allowed for building.
+   * @param type - The tower type to check
+   * @returns true if the tower type can be built
+   */
+  isTowerTypeAllowed(type: TowerType): boolean {
+    // If allowedTowers is null, all towers are allowed
+    if (this.state.allowedTowers === null) {
+      return true;
+    }
+    return this.state.allowedTowers.includes(type);
+  }
+
   getSpawnPoint(): Point {
     return this.spawnPoint;
   }
@@ -905,7 +939,7 @@ class GameEngine {
 
   /**
    * Place a tower at a position during the build phase.
-   * Validates: phase, position, path blocking, and credits.
+   * Validates: phase, tower type allowed, position, path blocking, and credits.
    * @param type - Tower type to place
    * @param position - Grid position to place at
    * @returns The placed tower if successful, null otherwise
@@ -913,6 +947,11 @@ class GameEngine {
   placeTower(type: TowerType, position: Point): Tower | null {
     // Must be in planning phase
     if (!this.stateMachine.isPlanning()) {
+      return null;
+    }
+
+    // Check if tower type is allowed for this game session
+    if (!this.isTowerTypeAllowed(type)) {
       return null;
     }
 
