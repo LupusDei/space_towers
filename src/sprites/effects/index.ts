@@ -8,3 +8,4 @@ export * from './RangeIndicator';
 export * from './HealthBar';
 export * from './StormEffectSprite';
 export * from './RapidFireEffectSprite';
+export * from './SlowIndicator';

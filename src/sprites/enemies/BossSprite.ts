@@ -3,6 +3,7 @@
 import type { Enemy } from '../../game/types';
 import type { EnemySprite, SpriteRenderContext } from '../types';
 import { drawBossHealthBar } from '../effects/HealthBar';
+import { drawSlowIndicator } from '../effects/SlowIndicator';
 
 // Boss color scheme - menacing purple/magenta
 const BOSS_PRIMARY = '#9B30FF'; // Purple
@@ -233,6 +234,11 @@ export const BossSprite: EnemySprite = {
       offsetY: -scaledHeight / 2 - headHeight - 25 + bobOffset,
       segments: 10,
       glowColor: BOSS_GLOW,
+    });
+
+    // Draw slow indicator if slowed (larger for boss)
+    drawSlowIndicator(ctx, enemy, centerX, centerY + bobOffset, time, {
+      radius: scaledWidth * 0.8,
     });
 
     ctx.restore();

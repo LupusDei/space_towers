@@ -3,6 +3,7 @@
 import type { Enemy } from '../../game/types';
 import type { EnemySprite, SpriteRenderContext } from '../types';
 import { drawHealthBar } from '../effects/HealthBar';
+import { drawSlowIndicator } from '../effects/SlowIndicator';
 
 // Scout drone colors
 const DRONE_GREEN = '#00ff88';
@@ -53,6 +54,11 @@ export class ScoutDroneSprite implements EnemySprite {
         width: cellSize * 0.6,
         height: 4,
       },
+    });
+
+    // Draw slow indicator if slowed
+    drawSlowIndicator(ctx, enemy, centerX, centerY, time, {
+      radius: baseSize * 1.5,
     });
   }
 

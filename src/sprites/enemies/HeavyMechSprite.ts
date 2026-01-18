@@ -3,6 +3,7 @@
 import type { Enemy } from '../../game/types';
 import type { EnemySprite, SpriteRenderContext } from '../types';
 import { drawHealthBar } from '../effects/HealthBar';
+import { drawSlowIndicator } from '../effects/SlowIndicator';
 
 export const HeavyMechSprite: EnemySprite = {
   draw(context: SpriteRenderContext, enemy: Enemy): void {
@@ -111,6 +112,11 @@ export const HeavyMechSprite: EnemySprite = {
         getHealthColor: (healthPercent: number) =>
           healthPercent > 0.5 ? '#FF4444' : healthPercent > 0.25 ? '#FF8800' : '#FF0000',
       },
+    });
+
+    // Draw slow indicator if slowed
+    drawSlowIndicator(ctx, enemy, centerX, centerY, time, {
+      radius: bodyWidth * 0.7,
     });
 
     ctx.restore();
