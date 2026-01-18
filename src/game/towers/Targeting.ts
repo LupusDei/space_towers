@@ -54,6 +54,39 @@ export function findTarget(tower: Tower, query: QueryInterface): Enemy | null {
 }
 
 /**
+ * Find the best target for a sniper tower - prioritizes highest HP enemy within range.
+ * For snipers, taking out high-HP targets efficiently is the priority.
+ * Falls back to furthest along path if HP is equal.
+ */
+export function findSniperTarget(tower: Tower, query: QueryInterface): Enemy | null {
+  const enemiesInRange = query.getEnemiesInRange(tower.position, tower.range);
+
+  if (enemiesInRange.length === 0) {
+    return null;
+  }
+
+  // Sort by highest HP first, then by furthest along path as tiebreaker
+  let bestTarget: Enemy | null = null;
+  let highestHealth = -1;
+  let highestPathIndex = -1;
+
+  for (const enemy of enemiesInRange) {
+    // Prioritize by HP first
+    if (enemy.health > highestHealth) {
+      highestHealth = enemy.health;
+      highestPathIndex = enemy.pathIndex;
+      bestTarget = enemy;
+    } else if (enemy.health === highestHealth && enemy.pathIndex > highestPathIndex) {
+      // Same HP, use path progress as tiebreaker
+      highestPathIndex = enemy.pathIndex;
+      bestTarget = enemy;
+    }
+  }
+
+  return bestTarget;
+}
+
+/**
  * Find chain targets for Tesla tower.
  * Returns additional targets near the primary target for chain lightning.
  * @param primary - The primary target enemy

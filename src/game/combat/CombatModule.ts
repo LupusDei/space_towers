@@ -13,7 +13,7 @@ import type {
 } from '../types';
 import { TowerType as TT } from '../types';
 import { Tower as TowerClass } from '../towers/Tower';
-import { findTarget, findChainTargets, getEnemiesInSplash } from '../towers/Targeting';
+import { findTarget, findSniperTarget, findChainTargets, getEnemiesInSplash } from '../towers/Targeting';
 import { projectilePool } from '../pools';
 import { eventBus, createEvent } from '../events';
 import { GAME_CONFIG, COMBAT_CONFIG } from '../config';
@@ -23,7 +23,7 @@ import { GAME_CONFIG, COMBAT_CONFIG } from '../config';
 // ============================================================================
 
 export interface HitscanEffect {
-  type: 'laser' | 'tesla';
+  type: 'laser' | 'tesla' | 'sniper';
   towerId: string;
   towerPosition: Point;
   targetPosition: Point;
@@ -72,6 +72,10 @@ function isProjectileTower(type: TowerType): boolean {
 
 function isGravityTower(type: TowerType): boolean {
   return type === TT.GRAVITY;
+}
+
+function isSniperTower(type: TowerType): boolean {
+  return type === TT.SNIPER;
 }
 
 function towerPositionToPixels(position: Point): Point {
@@ -219,7 +223,10 @@ class CombatModuleImpl implements GameModule {
       const towerData = this.query.getTowerById(towerId);
       if (!towerData) continue;
 
-      const target = findTarget(towerData, this.query);
+      // Use special targeting for sniper towers (prioritize highest HP)
+      const target = isSniperTower(towerData.type)
+        ? findSniperTarget(towerData, this.query)
+        : findTarget(towerData, this.query);
       if (!target) {
         tower.setTarget(null, null);
         // Also update engine's tower data for rendering
@@ -242,6 +249,8 @@ class CombatModuleImpl implements GameModule {
           this.handleProjectileFire(towerData, target, currentTime);
         } else if (isGravityTower(towerData.type)) {
           this.handleGravityFire(towerData, target, currentTime);
+        } else if (isSniperTower(towerData.type)) {
+          this.handleSniperFire(towerData, target, currentTime);
         }
       }
     }
@@ -391,6 +400,48 @@ class CombatModuleImpl implements GameModule {
           targetId: target.id,
           towerType: tower.type,
           position: towerPixelPos,
+          velocity: { x: 0, y: 0 },
+          damage: tower.damage,
+          speed: 0,
+          piercing: false,
+          aoe: 0,
+        },
+      })
+    );
+  }
+
+  // ==========================================================================
+  // Sniper Tower
+  // ==========================================================================
+
+  private handleSniperFire(tower: Tower, target: Enemy, currentTime: number): void {
+    // Validate target still exists
+    const validTarget = this.query?.getEnemyById(target.id);
+    if (!validTarget) return;
+
+    // Apply instant damage (hitscan - no projectile travel)
+    const damage = calculateDamage(tower.damage, validTarget.armor);
+    this.applyDamage(validTarget, damage, tower.id);
+
+    // Create visual effect
+    this.state.hitscanEffects.push({
+      type: 'sniper',
+      towerId: tower.id,
+      towerPosition: { ...tower.position },
+      targetPosition: { ...validTarget.position },
+      startTime: currentTime,
+      duration: COMBAT_CONFIG.HITSCAN_EFFECT_DURATION,
+    });
+
+    // Emit projectile fired event (for audio/other systems)
+    eventBus.emit(
+      createEvent('PROJECTILE_FIRED', {
+        projectile: {
+          id: `sniper_${tower.id}_${currentTime}`,
+          sourceId: tower.id,
+          targetId: target.id,
+          towerType: tower.type,
+          position: towerPositionToPixels(tower.position),
           velocity: { x: 0, y: 0 },
           damage: tower.damage,
           speed: 0,
