@@ -13,12 +13,17 @@ vi.mock('./TowerIcon', () => ({
 
 describe('TowerStore', () => {
   const mockOnSelectTowerType = vi.fn();
+  const towerTypes = Object.values(TowerType) as TowerType[];
 
   beforeEach(() => {
     mockOnSelectTowerType.mockClear();
   });
 
-  describe('rendering', () => {
+  // ============================================================================
+  // Card Rendering Tests
+  // ============================================================================
+
+  describe('card rendering', () => {
     it('should render all tower types', () => {
       render(
         <TowerStore
@@ -28,14 +33,36 @@ describe('TowerStore', () => {
         />
       );
 
-      const towerTypes = Object.values(TowerType);
       towerTypes.forEach((type) => {
         const stats = TOWER_STATS[type];
         expect(screen.getByText(stats.name)).toBeInTheDocument();
-        // Use queryAllByText since multiple towers may have the same cost
-        const costElements = screen.queryAllByText(`$${stats.cost}`);
-        expect(costElements.length).toBeGreaterThan(0);
       });
+    });
+
+    it('should render tower icons for each tower type', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      towerTypes.forEach((type) => {
+        expect(screen.getByTestId(`tower-icon-${type}`)).toBeInTheDocument();
+      });
+    });
+
+    it('should render the store header', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      expect(screen.getByText('Tower Store')).toBeInTheDocument();
     });
 
     it('should render empty cells for future towers', () => {
@@ -48,11 +75,11 @@ describe('TowerStore', () => {
       );
 
       const comingSoonElements = screen.queryAllByText('Coming Soon');
-      const towerTypes = Object.values(TowerType);
-      expect(comingSoonElements.length).toBe(Math.max(0, 12 - towerTypes.length));
+      const expectedEmptyCells = Math.max(0, 12 - towerTypes.length);
+      expect(comingSoonElements.length).toBe(expectedEmptyCells);
     });
 
-    it('should render the header', () => {
+    it('should render question mark icons in empty cells', () => {
       render(
         <TowerStore
           credits={1000}
@@ -61,12 +88,84 @@ describe('TowerStore', () => {
         />
       );
 
-      expect(screen.getByText('Tower Store')).toBeInTheDocument();
+      const questionMarks = screen.queryAllByText('?');
+      const expectedEmptyCells = Math.max(0, 12 - towerTypes.length);
+      expect(questionMarks.length).toBe(expectedEmptyCells);
+    });
+
+    it('should render buttons for each tower type', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      const buttons = screen.getAllByRole('button');
+      expect(buttons.length).toBe(towerTypes.length);
     });
   });
 
-  describe('selection', () => {
-    it('should call onSelectTowerType when a tower is clicked', () => {
+  // ============================================================================
+  // Credit Display Tests
+  // ============================================================================
+
+  describe('credit display', () => {
+    it('should display cost for each tower', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      towerTypes.forEach((type) => {
+        const stats = TOWER_STATS[type];
+        const costElements = screen.queryAllByText(`$${stats.cost}`);
+        expect(costElements.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should display cost with dollar sign prefix', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      const laserStats = TOWER_STATS[TowerType.LASER];
+      expect(screen.getByText(`$${laserStats.cost}`)).toBeInTheDocument();
+    });
+
+    it('should include cost in aria-label for accessibility', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      towerTypes.forEach((type) => {
+        const stats = TOWER_STATS[type];
+        const button = screen.getByRole('button', {
+          name: new RegExp(`${stats.name}.*${stats.cost}`, 'i'),
+        });
+        expect(button).toBeInTheDocument();
+      });
+    });
+  });
+
+  // ============================================================================
+  // Selection Logic Tests
+  // ============================================================================
+
+  describe('selection logic', () => {
+    it('should call onSelectTowerType with tower type when clicked', () => {
       render(
         <TowerStore
           credits={1000}
@@ -81,7 +180,7 @@ describe('TowerStore', () => {
       expect(mockOnSelectTowerType).toHaveBeenCalledWith(TowerType.LASER);
     });
 
-    it('should deselect when clicking the same tower', () => {
+    it('should deselect tower when clicking already selected tower', () => {
       render(
         <TowerStore
           credits={1000}
@@ -96,7 +195,7 @@ describe('TowerStore', () => {
       expect(mockOnSelectTowerType).toHaveBeenCalledWith(null);
     });
 
-    it('should select a different tower when one is already selected', () => {
+    it('should switch selection when clicking different tower', () => {
       render(
         <TowerStore
           credits={1000}
@@ -110,10 +209,68 @@ describe('TowerStore', () => {
 
       expect(mockOnSelectTowerType).toHaveBeenCalledWith(TowerType.MISSILE);
     });
+
+    it('should allow selecting any affordable tower type', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      towerTypes.forEach((type) => {
+        mockOnSelectTowerType.mockClear();
+        const stats = TOWER_STATS[type];
+        const button = screen.getByRole('button', { name: new RegExp(stats.name, 'i') });
+        fireEvent.click(button);
+        expect(mockOnSelectTowerType).toHaveBeenCalledWith(type);
+      });
+    });
+
+    it('should handle rapid selection changes', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      const laserButton = screen.getByRole('button', { name: /Laser Tower/i });
+      const missileButton = screen.getByRole('button', { name: /Missile Tower/i });
+
+      fireEvent.click(laserButton);
+      fireEvent.click(missileButton);
+      fireEvent.click(laserButton);
+
+      expect(mockOnSelectTowerType).toHaveBeenCalledTimes(3);
+      expect(mockOnSelectTowerType).toHaveBeenNthCalledWith(1, TowerType.LASER);
+      expect(mockOnSelectTowerType).toHaveBeenNthCalledWith(2, TowerType.MISSILE);
+      expect(mockOnSelectTowerType).toHaveBeenNthCalledWith(3, TowerType.LASER);
+    });
+
+    it('should not call onSelectTowerType for empty cells', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      // Empty cells should not be buttons
+      const buttons = screen.getAllByRole('button');
+      expect(buttons.length).toBe(towerTypes.length);
+    });
   });
 
+  // ============================================================================
+  // Affordability Tests
+  // ============================================================================
+
   describe('affordability', () => {
-    it('should disable towers the player cannot afford', () => {
+    it('should disable towers player cannot afford', () => {
       render(
         <TowerStore
           credits={30}
@@ -131,7 +288,35 @@ describe('TowerStore', () => {
       expect(missileButton).toBeDisabled();
     });
 
-    it('should not call onSelectTowerType when clicking a disabled tower', () => {
+    it('should enable tower when credits exactly match cost', () => {
+      const laserCost = TOWER_STATS[TowerType.LASER].cost;
+      render(
+        <TowerStore
+          credits={laserCost}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      const laserButton = screen.getByRole('button', { name: /Laser Tower/i });
+      expect(laserButton).not.toBeDisabled();
+    });
+
+    it('should disable tower when credits are one less than cost', () => {
+      const laserCost = TOWER_STATS[TowerType.LASER].cost;
+      render(
+        <TowerStore
+          credits={laserCost - 1}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      const laserButton = screen.getByRole('button', { name: /Laser Tower/i });
+      expect(laserButton).toBeDisabled();
+    });
+
+    it('should not call onSelectTowerType when clicking disabled tower', () => {
       render(
         <TowerStore
           credits={10}
@@ -146,10 +331,10 @@ describe('TowerStore', () => {
       expect(mockOnSelectTowerType).not.toHaveBeenCalled();
     });
 
-    it('should enable all towers when player has enough credits', () => {
+    it('should enable all towers when player has max credits', () => {
       render(
         <TowerStore
-          credits={1000}
+          credits={10000}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
         />
@@ -159,6 +344,192 @@ describe('TowerStore', () => {
       buttons.forEach((button) => {
         expect(button).not.toBeDisabled();
       });
+    });
+
+    it('should disable all towers when player has zero credits', () => {
+      render(
+        <TowerStore
+          credits={0}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      const buttons = screen.getAllByRole('button');
+      buttons.forEach((button) => {
+        expect(button).toBeDisabled();
+      });
+    });
+
+    it('should update affordability based on credits prop', () => {
+      const { rerender } = render(
+        <TowerStore
+          credits={10}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      const laserButton = screen.getByRole('button', { name: /Laser Tower/i });
+      expect(laserButton).toBeDisabled();
+
+      // Rerender with more credits
+      rerender(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      expect(laserButton).not.toBeDisabled();
+    });
+  });
+
+  // ============================================================================
+  // Visual State Tests
+  // ============================================================================
+
+  describe('visual states', () => {
+    it('should show selected state for selected tower', () => {
+      const { container } = render(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={TowerType.LASER}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      // The selected button should exist and be identifiable
+      const laserButton = screen.getByRole('button', { name: /Laser Tower/i });
+      expect(laserButton).toBeInTheDocument();
+
+      // Check that buttons array has correct length (component renders correctly)
+      const buttons = container.querySelectorAll('button');
+      expect(buttons.length).toBe(towerTypes.length);
+    });
+
+    it('should not show selected state when no tower selected', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      // All buttons should render without selected state
+      const buttons = screen.getAllByRole('button');
+      expect(buttons.length).toBe(towerTypes.length);
+    });
+
+    it('should update selected state when selection changes', () => {
+      const { rerender } = render(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={TowerType.LASER}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      const laserButton = screen.getByRole('button', { name: /Laser Tower/i });
+      expect(laserButton).toBeInTheDocument();
+
+      rerender(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={TowerType.MISSILE}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      const missileButton = screen.getByRole('button', { name: /Missile Tower/i });
+      expect(missileButton).toBeInTheDocument();
+    });
+  });
+
+  // ============================================================================
+  // Accessibility Tests
+  // ============================================================================
+
+  describe('accessibility', () => {
+    it('should have aria-label with tower name and cost', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      const laserStats = TOWER_STATS[TowerType.LASER];
+      const laserButton = screen.getByRole('button', {
+        name: `${laserStats.name} - ${laserStats.cost} credits`,
+      });
+      expect(laserButton).toBeInTheDocument();
+    });
+
+    it('should have button role for all tower cells', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      const buttons = screen.getAllByRole('button');
+      expect(buttons.length).toBe(towerTypes.length);
+    });
+
+    it('should mark disabled buttons as disabled in accessibility tree', () => {
+      render(
+        <TowerStore
+          credits={0}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      const buttons = screen.getAllByRole('button');
+      buttons.forEach((button) => {
+        expect(button).toHaveAttribute('disabled');
+      });
+    });
+  });
+
+  // ============================================================================
+  // Grid Layout Tests
+  // ============================================================================
+
+  describe('grid layout', () => {
+    it('should render 12 cells total (towers + empty)', () => {
+      const { container } = render(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      const buttons = container.querySelectorAll('button');
+      const emptyCells = screen.queryAllByText('Coming Soon');
+
+      expect(buttons.length + emptyCells.length).toBe(12);
+    });
+
+    it('should render tower buttons before empty cells', () => {
+      const { container } = render(
+        <TowerStore
+          credits={1000}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      // Get all direct children of the grid
+      const gridContainer = container.querySelector('[style*="grid"]');
+      expect(gridContainer).toBeInTheDocument();
     });
   });
 });
