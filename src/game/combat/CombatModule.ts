@@ -358,17 +358,36 @@ class CombatModuleImpl implements GameModule {
   // Gravity Tower
   // ==========================================================================
 
-  private handleGravityFire(tower: Tower, target: Enemy, currentTime: number): void {
-    // Validate target still exists
-    const validTarget = this.query?.getEnemyById(target.id);
-    if (!validTarget) return;
+  private handleGravityFire(tower: Tower, _target: Enemy, currentTime: number): void {
+    if (!this.query || !this.commands) return;
 
-    // Apply instant damage (Gravity tower is hitscan-like)
-    const damage = calculateDamage(tower.damage, validTarget.armor);
-    this.applyDamage(validTarget, damage, tower.id);
+    // Get tower position in pixels for range calculation
+    const towerPixelPos = towerPositionToPixels(tower.position);
+
+    // AOE pulse: damage all enemies in range
+    const enemiesInRange = this.query.getEnemiesInRange(tower.position, tower.range);
+
+    for (const enemy of enemiesInRange) {
+      // Validate enemy still exists (may have been killed by previous iteration)
+      const validEnemy = this.query.getEnemyById(enemy.id);
+      if (!validEnemy) continue;
+
+      // Apply damage
+      const damage = calculateDamage(tower.damage, validEnemy.armor);
+      this.applyDamage(validEnemy, damage, tower.id);
+
+      // Apply slow effect (50% slow for 1 second)
+      // Only apply if enemy is still alive after damage
+      if (validEnemy.health > 0) {
+        this.commands.applySlow(
+          validEnemy.id,
+          COMBAT_CONFIG.GRAVITY_SLOW_MULTIPLIER,
+          COMBAT_CONFIG.GRAVITY_SLOW_DURATION
+        );
+      }
+    }
 
     // Emit gravity pulse visual effect
-    const towerPixelPos = towerPositionToPixels(tower.position);
     eventBus.emit(
       createEvent('GRAVITY_PULSE_REQUESTED', {
         position: towerPixelPos,
@@ -382,14 +401,14 @@ class CombatModuleImpl implements GameModule {
         projectile: {
           id: `gravity_${tower.id}_${currentTime}`,
           sourceId: tower.id,
-          targetId: target.id,
+          targetId: enemiesInRange.length > 0 ? enemiesInRange[0].id : '',
           towerType: tower.type,
           position: towerPixelPos,
           velocity: { x: 0, y: 0 },
           damage: tower.damage,
           speed: 0,
           piercing: false,
-          aoe: 0,
+          aoe: tower.range,
         },
       })
     );

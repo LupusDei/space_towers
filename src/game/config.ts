@@ -52,6 +52,10 @@ export const COMBAT_CONFIG = {
   TESLA_CHAIN_RANGE: 2, // cells for chain jump
   CHAIN_DAMAGE_FALLOFF: 0.7, // each chain target takes 70% of previous damage
 
+  // Gravity tower
+  GRAVITY_SLOW_MULTIPLIER: 0.5, // 50% slow (enemies move at half speed)
+  GRAVITY_SLOW_DURATION: 1.0, // 1 second slow duration
+
   // Visual effect durations (ms)
   HITSCAN_EFFECT_DURATION: 100, // Brief flash for laser/tesla
   SPLASH_EFFECT_DURATION: 200,
