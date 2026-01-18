@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TOWER_STATS } from './config';
+import { TOWER_STATS, COMBAT_CONFIG } from './config';
 import { TowerType } from './types';
 
 describe('TOWER_STATS', () => {
@@ -94,6 +94,88 @@ describe('TOWER_STATS', () => {
         const maxLevelDamage = needleStats.damage + (needleStats.maxLevel - 1) * needleStats.damagePerLevel;
         expect(maxLevelDamage).toBe(34);
       });
+    });
+  });
+
+  describe('GRAVITY tower', () => {
+    const gravityStats = TOWER_STATS[TowerType.GRAVITY];
+
+    it('should have correct cost', () => {
+      expect(gravityStats.cost).toBe(80);
+    });
+
+    it('should have correct damage', () => {
+      expect(gravityStats.damage).toBe(5);
+    });
+
+    it('should have correct range', () => {
+      expect(gravityStats.range).toBe(100);
+    });
+
+    it('should have correct fire rate', () => {
+      expect(gravityStats.fireRate).toBe(1.0);
+    });
+
+    it('should have correct unlock cost (starter tower)', () => {
+      expect(gravityStats.unlockCost).toBe(0);
+    });
+
+    it('should have correct type', () => {
+      expect(gravityStats.type).toBe(TowerType.GRAVITY);
+    });
+
+    it('should have correct name', () => {
+      expect(gravityStats.name).toBe('Gravity Tower');
+    });
+
+    describe('level-up stats', () => {
+      it('should have correct damage per level', () => {
+        expect(gravityStats.damagePerLevel).toBe(3);
+      });
+
+      it('should have correct range per level', () => {
+        expect(gravityStats.rangePerLevel).toBe(8);
+      });
+
+      it('should have correct fire rate improvement per level', () => {
+        expect(gravityStats.fireRatePerLevel).toBe(-0.05);
+      });
+
+      it('should have correct upgrade costs', () => {
+        expect(gravityStats.upgradeCosts).toEqual([90, 135, 200, 300]);
+      });
+
+      it('should have max level of 5', () => {
+        expect(gravityStats.maxLevel).toBe(5);
+      });
+
+      it('should have meaningful damage at max level', () => {
+        // Level 5: 5 + (4 * 3) = 17 damage
+        const maxLevelDamage = gravityStats.damage + (gravityStats.maxLevel - 1) * gravityStats.damagePerLevel;
+        expect(maxLevelDamage).toBe(17);
+      });
+
+      it('should have improved range at max level', () => {
+        // Level 5: 100 + (4 * 8) = 132 range
+        const maxLevelRange = gravityStats.range + (gravityStats.maxLevel - 1) * gravityStats.rangePerLevel;
+        expect(maxLevelRange).toBe(132);
+      });
+
+      it('should have faster fire rate at max level', () => {
+        // Level 5: 1.0 + (4 * -0.05) = 0.8s between pulses
+        const maxLevelFireRate = gravityStats.fireRate + (gravityStats.maxLevel - 1) * gravityStats.fireRatePerLevel;
+        expect(maxLevelFireRate).toBeCloseTo(0.8, 2);
+      });
+    });
+  });
+
+  describe('GRAVITY slow constants', () => {
+    it('should have correct slow multiplier (50% slow)', () => {
+      expect(COMBAT_CONFIG.GRAVITY_SLOW_MULTIPLIER).toBe(0.5);
+    });
+
+    it('should have correct slow duration (1 second)', () => {
+      expect(COMBAT_CONFIG.GRAVITY_SLOW_DURATION).toBe(1.0);
     });
   });
 

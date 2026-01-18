@@ -920,3 +920,176 @@ describe('Gravity Tower AOE', () => {
     unsubscribe();
   });
 });
+
+describe('Gravity Tower Slow Mechanics', () => {
+  beforeEach(() => {
+    eventBus.clear();
+    combatModule.destroy();
+  });
+
+  it('should apply slow with correct multiplier and duration', () => {
+    const tower = createMockTower({
+      type: TowerType.GRAVITY,
+      damage: 5,
+      range: 150,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      position: { x: 220, y: 220 },
+    });
+
+    const slowApplications: { id: string; multiplier: number; duration: number }[] = [];
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: (id: string, multiplier: number, duration: number) => {
+        slowApplications.push({ id, multiplier, duration });
+      },
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(slowApplications.length).toBe(1);
+    expect(slowApplications[0].multiplier).toBe(0.5); // GRAVITY_SLOW_MULTIPLIER
+    expect(slowApplications[0].duration).toBe(1.0); // GRAVITY_SLOW_DURATION
+  });
+
+  it('should not stack slow effects from multiple gravity towers', () => {
+    // Two gravity towers hit the same enemy
+    const tower1 = createMockTower({
+      id: 'tower_1',
+      type: TowerType.GRAVITY,
+      damage: 5,
+      range: 150,
+      position: { x: 5, y: 5 },
+    });
+    const tower2 = createMockTower({
+      id: 'tower_2',
+      type: TowerType.GRAVITY,
+      damage: 5,
+      range: 150,
+      position: { x: 6, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      position: { x: 220, y: 220 },
+    });
+
+    const slowApplications: { id: string; multiplier: number; duration: number }[] = [];
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: (id: string, multiplier: number, duration: number) => {
+        slowApplications.push({ id, multiplier, duration });
+      },
+    };
+
+    const query = createMockQuery([tower1, tower2], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    // Both towers should attempt to apply slow
+    expect(slowApplications.length).toBe(2);
+    // But both should use the same non-stacking multiplier (0.5, not 0.25)
+    expect(slowApplications[0].multiplier).toBe(0.5);
+    expect(slowApplications[1].multiplier).toBe(0.5);
+  });
+
+  it('should apply slow to multiple enemies in AOE', () => {
+    const tower = createMockTower({
+      type: TowerType.GRAVITY,
+      damage: 5,
+      range: 150,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy1 = createMockEnemy({
+      id: 'enemy_1',
+      health: 100,
+      position: { x: 220, y: 220 },
+    });
+    const enemy2 = createMockEnemy({
+      id: 'enemy_2',
+      health: 100,
+      position: { x: 230, y: 230 },
+    });
+    const enemy3 = createMockEnemy({
+      id: 'enemy_3',
+      health: 100,
+      position: { x: 240, y: 240 },
+    });
+
+    const slowedEnemyIds: string[] = [];
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: (id: string) => {
+        slowedEnemyIds.push(id);
+      },
+    };
+
+    const query = createMockQuery([tower], [enemy1, enemy2, enemy3]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    // All enemies in range should be slowed
+    expect(slowedEnemyIds).toContain('enemy_1');
+    expect(slowedEnemyIds).toContain('enemy_2');
+    expect(slowedEnemyIds).toContain('enemy_3');
+  });
+
+  it('should respect armor when calculating AOE damage', () => {
+    const tower = createMockTower({
+      type: TowerType.GRAVITY,
+      damage: 5,
+      range: 150,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      armor: 3,
+      position: { x: 220, y: 220 },
+    });
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    // 5 damage - 3 armor = 2 damage
+    expect(enemy.health).toBe(98);
+  });
+
+  it('should deal minimum 1 damage when armor exceeds damage', () => {
+    const tower = createMockTower({
+      type: TowerType.GRAVITY,
+      damage: 5,
+      range: 150,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      armor: 10, // Armor exceeds damage
+      position: { x: 220, y: 220 },
+    });
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    // Should deal minimum 1 damage even with high armor
+    expect(enemy.health).toBe(99);
+  });
+});
