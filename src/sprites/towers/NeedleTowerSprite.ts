@@ -1,9 +1,77 @@
 // Needle Tower Sprite - Steel needle with glowing red tip
 // Sharp pointed design with industrial/medical aesthetic
 // Supports 5 visual tiers based on tower level
+// Includes hit pulse animation that triggers on each successful hit
 
 import type { Tower, Point } from '../../game/types';
 import type { TowerSprite, SpriteRenderContext } from '../types';
+
+// ============================================================================
+// Hit Pulse Manager - Tracks active hit pulses for needle tip animation
+// ============================================================================
+
+const HIT_PULSE_DURATION = 150; // ms - brief flash on hit
+
+interface ActiveHitPulse {
+  towerId: string;
+  startTime: number;
+}
+
+class NeedleHitPulseManager {
+  private pulses: Map<string, ActiveHitPulse> = new Map();
+
+  /**
+   * Trigger a hit pulse for a needle tower.
+   * Called when the tower successfully damages an enemy.
+   * @param towerId - The tower's unique ID
+   * @param time - Current game time in ms
+   */
+  triggerHit(towerId: string, time: number): void {
+    this.pulses.set(towerId, {
+      towerId,
+      startTime: time,
+    });
+  }
+
+  /**
+   * Get the current pulse intensity for a tower (0-1).
+   * Returns 0 if no active pulse.
+   * @param towerId - The tower's unique ID
+   * @param currentTime - Current game time in ms
+   */
+  getPulseIntensity(towerId: string, currentTime: number): number {
+    const pulse = this.pulses.get(towerId);
+    if (!pulse) return 0;
+
+    const elapsed = currentTime - pulse.startTime;
+    if (elapsed >= HIT_PULSE_DURATION) {
+      this.pulses.delete(towerId);
+      return 0;
+    }
+
+    // Quick flash that fades out
+    const progress = elapsed / HIT_PULSE_DURATION;
+    // Sharp attack, smooth decay
+    return Math.pow(1 - progress, 2);
+  }
+
+  /**
+   * Clear all active pulses (e.g., on game reset)
+   */
+  clear(): void {
+    this.pulses.clear();
+  }
+
+  /**
+   * Get count of active pulses (for testing)
+   */
+  getActiveCount(): number {
+    return this.pulses.size;
+  }
+}
+
+// Singleton instance for global access
+export const needleHitPulseManager = new NeedleHitPulseManager();
 
 // Level-based visual parameters
 function getLevelParams(level: number) {
@@ -346,10 +414,21 @@ export const NeedleTowerSprite: TowerSprite = {
     }
 
     // === GLOWING RED TIP ===
-    const tipGlowSize = cellSize * 0.1 * params.tipGlowRadius;
-    const tipPulse = params.tipGlowIntensity + 0.15 * Math.sin(time * 0.004);
+    // Get hit pulse intensity (0-1) for additional glow on successful hits
+    const hitPulseIntensity = needleHitPulseManager.getPulseIntensity(
+      tower.id,
+      time * 1000
+    );
 
-    // Outer glow
+    // Base tip glow size, enhanced by hit pulse
+    const baseTipGlowSize = cellSize * 0.1 * params.tipGlowRadius;
+    const tipGlowSize = baseTipGlowSize * (1 + hitPulseIntensity * 0.8);
+
+    // Base pulse from ambient animation, enhanced by hit pulse
+    const baseTipPulse = params.tipGlowIntensity + 0.15 * Math.sin(time * 0.004);
+    const tipPulse = Math.min(1, baseTipPulse + hitPulseIntensity * 0.5);
+
+    // Outer glow (expands and brightens on hit)
     const outerGlow = ctx.createRadialGradient(
       centerX,
       needleTip,
@@ -358,8 +437,16 @@ export const NeedleTowerSprite: TowerSprite = {
       needleTip,
       tipGlowSize
     );
-    outerGlow.addColorStop(0, `rgba(255, 100, 100, ${tipPulse})`);
-    outerGlow.addColorStop(0.4, `rgba(255, 50, 50, ${tipPulse * 0.5})`);
+    // Brighter colors when hit pulse is active
+    const hitBoost = hitPulseIntensity * 80;
+    outerGlow.addColorStop(
+      0,
+      `rgba(${255}, ${100 + hitBoost}, ${100 + hitBoost}, ${tipPulse})`
+    );
+    outerGlow.addColorStop(
+      0.4,
+      `rgba(255, ${50 + hitBoost * 0.5}, ${50 + hitBoost * 0.5}, ${tipPulse * 0.5})`
+    );
     outerGlow.addColorStop(0.7, `rgba(200, 30, 30, ${tipPulse * 0.2})`);
     outerGlow.addColorStop(1, 'rgba(150, 20, 20, 0)');
     ctx.fillStyle = outerGlow;
@@ -367,30 +454,46 @@ export const NeedleTowerSprite: TowerSprite = {
     ctx.arc(centerX, needleTip, tipGlowSize, 0, Math.PI * 2);
     ctx.fill();
 
-    // Inner bright core
+    // Hit pulse ring effect (expanding ring on hit)
+    if (hitPulseIntensity > 0) {
+      const ringRadius = baseTipGlowSize * (1 + (1 - hitPulseIntensity) * 1.5);
+      const ringAlpha = hitPulseIntensity * 0.6;
+      ctx.strokeStyle = `rgba(255, 200, 200, ${ringAlpha})`;
+      ctx.lineWidth = 2 * hitPulseIntensity;
+      ctx.beginPath();
+      ctx.arc(centerX, needleTip, ringRadius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Inner bright core (intensifies on hit)
+    const coreSize = cellSize * 0.03 * (1 + hitPulseIntensity * 0.5);
     const innerGlow = ctx.createRadialGradient(
       centerX,
       needleTip,
       0,
       centerX,
       needleTip,
-      cellSize * 0.03
+      coreSize
     );
+    // Whiter core when hit pulse is active
+    const coreWhiteness = hitPulseIntensity * 0.3;
     innerGlow.addColorStop(0, '#ffffff');
-    innerGlow.addColorStop(0.3, '#ffcccc');
-    innerGlow.addColorStop(0.6, '#ff6666');
+    innerGlow.addColorStop(0.3, `rgb(255, ${204 + 51 * coreWhiteness}, ${204 + 51 * coreWhiteness})`);
+    innerGlow.addColorStop(0.6, `rgb(255, ${102 + 50 * coreWhiteness}, ${102 + 50 * coreWhiteness})`);
     innerGlow.addColorStop(1, '#ff3333');
     ctx.fillStyle = innerGlow;
     ctx.beginPath();
-    ctx.arc(centerX, needleTip, cellSize * 0.03, 0, Math.PI * 2);
+    ctx.arc(centerX, needleTip, coreSize, 0, Math.PI * 2);
     ctx.fill();
 
-    // Tip highlight spark (flickers)
+    // Tip highlight spark (flickers, more frequent during hit pulse)
+    const sparkThreshold = hitPulseIntensity > 0 ? 0.3 : 0.6;
     const sparkPhase = (time * 0.005) % 1;
-    if (sparkPhase > 0.6) {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    if (sparkPhase > sparkThreshold) {
+      const sparkAlpha = hitPulseIntensity > 0 ? 1.0 : 0.8;
+      ctx.fillStyle = `rgba(255, 255, 255, ${sparkAlpha})`;
       ctx.beginPath();
-      ctx.arc(centerX, needleTip - 2, 1.5, 0, Math.PI * 2);
+      ctx.arc(centerX, needleTip - 2, 1.5 + hitPulseIntensity, 0, Math.PI * 2);
       ctx.fill();
     }
   },
