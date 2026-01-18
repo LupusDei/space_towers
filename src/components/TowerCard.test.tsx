@@ -116,6 +116,32 @@ describe('TowerCard', () => {
 
       expect(onClick).not.toHaveBeenCalled();
     });
+
+    it('should show unlock cost when locked with unlockCost prop', () => {
+      render(<TowerCard type={TowerType.LASER} locked unlockCost={15} />);
+      expect(screen.getByText('UNLOCK')).toBeInTheDocument();
+      expect(screen.getByText('15')).toBeInTheDocument();
+    });
+
+    it('should not show regular cost when locked with unlockCost', () => {
+      const stats = TOWER_STATS[TowerType.LASER];
+      render(<TowerCard type={TowerType.LASER} locked unlockCost={15} />);
+      expect(screen.queryByText(`$${stats.cost}`)).not.toBeInTheDocument();
+    });
+
+    it('should show regular cost when locked without unlockCost', () => {
+      const stats = TOWER_STATS[TowerType.LASER];
+      render(<TowerCard type={TowerType.LASER} locked />);
+      expect(screen.getByText(`$${stats.cost}`)).toBeInTheDocument();
+      expect(screen.queryByText('UNLOCK')).not.toBeInTheDocument();
+    });
+
+    it('should show regular cost when not locked even with unlockCost', () => {
+      const stats = TOWER_STATS[TowerType.LASER];
+      render(<TowerCard type={TowerType.LASER} unlockCost={15} />);
+      expect(screen.getByText(`$${stats.cost}`)).toBeInTheDocument();
+      expect(screen.queryByText('UNLOCK')).not.toBeInTheDocument();
+    });
   });
 
   describe('selected state', () => {
