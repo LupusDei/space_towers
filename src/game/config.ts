@@ -127,6 +127,21 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     rangePerLevel: 12,
     fireRatePerLevel: -0.12,
   },
+
+  [TowerType.GRAVITY]: {
+    type: TowerType.GRAVITY,
+    name: 'Gravity Tower',
+    cost: 80,
+    damage: 5,
+    range: 100,
+    fireRate: 1.0,
+    // Leveling: utility/slow tower
+    maxLevel: 5,
+    upgradeCosts: [90, 135, 200, 300], // Total to max: 725
+    damagePerLevel: 3,
+    rangePerLevel: 8,
+    fireRatePerLevel: -0.05,
+  },
 };
 
 // ============================================================================

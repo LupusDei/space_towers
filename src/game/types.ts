@@ -38,6 +38,7 @@ export const TowerType = {
   MISSILE: 'missile',
   TESLA: 'tesla',
   CANNON: 'cannon',
+  GRAVITY: 'gravity',
 } as const;
 export type TowerType = (typeof TowerType)[keyof typeof TowerType];
 
