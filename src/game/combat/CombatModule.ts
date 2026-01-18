@@ -23,7 +23,7 @@ import { GAME_CONFIG, COMBAT_CONFIG } from '../config';
 // ============================================================================
 
 export interface HitscanEffect {
-  type: 'laser' | 'tesla' | 'sniper';
+  type: 'laser' | 'tesla' | 'sniper' | 'needle';
   towerId: string;
   towerPosition: Point;
   targetPosition: Point;
@@ -76,6 +76,10 @@ function isGravityTower(type: TowerType): boolean {
 
 function isSniperTower(type: TowerType): boolean {
   return type === TT.SNIPER;
+}
+
+function isNeedleTower(type: TowerType): boolean {
+  return type === TT.NEEDLE;
 }
 
 function towerPositionToPixels(position: Point): Point {
@@ -251,6 +255,8 @@ class CombatModuleImpl implements GameModule {
           this.handleGravityFire(towerData, target, currentTime);
         } else if (isSniperTower(towerData.type)) {
           this.handleSniperFire(towerData, target, currentTime);
+        } else if (isNeedleTower(towerData.type)) {
+          this.handleNeedleFire(towerData, target, currentTime);
         }
       }
     }
@@ -457,6 +463,48 @@ class CombatModuleImpl implements GameModule {
       createEvent('PROJECTILE_FIRED', {
         projectile: {
           id: `sniper_${tower.id}_${currentTime}`,
+          sourceId: tower.id,
+          targetId: target.id,
+          towerType: tower.type,
+          position: towerPositionToPixels(tower.position),
+          velocity: { x: 0, y: 0 },
+          damage: tower.damage,
+          speed: 0,
+          piercing: false,
+          aoe: 0,
+        },
+      })
+    );
+  }
+
+  // ==========================================================================
+  // Needle Tower (Rapid-fire single target)
+  // ==========================================================================
+
+  private handleNeedleFire(tower: Tower, target: Enemy, currentTime: number): void {
+    // Validate target still exists
+    const validTarget = this.query?.getEnemyById(target.id);
+    if (!validTarget) return;
+
+    // Apply instant damage (hitscan - rapid fire, 4 hits per second)
+    const damage = calculateDamage(tower.damage, validTarget.armor);
+    this.applyDamage(validTarget, damage, tower.id);
+
+    // Create visual effect (short duration for rapid-fire feel)
+    this.state.hitscanEffects.push({
+      type: 'needle',
+      towerId: tower.id,
+      towerPosition: { ...tower.position },
+      targetPosition: { ...validTarget.position },
+      startTime: currentTime,
+      duration: COMBAT_CONFIG.HITSCAN_EFFECT_DURATION,
+    });
+
+    // Emit projectile fired event (for audio/other systems)
+    eventBus.emit(
+      createEvent('PROJECTILE_FIRED', {
+        projectile: {
+          id: `needle_${tower.id}_${currentTime}`,
           sourceId: tower.id,
           targetId: target.id,
           towerType: tower.type,

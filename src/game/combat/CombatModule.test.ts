@@ -920,3 +920,246 @@ describe('Gravity Tower AOE', () => {
     unsubscribe();
   });
 });
+
+describe('Needle Tower Firing', () => {
+  beforeEach(() => {
+    eventBus.clear();
+    combatModule.destroy();
+  });
+
+  it('should apply instant damage when needle fires', () => {
+    const tower = createMockTower({
+      type: TowerType.NEEDLE,
+      damage: 10,
+      fireRate: 0.25, // 4 hits per second
+    });
+    const enemy = createMockEnemy({ health: 100, armor: 0 });
+    const query = createMockQuery([tower], [enemy]);
+    const commands = createMockCommands();
+
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(enemy.health).toBe(90); // 100 - 10 damage
+  });
+
+  it('should create hitscan effect when needle fires', () => {
+    const tower = createMockTower({
+      type: TowerType.NEEDLE,
+      damage: 10,
+      fireRate: 0.25,
+    });
+    const enemy = createMockEnemy({ health: 100 });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    const effects = combatModule.getHitscanEffects();
+    expect(effects.length).toBeGreaterThan(0);
+    expect(effects[0].type).toBe('needle');
+  });
+
+  it('should reduce damage by armor', () => {
+    const tower = createMockTower({
+      type: TowerType.NEEDLE,
+      damage: 10,
+      fireRate: 0.25,
+    });
+    const enemy = createMockEnemy({ health: 100, armor: 3 });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(enemy.health).toBe(93); // 100 - (10 - 3) = 93
+  });
+
+  it('should deal minimum 1 damage when armor exceeds base damage', () => {
+    const tower = createMockTower({
+      type: TowerType.NEEDLE,
+      damage: 10,
+      fireRate: 0.25,
+    });
+    const enemy = createMockEnemy({ health: 100, armor: 50 });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    // 10 damage - 50 armor = -40, but minimum is 1
+    expect(enemy.health).toBe(99);
+  });
+
+  it('should kill enemy when damage exceeds health', () => {
+    const tower = createMockTower({
+      type: TowerType.NEEDLE,
+      damage: 100,
+      fireRate: 0.25,
+    });
+    const enemy = createMockEnemy({ health: 50, armor: 0 });
+    let removedEnemyId: string | null = null;
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: (id: string) => {
+        removedEnemyId = id;
+      },
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(removedEnemyId).toBe(enemy.id);
+  });
+
+  it('should award credits when enemy is killed', () => {
+    const tower = createMockTower({
+      type: TowerType.NEEDLE,
+      damage: 100,
+      fireRate: 0.25,
+    });
+    const enemy = createMockEnemy({ health: 50, armor: 0, reward: 15 });
+    let addedCredits = 0;
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {
+        enemy.reward = 0; // Simulate pool reset
+      },
+      addCredits: (amount: number) => {
+        addedCredits = amount;
+      },
+      getTime: () => 0,
+      applySlow: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(addedCredits).toBe(15);
+  });
+
+  it('should track kills and damage on tower', () => {
+    const tower = createMockTower({
+      type: TowerType.NEEDLE,
+      damage: 30,
+      fireRate: 0.25,
+    });
+    const enemy = createMockEnemy({ id: 'enemy_1', health: 25, armor: 0 });
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(tower.kills).toBe(1);
+    expect(tower.totalDamage).toBeGreaterThan(0);
+  });
+
+  it('should not damage enemy outside range', () => {
+    const tower = createMockTower({
+      type: TowerType.NEEDLE,
+      damage: 10,
+      range: 50,
+      position: { x: 0, y: 0 },
+      fireRate: 0.25,
+    });
+    // Enemy far outside range
+    const enemy = createMockEnemy({ position: { x: 500, y: 500 }, health: 100 });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(enemy.health).toBe(100); // No damage
+    expect(combatModule.getHitscanEffects().length).toBe(0);
+  });
+
+  it('should emit PROJECTILE_FIRED event when firing', () => {
+    const tower = createMockTower({
+      type: TowerType.NEEDLE,
+      damage: 10,
+      fireRate: 0.25,
+    });
+    const enemy = createMockEnemy({ health: 100 });
+
+    let eventReceived = false;
+    const unsubscribe = eventBus.on('PROJECTILE_FIRED', (event) => {
+      if (event.payload.projectile.towerType === TowerType.NEEDLE) {
+        eventReceived = true;
+      }
+    });
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(eventReceived).toBe(true);
+    unsubscribe();
+  });
+
+  it('should not create effect when target is removed before firing', () => {
+    const tower = createMockTower({
+      type: TowerType.NEEDLE,
+      damage: 10,
+      fireRate: 0.25,
+    });
+    const enemy = createMockEnemy({ id: 'enemy_1', health: 100 });
+
+    let enemyRemoved = false;
+    const enemies = [enemy];
+
+    const query: QueryInterface = {
+      getTowers: () => [tower],
+      getEnemies: () => (enemyRemoved ? [] : enemies),
+      getProjectiles: () => [],
+      getTowerById: (id: string) => (id === tower.id ? tower : undefined),
+      getEnemyById: () => {
+        if (!enemyRemoved) {
+          enemyRemoved = true;
+          return undefined;
+        }
+        return undefined;
+      },
+      getEnemiesInRange: () => (enemyRemoved ? [] : enemies),
+      getEnemiesAlongPath: () => (enemyRemoved ? [] : enemies),
+      getPath: () => [],
+      getCell: () => 'empty' as const,
+      getTowerAt: () => undefined,
+      getGameState: () => ({
+        phase: 'combat' as const,
+        wave: 1,
+        lives: 20,
+        credits: 200,
+        score: 0,
+        towers: new Map([[tower.id, tower]]),
+        enemies: new Map(enemyRemoved ? [] : [[enemy.id, enemy]]),
+        projectiles: new Map(),
+        grid: [],
+        path: [],
+        selectedTower: null,
+        selectedTowerType: null,
+        isPaused: false,
+      }),
+    };
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    const effects = combatModule.getHitscanEffects();
+    expect(effects.length).toBe(0);
+  });
+});
