@@ -1,8 +1,8 @@
 // Needle Tower Sprite Tests
-// Tests the NeedleTowerSprite visual component
+// Tests the NeedleTowerSprite visual component and hit pulse manager
 
-import { describe, it, expect, vi } from 'vitest';
-import { NeedleTowerSprite } from './NeedleTowerSprite';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { NeedleTowerSprite, needleHitPulseManager } from './NeedleTowerSprite';
 import type { SpriteRenderContext } from '../types';
 import type { Tower } from '../../game/types';
 import { TowerType } from '../../game/types';
@@ -237,5 +237,122 @@ describe('NeedleTowerSprite', () => {
       // Level 5 should have more drawing calls due to additional features
       expect(calls5).toBeGreaterThan(calls1);
     });
+  });
+
+  describe('hit pulse integration', () => {
+    it('draws without errors when hit pulse is active', () => {
+      const context = createMockContext(0.1); // time in seconds
+      const tower = createMockTower(1);
+
+      // Trigger a hit pulse
+      needleHitPulseManager.triggerHit(tower.id, 50); // 50ms
+
+      expect(() => NeedleTowerSprite.draw(context, tower)).not.toThrow();
+    });
+
+    it('draws hit pulse ring when pulse is active', () => {
+      const context = createMockContext(0.05); // 50ms in seconds
+      const tower = createMockTower(1);
+
+      // Trigger a hit pulse at time 0
+      needleHitPulseManager.triggerHit(tower.id, 0);
+
+      NeedleTowerSprite.draw(context, tower);
+
+      // Should draw the hit pulse ring (extra stroke call)
+      expect(context.ctx.stroke).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('needleHitPulseManager', () => {
+  beforeEach(() => {
+    needleHitPulseManager.clear();
+  });
+
+  it('starts with no active pulses', () => {
+    expect(needleHitPulseManager.getActiveCount()).toBe(0);
+  });
+
+  it('triggers a hit pulse for a tower', () => {
+    needleHitPulseManager.triggerHit('tower-1', 0);
+    expect(needleHitPulseManager.getActiveCount()).toBe(1);
+  });
+
+  it('returns pulse intensity > 0 immediately after trigger', () => {
+    needleHitPulseManager.triggerHit('tower-1', 0);
+    const intensity = needleHitPulseManager.getPulseIntensity('tower-1', 10);
+    expect(intensity).toBeGreaterThan(0);
+  });
+
+  it('returns pulse intensity of 0 after duration expires', () => {
+    needleHitPulseManager.triggerHit('tower-1', 0);
+    // Duration is 150ms, so at 200ms it should be 0
+    const intensity = needleHitPulseManager.getPulseIntensity('tower-1', 200);
+    expect(intensity).toBe(0);
+  });
+
+  it('returns 0 intensity for unknown tower', () => {
+    const intensity = needleHitPulseManager.getPulseIntensity('unknown', 0);
+    expect(intensity).toBe(0);
+  });
+
+  it('replaces pulse when same tower is triggered again', () => {
+    needleHitPulseManager.triggerHit('tower-1', 0);
+    needleHitPulseManager.triggerHit('tower-1', 100);
+
+    // Should still only have 1 pulse
+    expect(needleHitPulseManager.getActiveCount()).toBe(1);
+
+    // Intensity should be based on the new start time
+    // At 105ms (only 5ms elapsed from 100ms start), should be high
+    const intensity = needleHitPulseManager.getPulseIntensity('tower-1', 105);
+    expect(intensity).toBeGreaterThan(0.9); // Should be near max since only 5ms elapsed
+  });
+
+  it('tracks multiple towers independently', () => {
+    needleHitPulseManager.triggerHit('tower-1', 0);
+    needleHitPulseManager.triggerHit('tower-2', 50);
+
+    expect(needleHitPulseManager.getActiveCount()).toBe(2);
+
+    // tower-1 at 100ms should be further decayed
+    const intensity1 = needleHitPulseManager.getPulseIntensity('tower-1', 100);
+    // tower-2 at 100ms should be less decayed (started at 50ms)
+    const intensity2 = needleHitPulseManager.getPulseIntensity('tower-2', 100);
+
+    expect(intensity2).toBeGreaterThan(intensity1);
+  });
+
+  it('clears all pulses', () => {
+    needleHitPulseManager.triggerHit('tower-1', 0);
+    needleHitPulseManager.triggerHit('tower-2', 0);
+
+    needleHitPulseManager.clear();
+
+    expect(needleHitPulseManager.getActiveCount()).toBe(0);
+  });
+
+  it('removes expired pulse when getting intensity', () => {
+    needleHitPulseManager.triggerHit('tower-1', 0);
+    expect(needleHitPulseManager.getActiveCount()).toBe(1);
+
+    // Get intensity after expiration
+    needleHitPulseManager.getPulseIntensity('tower-1', 200);
+
+    // Pulse should be removed
+    expect(needleHitPulseManager.getActiveCount()).toBe(0);
+  });
+
+  it('pulse intensity decays smoothly', () => {
+    needleHitPulseManager.triggerHit('tower-1', 0);
+
+    const intensity0 = needleHitPulseManager.getPulseIntensity('tower-1', 0);
+    const intensity50 = needleHitPulseManager.getPulseIntensity('tower-1', 50);
+    const intensity100 = needleHitPulseManager.getPulseIntensity('tower-1', 100);
+
+    // Should decay over time
+    expect(intensity0).toBeGreaterThan(intensity50);
+    expect(intensity50).toBeGreaterThan(intensity100);
   });
 });
