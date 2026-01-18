@@ -17,6 +17,7 @@ export class Tower implements TowerData {
   fireRate: number;
   lastFired: number;
   target: string | null;
+  targetPosition: Point | null;
   kills: number;
   totalDamage: number;
 
@@ -35,6 +36,7 @@ export class Tower implements TowerData {
     this.fireRate = stats.fireRate;
     this.lastFired = 0;
     this.target = null;
+    this.targetPosition = null;
     this.kills = 0;
     this.totalDamage = 0;
     this.cooldownRemaining = 0; // Ready to fire immediately
@@ -85,9 +87,11 @@ export class Tower implements TowerData {
   /**
    * Set the tower's current target.
    * @param targetId - Enemy ID to target, or null to clear
+   * @param targetPosition - Position of the target for turret rotation
    */
-  setTarget(targetId: string | null): void {
+  setTarget(targetId: string | null, targetPosition?: Point | null): void {
     this.target = targetId;
+    this.targetPosition = targetPosition ?? null;
   }
 
   /**
@@ -142,6 +146,7 @@ export class Tower implements TowerData {
       fireRate: this.fireRate,
       lastFired: this.lastFired,
       target: this.target,
+      targetPosition: this.targetPosition ? { ...this.targetPosition } : null,
       kills: this.kills,
       totalDamage: this.totalDamage,
     };

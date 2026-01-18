@@ -221,12 +221,18 @@ class CombatModuleImpl implements GameModule {
 
       const target = findTarget(towerData, this.query);
       if (!target) {
-        tower.setTarget(null);
+        tower.setTarget(null, null);
+        // Also update engine's tower data for rendering
+        towerData.target = null;
+        towerData.targetPosition = null;
         continue;
       }
 
-      // Set target and fire
-      tower.setTarget(target.id);
+      // Set target and fire (pass target position for turret rotation)
+      tower.setTarget(target.id, target.position);
+      // Also update engine's tower data for rendering
+      towerData.target = target.id;
+      towerData.targetPosition = { ...target.position };
       const fireResult = tower.fire(currentTime);
 
       if (fireResult) {

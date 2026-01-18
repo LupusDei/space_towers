@@ -35,6 +35,7 @@ function createTower(overrides: Partial<Tower> = {}): Tower {
     fireRate: 0.5,
     lastFired: 0,
     target: null,
+    targetPosition: null,
     kills: 0,
     totalDamage: 0,
     ...overrides,

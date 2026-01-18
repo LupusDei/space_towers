@@ -54,6 +54,7 @@ export default function TowerIcon({ type, size = 40 }: TowerIconProps) {
       fireRate: 0,
       lastFired: 0,
       target: null,
+      targetPosition: null,
       kills: 0,
       totalDamage: 0,
     };
