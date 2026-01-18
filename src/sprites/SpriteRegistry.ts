@@ -9,6 +9,7 @@ import { LaserTurretSprite } from './towers/LaserTurretSprite';
 import { MissileBatterySprite } from './towers/MissileBatterySprite';
 import { TeslaCoilSprite } from './towers/TeslaCoilSprite';
 import { PlasmaCannonSprite } from './towers/PlasmaCannonSprite';
+import { SniperTowerSprite } from './towers/SniperTowerSprite';
 
 // Enemy sprites
 import { ScoutDroneSprite } from './enemies/ScoutDroneSprite';
@@ -27,6 +28,7 @@ const towerSprites: Record<TowerType, TowerSprite> = {
   [TowerType.TESLA]: TeslaCoilSprite,
   [TowerType.CANNON]: PlasmaCannonSprite,
   [TowerType.GRAVITY]: LaserTurretSprite, // TODO: Replace with GravityWellSprite
+  [TowerType.SNIPER]: SniperTowerSprite,
 };
 
 // Enemy type to sprite mapping

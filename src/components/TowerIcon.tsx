@@ -5,6 +5,7 @@ import { LaserTurretSprite } from '../sprites/towers/LaserTurretSprite';
 import { MissileBatterySprite } from '../sprites/towers/MissileBatterySprite';
 import { TeslaCoilSprite } from '../sprites/towers/TeslaCoilSprite';
 import { PlasmaCannonSprite } from '../sprites/towers/PlasmaCannonSprite';
+import { SniperTowerSprite } from '../sprites/towers/SniperTowerSprite';
 
 // Map tower types to their sprites
 const towerSprites: Record<TowerType, typeof LaserTurretSprite> = {
@@ -13,6 +14,7 @@ const towerSprites: Record<TowerType, typeof LaserTurretSprite> = {
   [TowerType.TESLA]: TeslaCoilSprite,
   [TowerType.CANNON]: PlasmaCannonSprite,
   [TowerType.GRAVITY]: LaserTurretSprite, // TODO: Replace with GravityWellSprite
+  [TowerType.SNIPER]: SniperTowerSprite,
 };
 
 // Tower type to color mapping for background glow
@@ -22,6 +24,7 @@ const towerColors: Record<TowerType, string> = {
   [TowerType.TESLA]: '#FFFF00',
   [TowerType.CANNON]: '#FF44FF',
   [TowerType.GRAVITY]: '#9944FF',
+  [TowerType.SNIPER]: '#88FF88',
 };
 
 interface TowerIconProps {
