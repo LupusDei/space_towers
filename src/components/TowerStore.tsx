@@ -5,6 +5,7 @@ import TowerIcon from './TowerIcon';
 
 interface TowerStoreProps {
   credits: number;
+  waveCredits: number;
   selectedTowerType: TowerType | null;
   onSelectTowerType: (type: TowerType | null) => void;
 }
@@ -13,12 +14,16 @@ const towerTypes = Object.values(TowerType) as TowerType[];
 
 export default function TowerStore({
   credits,
+  waveCredits,
   selectedTowerType,
   onSelectTowerType,
 }: TowerStoreProps) {
   return (
     <div style={styles.container}>
-      <div style={styles.header}>Tower Store</div>
+      <div style={styles.headerSection}>
+        <div style={styles.header}>Tower Store</div>
+        <div style={styles.waveCredits}>Wave Credits: {waveCredits}</div>
+      </div>
       <div style={styles.grid}>
         {towerTypes.map((type) => {
           const stats = TOWER_STATS[type];
@@ -67,6 +72,12 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '8px',
     border: `1px solid ${colors.accent}33`,
   },
+  headerSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   header: {
     fontFamily: typography.fontFamily.mono,
     fontSize: typography.fontSize.md,
@@ -75,6 +86,12 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase',
     letterSpacing: '2px',
     textAlign: 'center',
+  },
+  waveCredits: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.credits,
   },
   grid: {
     display: 'grid',

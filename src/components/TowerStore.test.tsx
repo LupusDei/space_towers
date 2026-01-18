@@ -23,6 +23,7 @@ describe('TowerStore', () => {
       render(
         <TowerStore
           credits={1000}
+          waveCredits={42}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
         />
@@ -42,6 +43,7 @@ describe('TowerStore', () => {
       render(
         <TowerStore
           credits={1000}
+          waveCredits={42}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
         />
@@ -56,12 +58,65 @@ describe('TowerStore', () => {
       render(
         <TowerStore
           credits={1000}
+          waveCredits={42}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
         />
       );
 
       expect(screen.getByText('Tower Store')).toBeInTheDocument();
+    });
+
+    it('should display Wave Credits balance', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={42}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      expect(screen.getByText('Wave Credits: 42')).toBeInTheDocument();
+    });
+
+    it('should display zero Wave Credits', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={0}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      expect(screen.getByText('Wave Credits: 0')).toBeInTheDocument();
+    });
+
+    it('should update Wave Credits display reactively', () => {
+      const { rerender } = render(
+        <TowerStore
+          credits={1000}
+          waveCredits={50}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      expect(screen.getByText('Wave Credits: 50')).toBeInTheDocument();
+
+      // Simulate spending credits by rerendering with new value
+      rerender(
+        <TowerStore
+          credits={1000}
+          waveCredits={40}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      expect(screen.getByText('Wave Credits: 40')).toBeInTheDocument();
+      expect(screen.queryByText('Wave Credits: 50')).not.toBeInTheDocument();
     });
   });
 
@@ -70,6 +125,7 @@ describe('TowerStore', () => {
       render(
         <TowerStore
           credits={1000}
+          waveCredits={42}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
         />
@@ -85,6 +141,7 @@ describe('TowerStore', () => {
       render(
         <TowerStore
           credits={1000}
+          waveCredits={42}
           selectedTowerType={TowerType.LASER}
           onSelectTowerType={mockOnSelectTowerType}
         />
@@ -100,6 +157,7 @@ describe('TowerStore', () => {
       render(
         <TowerStore
           credits={1000}
+          waveCredits={42}
           selectedTowerType={TowerType.LASER}
           onSelectTowerType={mockOnSelectTowerType}
         />
@@ -117,6 +175,7 @@ describe('TowerStore', () => {
       render(
         <TowerStore
           credits={30}
+          waveCredits={0}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
         />
@@ -135,6 +194,7 @@ describe('TowerStore', () => {
       render(
         <TowerStore
           credits={10}
+          waveCredits={0}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
         />
@@ -150,6 +210,7 @@ describe('TowerStore', () => {
       render(
         <TowerStore
           credits={1000}
+          waveCredits={0}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
         />
