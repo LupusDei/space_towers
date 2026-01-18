@@ -332,6 +332,15 @@ class GameEngine {
     }
   }
 
+  returnToStore(): void {
+    if (this.stateMachine.isPaused()) {
+      this.state.isPaused = false;
+      this.loopManager.stop();
+      // Keep the current tower selection when returning to store
+      this.stateMachine.transitionTo(Phase.TOWER_STORE);
+    }
+  }
+
   victory(): void {
     this.stateMachine.forcePhase(Phase.VICTORY);
     this.loopManager.stop();

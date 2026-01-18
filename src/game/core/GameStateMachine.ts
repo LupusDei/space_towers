@@ -24,7 +24,7 @@ const VALID_TRANSITIONS: Record<GamePhase, GamePhase[]> = {
   [Phase.TOWER_STORE]: [Phase.PLANNING, Phase.MENU],
   [Phase.PLANNING]: [Phase.COMBAT, Phase.PAUSED, Phase.VICTORY, Phase.DEFEAT],
   [Phase.COMBAT]: [Phase.PLANNING, Phase.PAUSED, Phase.VICTORY, Phase.DEFEAT],
-  [Phase.PAUSED]: [Phase.PLANNING, Phase.COMBAT],
+  [Phase.PAUSED]: [Phase.PLANNING, Phase.COMBAT, Phase.TOWER_STORE],
   [Phase.VICTORY]: [Phase.MENU, Phase.PLANNING, Phase.TOWER_STORE],
   [Phase.DEFEAT]: [Phase.MENU, Phase.PLANNING, Phase.TOWER_STORE],
 };

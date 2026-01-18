@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect, useCallback } from 'react';
+import { useState, useLayoutEffect, useCallback, useEffect } from 'react';
 import './App.css';
 import { useGameEngine } from './hooks/useGameEngine';
 import { GamePhase, TowerType } from './game/types';
@@ -9,6 +9,7 @@ import HUD from './components/HUD';
 import TowerPanel from './components/TowerPanel';
 import TowerSelectionWindow from './components/TowerSelectionWindow';
 import GameOver from './components/GameOver';
+import PauseMenu from './components/PauseMenu';
 import EngageButton from './components/EngageButton';
 import WavePreview from './components/WavePreview';
 import WaveSummary from './components/WaveSummary';
@@ -48,6 +49,22 @@ function useResponsiveScale() {
 function App() {
   const { state, actions } = useGameEngine();
   const scale = useResponsiveScale();
+
+  // Keyboard handler for pause/resume (Escape key)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (state.phase === GamePhase.PAUSED) {
+          actions.resume();
+        } else if (state.phase === GamePhase.PLANNING || state.phase === GamePhase.COMBAT) {
+          actions.pause();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [state.phase, actions]);
 
   const handleStartGame = () => {
     actions.startGame();
@@ -117,6 +134,7 @@ function App() {
         </div>
       </div>
       <GameOver onPlayAgain={handlePlayAgain} />
+      <PauseMenu onResume={actions.resume} onBackToStore={actions.returnToStore} />
       <WaveSummary phase={state.phase} />
       {selectedTowerObj && (
         <TowerSelectionWindow

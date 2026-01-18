@@ -15,6 +15,9 @@ export interface GameActions {
   selectTower: (towerId: string | null) => void;
   selectTowerType: (type: TowerType | null) => void;
   startGame: () => void;
+  pause: () => void;
+  resume: () => void;
+  returnToStore: () => void;
 }
 
 export interface UseGameEngineResult {
@@ -100,6 +103,21 @@ export function useGameEngine(): UseGameEngineResult {
     engine.startGame();
   }, []);
 
+  // Action: Pause the game
+  const pause = useCallback(() => {
+    engine.pause();
+  }, []);
+
+  // Action: Resume the game
+  const resume = useCallback(() => {
+    engine.resume();
+  }, []);
+
+  // Action: Return to tower store from pause
+  const returnToStore = useCallback(() => {
+    engine.returnToStore();
+  }, []);
+
   const actions: GameActions = {
     placeTower,
     sellTower,
@@ -108,6 +126,9 @@ export function useGameEngine(): UseGameEngineResult {
     selectTower,
     selectTowerType,
     startGame,
+    pause,
+    resume,
+    returnToStore,
   };
 
   return { state, actions };

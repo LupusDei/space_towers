@@ -315,6 +315,13 @@ describe('GameStateMachine', () => {
       expect(stateMachine.transitionTo(GamePhase.COMBAT)).toBe(true);
     });
 
+    it('PAUSED -> TOWER_STORE (back to store)', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
+      stateMachine.transitionTo(GamePhase.PLANNING);
+      stateMachine.transitionTo(GamePhase.PAUSED);
+      expect(stateMachine.transitionTo(GamePhase.TOWER_STORE)).toBe(true);
+    });
+
     it('VICTORY -> MENU', () => {
       stateMachine.forcePhase(GamePhase.VICTORY);
       expect(stateMachine.transitionTo(GamePhase.MENU)).toBe(true);
