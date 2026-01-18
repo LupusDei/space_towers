@@ -125,6 +125,8 @@ function createEnemy(): Enemy {
     reward: 0,
     pathIndex: 0,
     path: [],
+    slowMultiplier: 1,
+    slowEndTime: 0,
   };
 }
 
@@ -140,6 +142,8 @@ function resetEnemy(enemy: Enemy): void {
   enemy.reward = 0;
   enemy.pathIndex = 0;
   enemy.path = [];
+  enemy.slowMultiplier = 1;
+  enemy.slowEndTime = 0;
 }
 
 export const enemyPool = new ObjectPool<Enemy>({

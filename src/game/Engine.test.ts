@@ -898,6 +898,119 @@ describe('Engine Integration', () => {
   });
 
   // ==========================================================================
+  // Slow Effect System Tests
+  // ==========================================================================
+
+  describe('Slow Effect System', () => {
+    beforeEach(() => {
+      engine.startGame();
+    });
+
+    it('applySlow sets slowMultiplier and slowEndTime on enemy', () => {
+      engine.startWave();
+
+      const enemy = engine['enemyPool'].acquire();
+      enemy.type = EnemyType.SCOUT;
+      enemy.health = 100;
+      enemy.maxHealth = 100;
+      enemy.speed = 100;
+      engine.addEnemy(enemy);
+
+      // Apply 50% slow for 2000ms
+      engine.applySlow(enemy.id, 0.5, 2000);
+
+      const found = engine.getEnemyById(enemy.id);
+      expect(found?.slowMultiplier).toBe(0.5);
+      expect(found?.slowEndTime).toBeGreaterThan(0);
+    });
+
+    it('applySlow does nothing for non-existent enemy', () => {
+      engine.startWave();
+
+      // Should not throw
+      engine.applySlow('nonexistent', 0.5, 2000);
+    });
+
+    it('applySlow refreshes duration if new slow lasts longer', () => {
+      engine.startWave();
+
+      const enemy = engine['enemyPool'].acquire();
+      enemy.type = EnemyType.SCOUT;
+      enemy.health = 100;
+      enemy.maxHealth = 100;
+      enemy.speed = 100;
+      engine.addEnemy(enemy);
+
+      // Apply first slow
+      engine.applySlow(enemy.id, 0.5, 1000);
+      const firstEndTime = engine.getEnemyById(enemy.id)?.slowEndTime;
+
+      // Apply second slow with longer duration
+      engine.applySlow(enemy.id, 0.3, 3000);
+      const secondEndTime = engine.getEnemyById(enemy.id)?.slowEndTime;
+
+      expect(secondEndTime).toBeGreaterThan(firstEndTime!);
+      expect(engine.getEnemyById(enemy.id)?.slowMultiplier).toBe(0.3);
+    });
+
+    it('applySlow does not change if new slow would end sooner', () => {
+      engine.startWave();
+
+      const enemy = engine['enemyPool'].acquire();
+      enemy.type = EnemyType.SCOUT;
+      enemy.health = 100;
+      enemy.maxHealth = 100;
+      enemy.speed = 100;
+      engine.addEnemy(enemy);
+
+      // Apply first slow with long duration
+      engine.applySlow(enemy.id, 0.5, 5000);
+      const firstEndTime = engine.getEnemyById(enemy.id)?.slowEndTime;
+      const firstMultiplier = engine.getEnemyById(enemy.id)?.slowMultiplier;
+
+      // Apply second slow with shorter duration
+      engine.applySlow(enemy.id, 0.3, 1000);
+
+      // Should keep the first slow since it lasts longer
+      expect(engine.getEnemyById(enemy.id)?.slowEndTime).toBe(firstEndTime);
+      expect(engine.getEnemyById(enemy.id)?.slowMultiplier).toBe(firstMultiplier);
+    });
+
+    it('enemy pool resets slow fields when released', () => {
+      engine.startWave();
+
+      const enemy = engine['enemyPool'].acquire();
+      enemy.slowMultiplier = 0.5;
+      enemy.slowEndTime = 99999;
+      engine.addEnemy(enemy);
+      engine.removeEnemy(enemy.id);
+
+      // Re-acquire from pool
+      const newEnemy = engine['enemyPool'].acquire();
+
+      expect(newEnemy.slowMultiplier).toBe(1);
+      expect(newEnemy.slowEndTime).toBe(0);
+    });
+
+    it('CommandInterface exposes applySlow method', () => {
+      engine.startWave();
+
+      const enemy = engine['enemyPool'].acquire();
+      enemy.type = EnemyType.SCOUT;
+      enemy.health = 100;
+      enemy.maxHealth = 100;
+      enemy.speed = 100;
+      engine.addEnemy(enemy);
+
+      const commands = engine.getCommandInterface();
+      commands.applySlow(enemy.id, 0.5, 2000);
+
+      const found = engine.getEnemyById(enemy.id);
+      expect(found?.slowMultiplier).toBe(0.5);
+    });
+  });
+
+  // ==========================================================================
   // Reset and Cleanup Tests
   // ==========================================================================
 

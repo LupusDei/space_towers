@@ -40,6 +40,8 @@ function createMockEnemy(overrides: Partial<Enemy> = {}): Enemy {
     reward: 10,
     pathIndex: 0,
     path: [],
+    slowMultiplier: 1,
+    slowEndTime: 0,
     ...overrides,
   };
 }
@@ -94,6 +96,7 @@ function createMockCommands(): CommandInterface {
     removeEnemy: () => {},
     addCredits: () => {},
     getTime: () => 0,
+    applySlow: () => {},
   };
 }
 
@@ -232,6 +235,7 @@ describe('cleanupVisualEffects', () => {
       removeEnemy: () => {},
       addCredits: () => {},
       getTime: () => currentTime,
+      applySlow: () => {},
     };
     combatModule.init(query, commands);
 
@@ -326,6 +330,7 @@ describe('Laser Tower Damage', () => {
       },
       addCredits: () => {},
       getTime: () => 0,
+      applySlow: () => {},
     };
 
     const query = createMockQuery([tower], [enemy]);
@@ -350,6 +355,7 @@ describe('Laser Tower Damage', () => {
         addedCredits = amount;
       },
       getTime: () => 0,
+      applySlow: () => {},
     };
 
     const query = createMockQuery([tower], [enemy]);
@@ -370,6 +376,7 @@ describe('Laser Tower Damage', () => {
       removeEnemy: () => {},
       addCredits: () => {},
       getTime: () => 0,
+      applySlow: () => {},
     };
 
     const query = createMockQuery([tower], [enemy1, enemy2]);
@@ -433,6 +440,7 @@ describe('Projectile pool tracking', () => {
       removeEnemy: () => {},
       addCredits: () => {},
       getTime: () => 0,
+      applySlow: () => {},
     };
 
     const query = createMockQuery([tower], [enemy]);
@@ -474,6 +482,8 @@ describe('Damage calculation', () => {
       position: { x: 5 * 44 + 22, y: 5 * 44 + 22 }, // Same cell as tower, in pixels
       pathIndex: 0,
       path: [],
+      slowMultiplier: 1,
+      slowEndTime: 0,
     };
 
     const query = createMockQuery([tower], [enemy]);
@@ -510,6 +520,8 @@ describe('Damage calculation', () => {
       position: { x: 5 * 44 + 22, y: 5 * 44 + 22 },
       pathIndex: 0,
       path: [],
+      slowMultiplier: 1,
+      slowEndTime: 0,
     };
 
     const query = createMockQuery([tower], [enemy]);

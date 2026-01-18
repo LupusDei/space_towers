@@ -17,6 +17,8 @@ function createEnemy(overrides: Partial<Enemy> = {}): Enemy {
     reward: 10,
     pathIndex: 0,
     path: [],
+    slowMultiplier: 1,
+    slowEndTime: 0,
     ...overrides,
   };
 }
