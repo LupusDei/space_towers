@@ -5,7 +5,7 @@ import TowerIcon from './TowerIcon';
 
 interface TowerStoreProps {
   credits: number;
-  waveCredits: number;
+  waveCredits?: number;
   selectedTowerType: TowerType | null;
   onSelectTowerType: (type: TowerType | null) => void;
 }
@@ -14,7 +14,7 @@ const towerTypes = Object.values(TowerType) as TowerType[];
 
 export default function TowerStore({
   credits,
-  waveCredits,
+  waveCredits = 0,
   selectedTowerType,
   onSelectTowerType,
 }: TowerStoreProps) {
