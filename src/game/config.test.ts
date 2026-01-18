@@ -35,6 +35,68 @@ describe('TOWER_STATS', () => {
     });
   });
 
+  describe('NEEDLE tower', () => {
+    const needleStats = TOWER_STATS[TowerType.NEEDLE];
+
+    it('should have correct cost', () => {
+      expect(needleStats.cost).toBe(100);
+    });
+
+    it('should have correct damage', () => {
+      expect(needleStats.damage).toBe(10);
+    });
+
+    it('should have correct range', () => {
+      expect(needleStats.range).toBe(100);
+    });
+
+    it('should have very fast fire rate', () => {
+      expect(needleStats.fireRate).toBe(0.25);
+    });
+
+    it('should have correct unlock cost', () => {
+      expect(needleStats.unlockCost).toBe(20);
+    });
+
+    it('should have correct type', () => {
+      expect(needleStats.type).toBe(TowerType.NEEDLE);
+    });
+
+    it('should have correct name', () => {
+      expect(needleStats.name).toBe('Needle Tower');
+    });
+
+    describe('level-up stats', () => {
+      it('should have correct damage per level', () => {
+        expect(needleStats.damagePerLevel).toBe(6);
+      });
+
+      it('should have modest fire rate improvement (diminishing returns)', () => {
+        // Fire rate improvement should be smaller than other towers
+        // since Needle is already very fast
+        expect(needleStats.fireRatePerLevel).toBe(-0.015);
+      });
+
+      it('should have correct upgrade costs', () => {
+        expect(needleStats.upgradeCosts).toEqual([110, 165, 250, 375]);
+      });
+
+      it('should maintain fast fire rate at max level', () => {
+        // At max level (5), fire rate should still be fast but not too extreme
+        // Level 5: 0.25 - (4 * 0.015) = 0.19s (about 5.3 shots/sec)
+        const maxLevelFireRate = needleStats.fireRate + (needleStats.maxLevel - 1) * needleStats.fireRatePerLevel;
+        expect(maxLevelFireRate).toBeCloseTo(0.19, 2);
+        expect(maxLevelFireRate).toBeGreaterThan(0.1); // Should not be too fast
+      });
+
+      it('should have meaningful damage at max level', () => {
+        // Level 5: 10 + (4 * 6) = 34 damage
+        const maxLevelDamage = needleStats.damage + (needleStats.maxLevel - 1) * needleStats.damagePerLevel;
+        expect(maxLevelDamage).toBe(34);
+      });
+    });
+  });
+
   describe('all tower types', () => {
     const towerTypes = Object.values(TowerType) as TowerType[];
 

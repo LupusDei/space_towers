@@ -192,13 +192,15 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     cost: 100,
     damage: 10,
     range: 100,
-    fireRate: 0.25,
+    fireRate: 0.25, // Very fast base fire rate (4 shots/sec)
     unlockCost: 20,
+    // Leveling: rapid-fire specialist with diminishing returns
+    // Already fast, so fire rate gains are modest to avoid overpowered attack speed
     maxLevel: 5,
-    upgradeCosts: [120, 180, 270, 400],
-    damagePerLevel: 5,
+    upgradeCosts: [110, 165, 250, 375], // Total to max: 900
+    damagePerLevel: 6, // +60% damage per level for meaningful upgrades
     rangePerLevel: 8,
-    fireRatePerLevel: -0.02,
+    fireRatePerLevel: -0.015, // Modest fire rate gains (diminishing returns on fast tower)
   },
 };
 
