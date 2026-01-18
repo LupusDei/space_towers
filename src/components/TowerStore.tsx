@@ -8,7 +8,13 @@ interface TowerStoreProps {
   waveCredits: number;
   selectedTowerType: TowerType | null;
   onSelectTowerType: (type: TowerType | null) => void;
+  // Multi-selection mode for loadout selection
+  selectedTowers?: TowerType[];
+  onToggleTower?: (type: TowerType) => void;
+  onConfirmSelection?: (towers: TowerType[]) => void;
 }
+
+const REQUIRED_LOADOUT_SIZE = 4;
 
 const towerTypes = Object.values(TowerType) as TowerType[];
 
@@ -17,18 +23,47 @@ export default function TowerStore({
   waveCredits,
   selectedTowerType,
   onSelectTowerType,
+  selectedTowers = [],
+  onToggleTower,
+  onConfirmSelection,
 }: TowerStoreProps) {
+  // Determine if we're in loadout selection mode
+  const isLoadoutMode = onConfirmSelection !== undefined;
+  const canConfirm = selectedTowers.length === REQUIRED_LOADOUT_SIZE;
+
+  const handleTowerClick = (type: TowerType) => {
+    if (isLoadoutMode && onToggleTower) {
+      onToggleTower(type);
+    } else {
+      const isSelected = selectedTowerType === type;
+      onSelectTowerType(isSelected ? null : type);
+    }
+  };
+
+  const handleConfirmClick = () => {
+    if (onConfirmSelection && canConfirm) {
+      onConfirmSelection(selectedTowers);
+    }
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.headerSection}>
         <div style={styles.header}>Tower Store</div>
         <div style={styles.waveCredits}>Wave Credits: {waveCredits}</div>
+        {isLoadoutMode && (
+          <div style={styles.selectionCount}>
+            Selected: {selectedTowers.length}/{REQUIRED_LOADOUT_SIZE}
+          </div>
+        )}
       </div>
       <div style={styles.grid}>
         {towerTypes.map((type) => {
           const stats = TOWER_STATS[type];
           const canAfford = credits >= stats.cost;
-          const isSelected = selectedTowerType === type;
+          const isSelected = isLoadoutMode
+            ? selectedTowers.includes(type)
+            : selectedTowerType === type;
 
           return (
             <button
@@ -39,7 +74,7 @@ export default function TowerStore({
                 ...(canAfford ? {} : styles.towerCellDisabled),
               }}
               disabled={!canAfford}
-              onClick={() => onSelectTowerType(isSelected ? null : type)}
+              onClick={() => handleTowerClick(type)}
               aria-label={`${stats.name} - ${stats.cost} credits`}
             >
               <div style={styles.iconContainer}>
@@ -58,6 +93,19 @@ export default function TowerStore({
           </div>
         ))}
       </div>
+      {isLoadoutMode && (
+        <button
+          style={{
+            ...styles.confirmButton,
+            ...(canConfirm ? {} : styles.confirmButtonDisabled),
+          }}
+          disabled={!canConfirm}
+          onClick={handleConfirmClick}
+          aria-label="Confirm Selection"
+        >
+          Confirm Selection
+        </button>
+      )}
     </div>
   );
 }
@@ -169,5 +217,34 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: typography.fontSize.xs,
     color: colors.text.muted,
     fontStyle: 'italic',
+  },
+  selectionCount: {
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.accent,
+  },
+  confirmButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: `${spacing.sm} ${spacing.md}`,
+    marginTop: spacing.sm,
+    backgroundColor: colors.accent,
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.md,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.background,
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    transition: 'all 0.15s ease',
+  },
+  confirmButtonDisabled: {
+    backgroundColor: colors.text.muted,
+    cursor: 'not-allowed',
+    opacity: 0.5,
   },
 };

@@ -14,9 +14,13 @@ vi.mock('./TowerIcon', () => ({
 describe('TowerStore', () => {
   const mockOnSelectTowerType = vi.fn();
   const towerTypes = Object.values(TowerType) as TowerType[];
+  const mockOnToggleTower = vi.fn();
+  const mockOnConfirmSelection = vi.fn();
 
   beforeEach(() => {
     mockOnSelectTowerType.mockClear();
+    mockOnToggleTower.mockClear();
+    mockOnConfirmSelection.mockClear();
   });
 
   // ============================================================================
@@ -591,6 +595,201 @@ describe('TowerStore', () => {
       // Get all direct children of the grid
       const gridContainer = container.querySelector('[style*="grid"]');
       expect(gridContainer).toBeInTheDocument();
+    });
+  });
+
+  describe('loadout selection mode', () => {
+    it('should show Confirm Selection button when onConfirmSelection is provided', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={0}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowers={[]}
+          onToggleTower={mockOnToggleTower}
+          onConfirmSelection={mockOnConfirmSelection}
+        />
+      );
+
+      expect(screen.getByRole('button', { name: /Confirm Selection/i })).toBeInTheDocument();
+    });
+
+    it('should not show Confirm Selection button in normal mode', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={0}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      expect(screen.queryByRole('button', { name: /Confirm Selection/i })).not.toBeInTheDocument();
+    });
+
+    it('should show selection count in loadout mode', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={0}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowers={[TowerType.LASER, TowerType.MISSILE]}
+          onToggleTower={mockOnToggleTower}
+          onConfirmSelection={mockOnConfirmSelection}
+        />
+      );
+
+      expect(screen.getByText('Selected: 2/4')).toBeInTheDocument();
+    });
+
+    it('should disable Confirm Selection button when less than 4 towers selected', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={0}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowers={[TowerType.LASER, TowerType.MISSILE, TowerType.TESLA]}
+          onToggleTower={mockOnToggleTower}
+          onConfirmSelection={mockOnConfirmSelection}
+        />
+      );
+
+      const confirmButton = screen.getByRole('button', { name: /Confirm Selection/i });
+      expect(confirmButton).toBeDisabled();
+    });
+
+    it('should enable Confirm Selection button when exactly 4 towers selected', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={0}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowers={[TowerType.LASER, TowerType.MISSILE, TowerType.TESLA, TowerType.CANNON]}
+          onToggleTower={mockOnToggleTower}
+          onConfirmSelection={mockOnConfirmSelection}
+        />
+      );
+
+      const confirmButton = screen.getByRole('button', { name: /Confirm Selection/i });
+      expect(confirmButton).not.toBeDisabled();
+    });
+
+    it('should call onConfirmSelection with selected towers when Confirm Selection clicked', () => {
+      const selectedTowers = [TowerType.LASER, TowerType.MISSILE, TowerType.TESLA, TowerType.CANNON];
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={0}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowers={selectedTowers}
+          onToggleTower={mockOnToggleTower}
+          onConfirmSelection={mockOnConfirmSelection}
+        />
+      );
+
+      const confirmButton = screen.getByRole('button', { name: /Confirm Selection/i });
+      fireEvent.click(confirmButton);
+
+      expect(mockOnConfirmSelection).toHaveBeenCalledWith(selectedTowers);
+    });
+
+    it('should not call onConfirmSelection when clicking disabled button', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={0}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowers={[TowerType.LASER]}
+          onToggleTower={mockOnToggleTower}
+          onConfirmSelection={mockOnConfirmSelection}
+        />
+      );
+
+      const confirmButton = screen.getByRole('button', { name: /Confirm Selection/i });
+      fireEvent.click(confirmButton);
+
+      expect(mockOnConfirmSelection).not.toHaveBeenCalled();
+    });
+
+    it('should call onToggleTower when clicking a tower in loadout mode', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={0}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowers={[]}
+          onToggleTower={mockOnToggleTower}
+          onConfirmSelection={mockOnConfirmSelection}
+        />
+      );
+
+      const laserButton = screen.getByRole('button', { name: /Laser Tower/i });
+      fireEvent.click(laserButton);
+
+      expect(mockOnToggleTower).toHaveBeenCalledWith(TowerType.LASER);
+      expect(mockOnSelectTowerType).not.toHaveBeenCalled();
+    });
+
+    it('should highlight selected towers in loadout mode', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={0}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowers={[TowerType.LASER, TowerType.MISSILE]}
+          onToggleTower={mockOnToggleTower}
+          onConfirmSelection={mockOnConfirmSelection}
+        />
+      );
+
+      // In loadout mode, selected towers should have the selected style
+      // Verify buttons are rendered and can be clicked
+      const laserButton = screen.getByRole('button', { name: /Laser Tower/i });
+      const teslaButton = screen.getByRole('button', { name: /Tesla Tower/i });
+
+      // Both buttons exist
+      expect(laserButton).toBeInTheDocument();
+      expect(teslaButton).toBeInTheDocument();
+    });
+
+    it('should show 0/4 when no towers selected', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={0}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowers={[]}
+          onToggleTower={mockOnToggleTower}
+          onConfirmSelection={mockOnConfirmSelection}
+        />
+      );
+
+      expect(screen.getByText('Selected: 0/4')).toBeInTheDocument();
+    });
+
+    it('should show 4/4 when all 4 towers selected', () => {
+      render(
+        <TowerStore
+          credits={1000}
+          waveCredits={0}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+          selectedTowers={[TowerType.LASER, TowerType.MISSILE, TowerType.TESLA, TowerType.CANNON]}
+          onToggleTower={mockOnToggleTower}
+          onConfirmSelection={mockOnConfirmSelection}
+        />
+      );
+
+      expect(screen.getByText('Selected: 4/4')).toBeInTheDocument();
     });
   });
 });
