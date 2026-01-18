@@ -3,6 +3,7 @@
 
 import { TowerType, type UserProgress } from '../types';
 import { type StorageService, createStorageService } from './StorageService';
+import { TOWER_STATS } from '../config';
 
 // ============================================================================
 // Constants
@@ -142,4 +143,48 @@ export function saveProgress(
  */
 export function clearProgress(storage: StorageService = createStorageService()): void {
   storage.remove(PROGRESS_KEY);
+}
+
+// ============================================================================
+// Tower Unlock Functions
+// ============================================================================
+
+export type UnlockResult =
+  | { success: true }
+  | { success: false; reason: 'already_unlocked' | 'insufficient_credits' };
+
+/**
+ * Attempts to unlock a tower using wave credits.
+ *
+ * @param towerType - The tower type to unlock
+ * @param storage - The StorageService to use (defaults to localStorage-backed service)
+ * @returns Result indicating success or failure with reason
+ */
+export function unlockTower(
+  towerType: TowerType,
+  storage: StorageService = createStorageService()
+): UnlockResult {
+  const progress = loadProgress(storage);
+
+  // Check if tower is already unlocked
+  if (progress.unlockedTowers.includes(towerType)) {
+    return { success: false, reason: 'already_unlocked' };
+  }
+
+  // Get unlock cost from tower stats
+  const unlockCost = TOWER_STATS[towerType].unlockCost;
+
+  // Check if user has enough credits
+  if (progress.waveCredits < unlockCost) {
+    return { success: false, reason: 'insufficient_credits' };
+  }
+
+  // Deduct credits and add tower
+  progress.waveCredits -= unlockCost;
+  progress.unlockedTowers.push(towerType);
+
+  // Save updated progress
+  saveProgress(progress, storage);
+
+  return { success: true };
 }

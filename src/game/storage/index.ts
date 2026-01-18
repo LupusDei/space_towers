@@ -12,4 +12,6 @@ export {
   saveProgress,
   clearProgress,
   getDefaultProgress,
+  unlockTower,
+  type UnlockResult,
 } from './progressService';
