@@ -69,6 +69,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
   [TowerType.LASER]: {
     type: TowerType.LASER,
     name: 'Laser Tower',
+    description: 'Fires an instant hitscan beam that damages enemies immediately. Fast and reliable single-target damage.',
     cost: 25,
     damage: 5,
     range: 150,
@@ -85,6 +86,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
   [TowerType.MISSILE]: {
     type: TowerType.MISSILE,
     name: 'Missile Tower',
+    description: 'Launches explosive missiles that deal splash damage to all enemies within the blast radius. Great against clustered enemies.',
     cost: 50,
     damage: 20,
     range: 200,
@@ -104,6 +106,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
   [TowerType.TESLA]: {
     type: TowerType.TESLA,
     name: 'Tesla Tower',
+    description: 'Unleashes chain lightning that arcs between nearby enemies. Each jump deals reduced damage but hits multiple targets.',
     cost: 40,
     damage: 8,
     range: 120,
@@ -123,6 +126,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
   [TowerType.CANNON]: {
     type: TowerType.CANNON,
     name: 'Cannon Tower',
+    description: 'Fires heavy shells that deal massive single-target damage. Slow but devastating against tough enemies.',
     cost: 60,
     damage: 30,
     range: 175,
@@ -139,6 +143,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
   [TowerType.GRAVITY]: {
     type: TowerType.GRAVITY,
     name: 'Gravity Tower',
+    description: 'Emits gravity pulses that slow all enemies in range by 50% for 1 second. Essential for crowd control.',
     cost: 80,
     damage: 5,
     range: 100,
@@ -155,6 +160,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
   [TowerType.STORM]: {
     type: TowerType.STORM,
     name: 'Storm Tower',
+    description: 'Creates a stationary storm that deals continuous damage to all enemies passing through for 3 seconds. Area denial specialist.',
     cost: 100,
     damage: 10, // damage per second during storm
     range: 200,
@@ -174,6 +180,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
   [TowerType.SNIPER]: {
     type: TowerType.SNIPER,
     name: 'Sniper Tower',
+    description: 'Long-range hitscan tower with extreme range and high damage. Perfect for picking off enemies from afar.',
     cost: 75,
     damage: 50,
     range: 350,
@@ -189,6 +196,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
   [TowerType.NEEDLE]: {
     type: TowerType.NEEDLE,
     name: 'Needle Tower',
+    description: 'Rapid-fire tower with rotating turret that fires 4 shots per second. Low damage per hit but excellent sustained DPS.',
     cost: 100,
     damage: 10,
     range: 100,

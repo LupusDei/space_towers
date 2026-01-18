@@ -341,6 +341,7 @@ export interface GameModule {
 export interface TowerStats {
   type: TowerType;
   name: string;
+  description: string; // Tower ability description for tooltips
   cost: number;
   damage: number;
   range: number;

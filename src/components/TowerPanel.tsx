@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { TowerType, type Tower } from '../game/types';
 import { TOWER_STATS, GAME_CONFIG, COMBAT_CONFIG } from '../game/config';
 
@@ -17,6 +17,7 @@ function getSpecialEffect(type: TowerType): string | null {
 import { eventBus } from '../game/events';
 import { colors, spacing, typography } from '../styles/theme';
 import TowerIcon from './TowerIcon';
+import TowerTooltip from './TowerTooltip';
 
 interface TowerPanelProps {
   credits: number;
@@ -37,6 +38,8 @@ export default function TowerPanel({
 }: TowerPanelProps) {
   // Subscribe directly to credits changes for immediate updates
   const [credits, setCredits] = useState(initialCredits);
+  const [hoveredTower, setHoveredTower] = useState<TowerType | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     // Sync with prop when it changes (e.g., on game restart)
@@ -52,6 +55,21 @@ export default function TowerPanel({
       unsubscribe();
     };
   }, []);
+
+  const handleMouseEnter = useCallback((type: TowerType, event: React.MouseEvent) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    // Position tooltip to the right of the hovered element
+    setTooltipPosition({
+      x: rect.right + 8,
+      y: rect.top,
+    });
+    setHoveredTower(type);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredTower(null);
+  }, []);
+
   const getRefundAmount = (tower: Tower): number => {
     const stats = TOWER_STATS[tower.type];
     return Math.floor(stats.cost * GAME_CONFIG.SELL_REFUND_PERCENT);
@@ -82,6 +100,8 @@ export default function TowerPanel({
               }}
               disabled={!canAfford}
               onClick={() => onSelectTowerType(isSelected ? null : type)}
+              onMouseEnter={(e) => handleMouseEnter(type, e)}
+              onMouseLeave={handleMouseLeave}
             >
               <div style={styles.rowIcon}>
                 <TowerIcon type={type} size={28} />
@@ -118,6 +138,10 @@ export default function TowerPanel({
             Sell for ${getRefundAmount(selectedTower)}
           </button>
         </div>
+      )}
+
+      {hoveredTower && (
+        <TowerTooltip type={hoveredTower} position={tooltipPosition} />
       )}
     </div>
   );
