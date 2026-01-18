@@ -18,6 +18,8 @@ function createMockEnemy(id: string, x: number, y: number): Enemy {
     reward: 10,
     pathIndex: 0,
     path: [],
+    slowMultiplier: 1,
+    slowEndTime: 0,
   };
 }
 

@@ -79,6 +79,8 @@ export interface Enemy {
   reward: number;
   pathIndex: number;
   path: Point[];
+  slowMultiplier: number;
+  slowEndTime: number;
 }
 
 export interface Projectile {
@@ -297,6 +299,7 @@ export interface CommandInterface {
   removeEnemy(enemyId: string): void;
   addCredits(amount: number): void;
   getTime(): number;
+  applySlow(enemyId: string, multiplier: number, duration: number): void;
 }
 
 export interface GameModule {

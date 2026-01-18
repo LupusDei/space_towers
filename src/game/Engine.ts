@@ -392,7 +392,11 @@ class GameEngine {
       return false;
     }
 
-    const moveDistance = enemy.speed * dt;
+    // Apply slow effect if active, otherwise use full speed
+    const effectiveSpeed = this.state.time < enemy.slowEndTime
+      ? enemy.speed * enemy.slowMultiplier
+      : enemy.speed;
+    const moveDistance = effectiveSpeed * dt;
     if (moveDistance >= distance) {
       enemy.position.x = target.x * GAME_CONFIG.CELL_SIZE;
       enemy.position.y = target.y * GAME_CONFIG.CELL_SIZE;
@@ -726,6 +730,7 @@ class GameEngine {
       removeEnemy: (enemyId) => this.removeEnemy(enemyId),
       addCredits: (amount) => this.addCredits(amount),
       getTime: () => this.getTime(),
+      applySlow: (enemyId, multiplier, duration) => this.applySlow(enemyId, multiplier, duration),
     };
   }
 
@@ -802,6 +807,24 @@ class GameEngine {
     this.state.credits += amount;
     this.eventBus.emit(createEvent('CREDITS_CHANGED', { amount, newTotal: this.state.credits }));
     this.stateNotifier.notify();
+  }
+
+  /**
+   * Apply a slow effect to an enemy. Multiple slows don't stack - just refreshes duration.
+   * @param enemyId - ID of the enemy to slow
+   * @param multiplier - Speed multiplier (0.5 = 50% speed)
+   * @param duration - Duration in milliseconds
+   */
+  applySlow(enemyId: string, multiplier: number, duration: number): void {
+    const enemy = this.state.enemies.get(enemyId);
+    if (!enemy) return;
+
+    const newEndTime = this.state.time + duration;
+    // Only update if new slow would last longer than current
+    if (newEndTime > enemy.slowEndTime) {
+      enemy.slowMultiplier = multiplier;
+      enemy.slowEndTime = newEndTime;
+    }
   }
 
   spendCredits(amount: number): boolean {
