@@ -3,7 +3,7 @@ import {
   ProgressService,
   createProgressService,
   getDefaultProgress,
-} from './progressService';
+} from './ProgressService';
 import { createMemoryStorage } from './StorageService';
 import { TowerType } from '../types';
 
