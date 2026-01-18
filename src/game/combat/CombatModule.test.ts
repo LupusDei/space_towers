@@ -919,4 +919,114 @@ describe('Gravity Tower AOE', () => {
     expect(pulseEventReceived).toBe(true);
     unsubscribe();
   });
+
+  it('should scale slow duration with tower level', () => {
+    // Level 3 tower: base 1.0s + 2 * 0.2s = 1.4s duration
+    const tower = createMockTower({
+      type: TowerType.GRAVITY,
+      damage: 5,
+      range: 150,
+      position: { x: 5, y: 5 },
+      level: 3,
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      armor: 0,
+      position: { x: 220, y: 220 },
+    });
+
+    const slowedEnemies: { id: string; multiplier: number; duration: number }[] = [];
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: (id: string, multiplier: number, duration: number) => {
+        slowedEnemies.push({ id, multiplier, duration });
+      },
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(slowedEnemies.length).toBe(1);
+    // Level 3: 1.0 + 2 * 0.2 = 1.4s duration
+    expect(slowedEnemies[0].duration).toBeCloseTo(1.4, 2);
+  });
+
+  it('should scale slow multiplier with tower level', () => {
+    // Level 5 tower: base 0.5 + 4 * (-0.05) = 0.3 (70% slow)
+    const tower = createMockTower({
+      type: TowerType.GRAVITY,
+      damage: 5,
+      range: 150,
+      position: { x: 5, y: 5 },
+      level: 5,
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      armor: 0,
+      position: { x: 220, y: 220 },
+    });
+
+    const slowedEnemies: { id: string; multiplier: number; duration: number }[] = [];
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: (id: string, multiplier: number, duration: number) => {
+        slowedEnemies.push({ id, multiplier, duration });
+      },
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(slowedEnemies.length).toBe(1);
+    // Level 5: 0.5 + 4 * (-0.05) = 0.3 multiplier (70% slow)
+    expect(slowedEnemies[0].multiplier).toBeCloseTo(0.3, 2);
+    // Level 5: 1.0 + 4 * 0.2 = 1.8s duration
+    expect(slowedEnemies[0].duration).toBeCloseTo(1.8, 2);
+  });
+
+  it('should use base stats for level 1 tower', () => {
+    const tower = createMockTower({
+      type: TowerType.GRAVITY,
+      damage: 5,
+      range: 150,
+      position: { x: 5, y: 5 },
+      level: 1,
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      armor: 0,
+      position: { x: 220, y: 220 },
+    });
+
+    const slowedEnemies: { id: string; multiplier: number; duration: number }[] = [];
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: (id: string, multiplier: number, duration: number) => {
+        slowedEnemies.push({ id, multiplier, duration });
+      },
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(slowedEnemies.length).toBe(1);
+    // Level 1: base stats (no bonus)
+    expect(slowedEnemies[0].multiplier).toBe(0.5);
+    expect(slowedEnemies[0].duration).toBe(1.0);
+  });
 });
