@@ -6,3 +6,4 @@ export * from './TeslaCoilSprite';
 export * from './MissileBatterySprite';
 export * from './SniperTowerSprite';
 export * from './NeedleTowerSprite';
+export * from './StormTowerSprite';

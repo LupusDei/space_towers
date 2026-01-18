@@ -5,6 +5,7 @@ import { LaserTurretSprite } from '../sprites/towers/LaserTurretSprite';
 import { MissileBatterySprite } from '../sprites/towers/MissileBatterySprite';
 import { TeslaCoilSprite } from '../sprites/towers/TeslaCoilSprite';
 import { PlasmaCannonSprite } from '../sprites/towers/PlasmaCannonSprite';
+import { StormTowerSprite } from '../sprites/towers/StormTowerSprite';
 
 // Map tower types to their sprites
 const towerSprites: Record<TowerType, typeof LaserTurretSprite> = {
@@ -13,7 +14,7 @@ const towerSprites: Record<TowerType, typeof LaserTurretSprite> = {
   [TowerType.TESLA]: TeslaCoilSprite,
   [TowerType.CANNON]: PlasmaCannonSprite,
   [TowerType.GRAVITY]: LaserTurretSprite, // TODO: Replace with GravityWellSprite
-  [TowerType.STORM]: TeslaCoilSprite, // TODO: Replace with StormSpire sprite
+  [TowerType.STORM]: StormTowerSprite,
   [TowerType.SNIPER]: LaserTurretSprite, // TODO: Replace with SniperTowerSprite
   [TowerType.NEEDLE]: LaserTurretSprite, // TODO: Replace with NeedleSprite
 };
