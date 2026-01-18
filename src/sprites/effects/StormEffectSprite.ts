@@ -359,4 +359,273 @@ class StormEffectManager {
 // Singleton instance
 export const stormEffectManager = new StormEffectManager();
 
+// ============================================================================
+// Storm Charging Manager - Track and render charging animations on towers
+// ============================================================================
+
+const CHARGE_DURATION = 800; // ms - time to fully charge before storm spawns
+
+interface ChargingTower {
+  towerId: string;
+  position: Point; // Tower position in grid coordinates
+  startTime: number;
+  duration: number;
+}
+
+class StormChargingManager {
+  private chargingTowers: Map<string, ChargingTower> = new Map();
+
+  /**
+   * Start or update charging for a tower.
+   * @param towerId - The tower's unique ID
+   * @param position - Tower position in grid coordinates
+   * @param time - Current game time in ms
+   * @param duration - Charge duration in ms (default 800)
+   */
+  startCharging(
+    towerId: string,
+    position: Point,
+    time: number,
+    duration: number = CHARGE_DURATION
+  ): void {
+    this.chargingTowers.set(towerId, {
+      towerId,
+      position: { x: position.x, y: position.y },
+      startTime: time,
+      duration,
+    });
+  }
+
+  /**
+   * Stop charging for a tower (called when storm spawns or cancelled).
+   */
+  stopCharging(towerId: string): void {
+    this.chargingTowers.delete(towerId);
+  }
+
+  /**
+   * Get charging progress for a tower (0-1).
+   * Returns 0 if not charging or expired.
+   */
+  getChargeProgress(towerId: string, currentTime: number): number {
+    const tower = this.chargingTowers.get(towerId);
+    if (!tower) return 0;
+
+    const elapsed = currentTime - tower.startTime;
+    if (elapsed >= tower.duration) {
+      return 1;
+    }
+
+    return elapsed / tower.duration;
+  }
+
+  /**
+   * Check if a tower is currently charging.
+   */
+  isCharging(towerId: string): boolean {
+    return this.chargingTowers.has(towerId);
+  }
+
+  /**
+   * Draw charging effects for all charging towers.
+   * Should be called during the render loop.
+   */
+  drawAll(context: SpriteRenderContext): void {
+    const currentTime = context.time * 1000;
+    const { ctx, cellSize } = context;
+
+    for (const [towerId, tower] of this.chargingTowers) {
+      const elapsed = currentTime - tower.startTime;
+      const progress = Math.min(1, elapsed / tower.duration);
+
+      // Remove expired charges
+      if (progress >= 1) {
+        this.chargingTowers.delete(towerId);
+        continue;
+      }
+
+      // Draw charging effect at tower position
+      const centerX = tower.position.x * cellSize + cellSize / 2;
+      const centerY = tower.position.y * cellSize + cellSize / 2;
+
+      drawChargingEffect(ctx, centerX, centerY, cellSize, progress, context.time);
+    }
+  }
+
+  /**
+   * Draw charging effect for a specific tower (can be called from tower sprite).
+   */
+  drawForTower(
+    context: SpriteRenderContext,
+    towerId: string,
+    centerX: number,
+    centerY: number
+  ): void {
+    const currentTime = context.time * 1000;
+    const progress = this.getChargeProgress(towerId, currentTime);
+
+    if (progress > 0 && progress < 1) {
+      drawChargingEffect(
+        context.ctx,
+        centerX,
+        centerY,
+        context.cellSize,
+        progress,
+        context.time
+      );
+    }
+  }
+
+  /**
+   * Clear all charging states.
+   */
+  clear(): void {
+    this.chargingTowers.clear();
+  }
+
+  /**
+   * Get count of charging towers (for testing).
+   */
+  getActiveCount(): number {
+    return this.chargingTowers.size;
+  }
+}
+
+/**
+ * Draw the charging effect at a tower position.
+ * Shows energy arcs traveling up, intensifying glow, and electrical buildup.
+ */
+function drawChargingEffect(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  cellSize: number,
+  progress: number,
+  time: number
+): void {
+  const baseRadius = cellSize * 0.35;
+  const coilHeight = cellSize * 0.55;
+  const coilTop = centerY - coilHeight * 0.55;
+
+  // Intensity increases with progress
+  const intensity = progress * progress; // Quadratic for dramatic buildup
+
+  // === ENERGY FIELD AROUND TOWER ===
+  const fieldAlpha = intensity * 0.3;
+  const fieldRadius = cellSize * 0.5 * (1 + progress * 0.3);
+  const fieldGradient = ctx.createRadialGradient(
+    centerX,
+    centerY - cellSize * 0.1,
+    0,
+    centerX,
+    centerY - cellSize * 0.1,
+    fieldRadius
+  );
+  fieldGradient.addColorStop(0, `rgba(100, 150, 255, ${fieldAlpha})`);
+  fieldGradient.addColorStop(0.5, `rgba(80, 120, 220, ${fieldAlpha * 0.5})`);
+  fieldGradient.addColorStop(1, 'rgba(60, 100, 200, 0)');
+  ctx.fillStyle = fieldGradient;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY - cellSize * 0.1, fieldRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // === RISING ENERGY ARCS ===
+  const arcCount = 3 + Math.floor(progress * 3);
+  for (let i = 0; i < arcCount; i++) {
+    // Each arc rises at different speeds
+    const arcSpeed = 0.8 + (i % 3) * 0.2;
+    const arcPhase = ((time * arcSpeed * 3 + i * 0.33) % 1);
+    const arcY = centerY + baseRadius * 0.3 - arcPhase * coilHeight * 1.2;
+
+    // Only draw if arc is in visible range
+    if (arcY > coilTop - cellSize * 0.1 && arcY < centerY + baseRadius * 0.3) {
+      const arcAlpha = intensity * (1 - arcPhase) * 0.8;
+      const arcWidth = cellSize * 0.15 * (1 + i * 0.1);
+
+      // Arc glow
+      ctx.strokeStyle = `rgba(150, 200, 255, ${arcAlpha * 0.5})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(centerX - arcWidth, arcY);
+      ctx.quadraticCurveTo(
+        centerX,
+        arcY - 5 * Math.sin(time * 10 + i),
+        centerX + arcWidth,
+        arcY
+      );
+      ctx.stroke();
+
+      // Arc core
+      ctx.strokeStyle = `rgba(200, 230, 255, ${arcAlpha})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+
+  // === CRACKLING ELECTRICITY AT TOP ===
+  if (progress > 0.3) {
+    const crackleCount = Math.floor(progress * 5);
+    const crackleIntensity = (progress - 0.3) / 0.7;
+
+    for (let i = 0; i < crackleCount; i++) {
+      const angle = ((time * 5 + i * 1.5) % (Math.PI * 2));
+      const crackleLength = cellSize * 0.1 * (0.5 + seededRandom(time * 100 + i) * 0.5);
+
+      const startX = centerX + Math.cos(angle) * baseRadius * 0.2;
+      const startY = coilTop;
+      const endX = startX + Math.cos(angle + Math.PI / 4) * crackleLength;
+      const endY = startY + Math.sin(angle + Math.PI / 4) * crackleLength - crackleLength * 0.5;
+
+      const crackleAlpha = crackleIntensity * 0.7 * seededRandom(time * 50 + i * 100);
+
+      ctx.strokeStyle = `rgba(180, 220, 255, ${crackleAlpha})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+    }
+  }
+
+  // === BUILDING GLOW AT TOP ===
+  const topGlowAlpha = intensity * 0.6;
+  const topGlowRadius = cellSize * 0.15 * (1 + progress * 0.5);
+  const topGlow = ctx.createRadialGradient(
+    centerX,
+    coilTop,
+    0,
+    centerX,
+    coilTop,
+    topGlowRadius
+  );
+  topGlow.addColorStop(0, `rgba(180, 220, 255, ${topGlowAlpha})`);
+  topGlow.addColorStop(0.5, `rgba(100, 160, 255, ${topGlowAlpha * 0.5})`);
+  topGlow.addColorStop(1, 'rgba(60, 120, 220, 0)');
+  ctx.fillStyle = topGlow;
+  ctx.beginPath();
+  ctx.arc(centerX, coilTop, topGlowRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // === PULSING RINGS (at higher charge levels) ===
+  if (progress > 0.5) {
+    const ringProgress = (progress - 0.5) / 0.5;
+    const ringCount = 2;
+
+    for (let i = 0; i < ringCount; i++) {
+      const ringPhase = ((time * 2 + i * 0.5) % 1);
+      const ringRadius = cellSize * 0.2 * (1 + ringPhase * 0.5);
+      const ringAlpha = ringProgress * (1 - ringPhase) * 0.4;
+
+      ctx.strokeStyle = `rgba(150, 200, 255, ${ringAlpha})`;
+      ctx.lineWidth = 2 * (1 - ringPhase);
+      ctx.beginPath();
+      ctx.arc(centerX, coilTop - cellSize * 0.05, ringRadius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+}
+
+// Singleton instance for global access
+export const stormChargingManager = new StormChargingManager();
+
 export default createStormEffectSprite;

@@ -1,11 +1,12 @@
 // Storm Effect Sprite Tests
-// Tests for storm effect sprite and manager
+// Tests for storm effect sprite, manager, and charging manager
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   createStormEffectSprite,
   stormEffectManager,
   StormEffectSprite,
+  stormChargingManager,
 } from './StormEffectSprite';
 import type { SpriteRenderContext } from '../types';
 
@@ -29,6 +30,7 @@ function createMockContext(): CanvasRenderingContext2D {
     beginPath: () => {},
     moveTo: () => {},
     lineTo: () => {},
+    quadraticCurveTo: () => {},
     stroke: () => {},
     fill: () => {},
     arc: () => {},
@@ -268,6 +270,165 @@ describe('stormEffectManager', () => {
       expect(active.length).toBe(2);
       expect(active[0].sprite).toBeDefined();
       expect(active[1].sprite).toBeDefined();
+    });
+  });
+});
+
+// ============================================================================
+// StormChargingManager Tests
+// ============================================================================
+
+describe('stormChargingManager', () => {
+  beforeEach(() => {
+    stormChargingManager.clear();
+  });
+
+  describe('startCharging', () => {
+    it('should start charging for a tower', () => {
+      stormChargingManager.startCharging('tower-1', { x: 5, y: 5 }, 0);
+
+      expect(stormChargingManager.getActiveCount()).toBe(1);
+    });
+
+    it('should track multiple charging towers', () => {
+      stormChargingManager.startCharging('tower-1', { x: 5, y: 5 }, 0);
+      stormChargingManager.startCharging('tower-2', { x: 10, y: 10 }, 0);
+      stormChargingManager.startCharging('tower-3', { x: 15, y: 15 }, 0);
+
+      expect(stormChargingManager.getActiveCount()).toBe(3);
+    });
+
+    it('should replace charging state when same tower starts again', () => {
+      stormChargingManager.startCharging('tower-1', { x: 5, y: 5 }, 0);
+      stormChargingManager.startCharging('tower-1', { x: 5, y: 5 }, 500);
+
+      expect(stormChargingManager.getActiveCount()).toBe(1);
+      // Progress should be based on new start time
+      const progress = stormChargingManager.getChargeProgress('tower-1', 600);
+      expect(progress).toBeCloseTo(0.125, 2); // 100ms elapsed / 800ms duration
+    });
+  });
+
+  describe('stopCharging', () => {
+    it('should stop charging for a tower', () => {
+      stormChargingManager.startCharging('tower-1', { x: 5, y: 5 }, 0);
+      stormChargingManager.stopCharging('tower-1');
+
+      expect(stormChargingManager.getActiveCount()).toBe(0);
+    });
+
+    it('should not affect other charging towers', () => {
+      stormChargingManager.startCharging('tower-1', { x: 5, y: 5 }, 0);
+      stormChargingManager.startCharging('tower-2', { x: 10, y: 10 }, 0);
+      stormChargingManager.stopCharging('tower-1');
+
+      expect(stormChargingManager.getActiveCount()).toBe(1);
+      expect(stormChargingManager.isCharging('tower-2')).toBe(true);
+    });
+
+    it('should handle stopping non-existent tower gracefully', () => {
+      expect(() => {
+        stormChargingManager.stopCharging('non-existent');
+      }).not.toThrow();
+    });
+  });
+
+  describe('getChargeProgress', () => {
+    it('should return 0 for non-charging tower', () => {
+      const progress = stormChargingManager.getChargeProgress('tower-1', 0);
+
+      expect(progress).toBe(0);
+    });
+
+    it('should return progress based on elapsed time', () => {
+      stormChargingManager.startCharging('tower-1', { x: 5, y: 5 }, 0, 800);
+
+      expect(stormChargingManager.getChargeProgress('tower-1', 200)).toBeCloseTo(0.25, 2);
+      expect(stormChargingManager.getChargeProgress('tower-1', 400)).toBeCloseTo(0.5, 2);
+      expect(stormChargingManager.getChargeProgress('tower-1', 600)).toBeCloseTo(0.75, 2);
+    });
+
+    it('should return 1 when charge is complete', () => {
+      stormChargingManager.startCharging('tower-1', { x: 5, y: 5 }, 0, 800);
+
+      expect(stormChargingManager.getChargeProgress('tower-1', 800)).toBe(1);
+      expect(stormChargingManager.getChargeProgress('tower-1', 1000)).toBe(1);
+    });
+  });
+
+  describe('isCharging', () => {
+    it('should return false for non-charging tower', () => {
+      expect(stormChargingManager.isCharging('tower-1')).toBe(false);
+    });
+
+    it('should return true for charging tower', () => {
+      stormChargingManager.startCharging('tower-1', { x: 5, y: 5 }, 0);
+
+      expect(stormChargingManager.isCharging('tower-1')).toBe(true);
+    });
+  });
+
+  describe('drawAll', () => {
+    it('should not throw when drawing charging effects', () => {
+      stormChargingManager.startCharging('tower-1', { x: 5, y: 5 }, 0);
+      stormChargingManager.startCharging('tower-2', { x: 10, y: 10 }, 0);
+
+      const context = createMockRenderContext(0.4); // 400ms in seconds
+
+      expect(() => {
+        stormChargingManager.drawAll(context);
+      }).not.toThrow();
+    });
+
+    it('should remove completed charges', () => {
+      stormChargingManager.startCharging('tower-1', { x: 5, y: 5 }, 0, 800);
+
+      // 1 second = 1000ms, which exceeds 800ms charge duration
+      const context = createMockRenderContext(1);
+      stormChargingManager.drawAll(context);
+
+      expect(stormChargingManager.getActiveCount()).toBe(0);
+    });
+
+    it('should keep active charges that are not complete', () => {
+      stormChargingManager.startCharging('tower-1', { x: 5, y: 5 }, 0, 800);
+
+      // 400ms elapsed, still charging
+      const context = createMockRenderContext(0.4);
+      stormChargingManager.drawAll(context);
+
+      expect(stormChargingManager.getActiveCount()).toBe(1);
+    });
+  });
+
+  describe('drawForTower', () => {
+    it('should not throw when drawing for specific tower', () => {
+      stormChargingManager.startCharging('tower-1', { x: 5, y: 5 }, 0);
+
+      const context = createMockRenderContext(0.4);
+
+      expect(() => {
+        stormChargingManager.drawForTower(context, 'tower-1', 100, 100);
+      }).not.toThrow();
+    });
+
+    it('should not throw when tower is not charging', () => {
+      const context = createMockRenderContext(0.4);
+
+      expect(() => {
+        stormChargingManager.drawForTower(context, 'non-existent', 100, 100);
+      }).not.toThrow();
+    });
+  });
+
+  describe('clear', () => {
+    it('should remove all charging states', () => {
+      stormChargingManager.startCharging('tower-1', { x: 5, y: 5 }, 0);
+      stormChargingManager.startCharging('tower-2', { x: 10, y: 10 }, 0);
+
+      stormChargingManager.clear();
+
+      expect(stormChargingManager.getActiveCount()).toBe(0);
     });
   });
 });
