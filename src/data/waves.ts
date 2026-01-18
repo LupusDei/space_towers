@@ -225,3 +225,11 @@ export function getWaveDuration(wave: WaveDefinition): number {
 
   return maxEndTime;
 }
+
+/**
+ * Calculate credits awarded for completing a wave
+ * Completing wave N awards N credits
+ */
+export function calculateWaveCredits(waveNumber: number): number {
+  return waveNumber;
+}
