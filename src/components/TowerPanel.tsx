@@ -24,9 +24,11 @@ interface TowerPanelProps {
   selectedTower: Tower | null;
   onSelectTowerType: (type: TowerType | null) => void;
   onSellTower: () => void;
+  /** Optional list of towers to display (loadout). If not provided, shows all towers. */
+  selectedTowers?: TowerType[];
 }
 
-const towerTypes = Object.values(TowerType) as TowerType[];
+const allTowerTypes = Object.values(TowerType) as TowerType[];
 
 export default function TowerPanel({
   credits: initialCredits,
@@ -34,7 +36,12 @@ export default function TowerPanel({
   selectedTower,
   onSelectTowerType,
   onSellTower,
+  selectedTowers,
 }: TowerPanelProps) {
+  // Filter to only show selected towers if a loadout is provided
+  const towerTypes = selectedTowers && selectedTowers.length > 0
+    ? selectedTowers
+    : allTowerTypes;
   // Subscribe directly to credits changes for immediate updates
   const [credits, setCredits] = useState(initialCredits);
 
