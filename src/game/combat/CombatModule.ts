@@ -23,7 +23,7 @@ import { GAME_CONFIG, COMBAT_CONFIG } from '../config';
 // ============================================================================
 
 export interface HitscanEffect {
-  type: 'laser' | 'tesla';
+  type: 'laser' | 'tesla' | 'sniper';
   towerId: string;
   towerPosition: Point;
   targetPosition: Point;
@@ -63,7 +63,7 @@ interface CombatState {
 // ============================================================================
 
 function isHitscanTower(type: TowerType): boolean {
-  return type === TT.LASER || type === TT.TESLA;
+  return type === TT.LASER || type === TT.TESLA || type === TT.SNIPER;
 }
 
 function isProjectileTower(type: TowerType): boolean {
@@ -251,6 +251,8 @@ class CombatModuleImpl implements GameModule {
       this.fireLaser(tower, validTarget, currentTime);
     } else if (tower.type === TT.TESLA) {
       this.fireTesla(tower, validTarget, currentTime);
+    } else if (tower.type === TT.SNIPER) {
+      this.fireSniper(tower, validTarget, currentTime);
     }
   }
 
@@ -334,6 +336,40 @@ class CombatModuleImpl implements GameModule {
       createEvent('PROJECTILE_FIRED', {
         projectile: {
           id: `tesla_${tower.id}_${currentTime}`,
+          sourceId: tower.id,
+          targetId: target.id,
+          towerType: tower.type,
+          position: towerPositionToPixels(tower.position),
+          velocity: { x: 0, y: 0 },
+          damage: tower.damage,
+          speed: 0,
+          piercing: false,
+          aoe: 0,
+        },
+      })
+    );
+  }
+
+  private fireSniper(tower: Tower, target: Enemy, currentTime: number): void {
+    // Apply instant damage (high single-target damage)
+    const damage = calculateDamage(tower.damage, target.armor);
+    this.applyDamage(target, damage, tower.id);
+
+    // Create tracer visual effect (brief flash from tower to target)
+    this.state.hitscanEffects.push({
+      type: 'sniper',
+      towerId: tower.id,
+      towerPosition: { ...tower.position },
+      targetPosition: { ...target.position },
+      startTime: currentTime,
+      duration: COMBAT_CONFIG.HITSCAN_EFFECT_DURATION, // Brief flash
+    });
+
+    // Emit projectile fired event (for audio/other systems)
+    eventBus.emit(
+      createEvent('PROJECTILE_FIRED', {
+        projectile: {
+          id: `sniper_${tower.id}_${currentTime}`,
           sourceId: tower.id,
           targetId: target.id,
           towerType: tower.type,

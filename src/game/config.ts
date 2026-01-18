@@ -142,6 +142,21 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     rangePerLevel: 8,
     fireRatePerLevel: -0.05,
   },
+
+  [TowerType.SNIPER]: {
+    type: TowerType.SNIPER,
+    name: 'Sniper Tower',
+    cost: 75,
+    damage: 50,
+    range: 350,
+    fireRate: 2.0,
+    // Leveling: high damage single-target specialist
+    maxLevel: 5,
+    upgradeCosts: [80, 120, 180, 260], // Total to max: 640
+    damagePerLevel: 35,
+    rangePerLevel: 25,
+    fireRatePerLevel: -0.1,
+  },
 };
 
 // ============================================================================

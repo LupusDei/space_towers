@@ -401,6 +401,99 @@ describe('Combat Constants', () => {
   it('should have CANNON tower defined', () => {
     expect(TowerType.CANNON).toBe('cannon');
   });
+
+  it('should have SNIPER tower defined', () => {
+    expect(TowerType.SNIPER).toBe('sniper');
+  });
+});
+
+describe('Sniper Tower', () => {
+  beforeEach(() => {
+    eventBus.clear();
+    combatModule.destroy();
+  });
+
+  it('should identify sniper as hitscan tower', () => {
+    const tower = createMockTower({ type: TowerType.SNIPER });
+    expect(tower.type).toBe(TowerType.SNIPER);
+  });
+
+  it('should apply damage to enemy when sniper tower fires', () => {
+    const tower = createMockTower({ type: TowerType.SNIPER, damage: 50 });
+    const enemy = createMockEnemy({ health: 100, armor: 0 });
+    const query = createMockQuery([tower], [enemy]);
+    const commands = createMockCommands();
+
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    // Sniper deals high single-target damage
+    expect(enemy.health).toBe(50); // 100 - 50 damage
+  });
+
+  it('should create sniper hitscan effect (tracer) when firing', () => {
+    const tower = createMockTower({ type: TowerType.SNIPER, damage: 50 });
+    const enemy = createMockEnemy();
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    const effects = combatModule.getHitscanEffects();
+    expect(effects.length).toBeGreaterThan(0);
+    expect(effects[0].type).toBe('sniper');
+  });
+
+  it('should reduce damage by armor', () => {
+    const tower = createMockTower({ type: TowerType.SNIPER, damage: 50 });
+    const enemy = createMockEnemy({ health: 100, armor: 10 });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(enemy.health).toBe(60); // 100 - (50 - 10) = 60
+  });
+
+  it('should kill enemy when damage exceeds health', () => {
+    const tower = createMockTower({ type: TowerType.SNIPER, damage: 50 });
+    const enemy = createMockEnemy({ health: 30, armor: 0 });
+    let removedEnemyId: string | null = null;
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: (id: string) => {
+        removedEnemyId = id;
+      },
+      addCredits: () => {},
+      getTime: () => 0,
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(removedEnemyId).toBe(enemy.id);
+  });
+
+  it('should track kills and damage on sniper tower', () => {
+    const tower = createMockTower({ type: TowerType.SNIPER, damage: 50 });
+    const enemy = createMockEnemy({ health: 40, armor: 0 });
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(tower.kills).toBe(1);
+    expect(tower.totalDamage).toBeGreaterThan(0);
+  });
 });
 
 describe('Projectile pool tracking', () => {
