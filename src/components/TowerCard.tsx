@@ -22,6 +22,10 @@ export interface TowerCardProps {
   selected?: boolean;
   disabled?: boolean;
   onClick?: () => void;
+  /** Current wave credits available (required if locked) */
+  waveCredits?: number;
+  /** Callback when unlock button is clicked */
+  onUnlock?: () => void;
 }
 
 export default function TowerCard({
@@ -30,11 +34,15 @@ export default function TowerCard({
   selected = false,
   disabled = false,
   onClick,
+  waveCredits = 0,
+  onUnlock,
 }: TowerCardProps) {
   const stats = TOWER_STATS[type];
   const dps = (stats.damage / stats.fireRate).toFixed(0);
   const special = getSpecialEffect(type);
   const isInteractive = !locked && !disabled && onClick;
+  const canAfford = waveCredits >= stats.unlockCost;
+  const showUnlockButton = locked && onUnlock;
 
   return (
     <div
@@ -61,7 +69,7 @@ export default function TowerCard({
     >
       <div style={styles.iconContainer}>
         <TowerIcon type={type} size={48} />
-        {locked && <div style={styles.lockOverlay}>🔒</div>}
+        {locked && !showUnlockButton && <div style={styles.lockOverlay}>🔒</div>}
       </div>
 
       <div style={styles.info}>
@@ -89,6 +97,27 @@ export default function TowerCard({
       <div style={styles.cost}>
         <span style={styles.costValue}>${stats.cost}</span>
       </div>
+
+      {showUnlockButton && (
+        <button
+          style={{
+            ...styles.unlockButton,
+            ...(canAfford ? styles.unlockButtonAfford : styles.unlockButtonCantAfford),
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (canAfford) {
+              onUnlock();
+            }
+          }}
+          disabled={!canAfford}
+          title={canAfford ? `Unlock for ${stats.unlockCost} credits` : 'Not enough credits'}
+          aria-label={canAfford ? `Unlock for ${stats.unlockCost} credits` : `Unlock (${stats.unlockCost} credits needed)`}
+        >
+          <span style={styles.unlockIcon}>🔓</span>
+          <span style={styles.unlockCost}>{stats.unlockCost}</span>
+        </button>
+      )}
     </div>
   );
 }
@@ -190,5 +219,35 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: typography.fontWeight.bold,
     color: colors.credits,
     fontFamily: typography.fontFamily.mono,
+  },
+  unlockButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: `${spacing.xs} ${spacing.sm}`,
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    transition: 'all 0.15s ease',
+    flexShrink: 0,
+  },
+  unlockButtonAfford: {
+    backgroundColor: colors.success,
+    color: colors.background,
+  },
+  unlockButtonCantAfford: {
+    backgroundColor: colors.text.muted,
+    color: colors.text.secondary,
+    cursor: 'not-allowed',
+    opacity: 0.6,
+  },
+  unlockIcon: {
+    fontSize: typography.fontSize.md,
+  },
+  unlockCost: {
+    fontWeight: typography.fontWeight.bold,
   },
 };
