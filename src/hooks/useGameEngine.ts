@@ -14,6 +14,7 @@ export interface GameActions {
   engage: () => void;
   selectTower: (towerId: string | null) => void;
   selectTowerType: (type: TowerType | null) => void;
+  enterLoadout: () => void;
   startGame: () => void;
 }
 
@@ -95,6 +96,11 @@ export function useGameEngine(): UseGameEngineResult {
     engine.setSelectedTowerType(type);
   }, []);
 
+  // Action: Enter loadout screen
+  const enterLoadout = useCallback(() => {
+    engine.enterLoadout();
+  }, []);
+
   // Action: Start the game
   const startGame = useCallback(() => {
     engine.startGame();
@@ -107,6 +113,7 @@ export function useGameEngine(): UseGameEngineResult {
     engage,
     selectTower,
     selectTowerType,
+    enterLoadout,
     startGame,
   };
 

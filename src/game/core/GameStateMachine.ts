@@ -20,12 +20,13 @@ export interface GameStateMachineConfig {
 // ============================================================================
 
 const VALID_TRANSITIONS: Record<GamePhase, GamePhase[]> = {
-  [Phase.MENU]: [Phase.PLANNING],
+  [Phase.MENU]: [Phase.LOADOUT],
+  [Phase.LOADOUT]: [Phase.PLANNING, Phase.MENU],
   [Phase.PLANNING]: [Phase.COMBAT, Phase.PAUSED, Phase.VICTORY, Phase.DEFEAT],
   [Phase.COMBAT]: [Phase.PLANNING, Phase.PAUSED, Phase.VICTORY, Phase.DEFEAT],
   [Phase.PAUSED]: [Phase.PLANNING, Phase.COMBAT],
-  [Phase.VICTORY]: [Phase.MENU, Phase.PLANNING],
-  [Phase.DEFEAT]: [Phase.MENU, Phase.PLANNING],
+  [Phase.VICTORY]: [Phase.MENU, Phase.LOADOUT],
+  [Phase.DEFEAT]: [Phase.MENU, Phase.LOADOUT],
 };
 
 // ============================================================================
@@ -121,6 +122,10 @@ export class GameStateMachine {
     return this.phase === Phase.MENU;
   }
 
+  isLoadout(): boolean {
+    return this.phase === Phase.LOADOUT;
+  }
+
   isPlanning(): boolean {
     return this.phase === Phase.PLANNING;
   }
@@ -150,9 +155,20 @@ export class GameStateMachine {
   }
 
   /**
-   * Check if game can be started (from MENU, VICTORY, or DEFEAT).
+   * Check if game can be started (from LOADOUT, VICTORY, or DEFEAT).
    */
   canStartGame(): boolean {
+    return (
+      this.phase === Phase.LOADOUT ||
+      this.phase === Phase.VICTORY ||
+      this.phase === Phase.DEFEAT
+    );
+  }
+
+  /**
+   * Check if loadout can be entered (from MENU, VICTORY, or DEFEAT).
+   */
+  canEnterLoadout(): boolean {
     return (
       this.phase === Phase.MENU ||
       this.phase === Phase.VICTORY ||

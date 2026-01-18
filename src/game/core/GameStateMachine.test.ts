@@ -22,10 +22,10 @@ describe('GameStateMachine', () => {
 
   describe('transitionTo', () => {
     it('should transition to valid phase', () => {
-      const result = stateMachine.transitionTo(GamePhase.PLANNING);
+      const result = stateMachine.transitionTo(GamePhase.LOADOUT);
 
       expect(result).toBe(true);
-      expect(stateMachine.getPhase()).toBe(GamePhase.PLANNING);
+      expect(stateMachine.getPhase()).toBe(GamePhase.LOADOUT);
     });
 
     it('should reject invalid transitions', () => {
@@ -46,13 +46,13 @@ describe('GameStateMachine', () => {
       const callback = vi.fn();
       stateMachine.setOnPhaseChange(callback);
 
-      stateMachine.transitionTo(GamePhase.PLANNING);
+      stateMachine.transitionTo(GamePhase.LOADOUT);
 
-      expect(callback).toHaveBeenCalledWith(GamePhase.MENU, GamePhase.PLANNING);
+      expect(callback).toHaveBeenCalledWith(GamePhase.MENU, GamePhase.LOADOUT);
     });
 
     it('should update previousPhase', () => {
-      stateMachine.transitionTo(GamePhase.PLANNING);
+      stateMachine.transitionTo(GamePhase.LOADOUT);
 
       expect(stateMachine.getPreviousPhase()).toBe(GamePhase.MENU);
     });
@@ -86,7 +86,7 @@ describe('GameStateMachine', () => {
 
   describe('canTransitionTo', () => {
     it('should return true for valid transitions', () => {
-      expect(stateMachine.canTransitionTo(GamePhase.PLANNING)).toBe(true);
+      expect(stateMachine.canTransitionTo(GamePhase.LOADOUT)).toBe(true);
     });
 
     it('should return false for invalid transitions', () => {
@@ -119,22 +119,30 @@ describe('GameStateMachine', () => {
   describe('phase helpers', () => {
     it('isMenu should return true in MENU phase', () => {
       expect(stateMachine.isMenu()).toBe(true);
-      stateMachine.transitionTo(GamePhase.PLANNING);
+      stateMachine.transitionTo(GamePhase.LOADOUT);
       expect(stateMachine.isMenu()).toBe(false);
     });
 
+    it('isLoadout should return true in LOADOUT phase', () => {
+      stateMachine.transitionTo(GamePhase.LOADOUT);
+      expect(stateMachine.isLoadout()).toBe(true);
+    });
+
     it('isPlanning should return true in PLANNING phase', () => {
+      stateMachine.transitionTo(GamePhase.LOADOUT);
       stateMachine.transitionTo(GamePhase.PLANNING);
       expect(stateMachine.isPlanning()).toBe(true);
     });
 
     it('isCombat should return true in COMBAT phase', () => {
+      stateMachine.transitionTo(GamePhase.LOADOUT);
       stateMachine.transitionTo(GamePhase.PLANNING);
       stateMachine.transitionTo(GamePhase.COMBAT);
       expect(stateMachine.isCombat()).toBe(true);
     });
 
     it('isPaused should return true in PAUSED phase', () => {
+      stateMachine.transitionTo(GamePhase.LOADOUT);
       stateMachine.transitionTo(GamePhase.PLANNING);
       stateMachine.transitionTo(GamePhase.PAUSED);
       expect(stateMachine.isPaused()).toBe(true);
@@ -162,6 +170,7 @@ describe('GameStateMachine', () => {
     });
 
     it('isActive should return true for PLANNING or COMBAT', () => {
+      stateMachine.transitionTo(GamePhase.LOADOUT);
       stateMachine.transitionTo(GamePhase.PLANNING);
       expect(stateMachine.isActive()).toBe(true);
 
@@ -174,7 +183,8 @@ describe('GameStateMachine', () => {
   });
 
   describe('canStartGame', () => {
-    it('should return true from MENU', () => {
+    it('should return true from LOADOUT', () => {
+      stateMachine.transitionTo(GamePhase.LOADOUT);
       expect(stateMachine.canStartGame()).toBe(true);
     });
 
@@ -189,13 +199,40 @@ describe('GameStateMachine', () => {
     });
 
     it('should return false from PLANNING', () => {
+      stateMachine.transitionTo(GamePhase.LOADOUT);
       stateMachine.transitionTo(GamePhase.PLANNING);
       expect(stateMachine.canStartGame()).toBe(false);
+    });
+
+    it('should return false from MENU', () => {
+      expect(stateMachine.canStartGame()).toBe(false);
+    });
+  });
+
+  describe('canEnterLoadout', () => {
+    it('should return true from MENU', () => {
+      expect(stateMachine.canEnterLoadout()).toBe(true);
+    });
+
+    it('should return true from VICTORY', () => {
+      stateMachine.forcePhase(GamePhase.VICTORY);
+      expect(stateMachine.canEnterLoadout()).toBe(true);
+    });
+
+    it('should return true from DEFEAT', () => {
+      stateMachine.forcePhase(GamePhase.DEFEAT);
+      expect(stateMachine.canEnterLoadout()).toBe(true);
+    });
+
+    it('should return false from PLANNING', () => {
+      stateMachine.forcePhase(GamePhase.PLANNING);
+      expect(stateMachine.canEnterLoadout()).toBe(false);
     });
   });
 
   describe('canStartWave', () => {
     it('should return true from PLANNING', () => {
+      stateMachine.transitionTo(GamePhase.LOADOUT);
       stateMachine.transitionTo(GamePhase.PLANNING);
       expect(stateMachine.canStartWave()).toBe(true);
     });
@@ -208,6 +245,7 @@ describe('GameStateMachine', () => {
 
   describe('canPause', () => {
     it('should return true from PLANNING', () => {
+      stateMachine.transitionTo(GamePhase.LOADOUT);
       stateMachine.transitionTo(GamePhase.PLANNING);
       expect(stateMachine.canPause()).toBe(true);
     });
@@ -224,6 +262,7 @@ describe('GameStateMachine', () => {
 
   describe('canResume', () => {
     it('should return true from PAUSED', () => {
+      stateMachine.transitionTo(GamePhase.LOADOUT);
       stateMachine.transitionTo(GamePhase.PLANNING);
       stateMachine.transitionTo(GamePhase.PAUSED);
       expect(stateMachine.canResume()).toBe(true);
@@ -235,16 +274,28 @@ describe('GameStateMachine', () => {
   });
 
   describe('valid state transitions', () => {
-    it('MENU -> PLANNING', () => {
+    it('MENU -> LOADOUT', () => {
+      expect(stateMachine.transitionTo(GamePhase.LOADOUT)).toBe(true);
+    });
+
+    it('LOADOUT -> PLANNING', () => {
+      stateMachine.transitionTo(GamePhase.LOADOUT);
       expect(stateMachine.transitionTo(GamePhase.PLANNING)).toBe(true);
     });
 
+    it('LOADOUT -> MENU', () => {
+      stateMachine.transitionTo(GamePhase.LOADOUT);
+      expect(stateMachine.transitionTo(GamePhase.MENU)).toBe(true);
+    });
+
     it('PLANNING -> COMBAT', () => {
+      stateMachine.transitionTo(GamePhase.LOADOUT);
       stateMachine.transitionTo(GamePhase.PLANNING);
       expect(stateMachine.transitionTo(GamePhase.COMBAT)).toBe(true);
     });
 
     it('PLANNING -> PAUSED', () => {
+      stateMachine.transitionTo(GamePhase.LOADOUT);
       stateMachine.transitionTo(GamePhase.PLANNING);
       expect(stateMachine.transitionTo(GamePhase.PAUSED)).toBe(true);
     });
@@ -270,12 +321,14 @@ describe('GameStateMachine', () => {
     });
 
     it('PAUSED -> PLANNING', () => {
+      stateMachine.transitionTo(GamePhase.LOADOUT);
       stateMachine.transitionTo(GamePhase.PLANNING);
       stateMachine.transitionTo(GamePhase.PAUSED);
       expect(stateMachine.transitionTo(GamePhase.PLANNING)).toBe(true);
     });
 
     it('PAUSED -> COMBAT', () => {
+      stateMachine.transitionTo(GamePhase.LOADOUT);
       stateMachine.transitionTo(GamePhase.PLANNING);
       stateMachine.transitionTo(GamePhase.PAUSED);
       expect(stateMachine.transitionTo(GamePhase.COMBAT)).toBe(true);
@@ -286,9 +339,9 @@ describe('GameStateMachine', () => {
       expect(stateMachine.transitionTo(GamePhase.MENU)).toBe(true);
     });
 
-    it('VICTORY -> PLANNING (restart)', () => {
+    it('VICTORY -> LOADOUT (restart)', () => {
       stateMachine.forcePhase(GamePhase.VICTORY);
-      expect(stateMachine.transitionTo(GamePhase.PLANNING)).toBe(true);
+      expect(stateMachine.transitionTo(GamePhase.LOADOUT)).toBe(true);
     });
 
     it('DEFEAT -> MENU', () => {
@@ -296,9 +349,9 @@ describe('GameStateMachine', () => {
       expect(stateMachine.transitionTo(GamePhase.MENU)).toBe(true);
     });
 
-    it('DEFEAT -> PLANNING (restart)', () => {
+    it('DEFEAT -> LOADOUT (restart)', () => {
       stateMachine.forcePhase(GamePhase.DEFEAT);
-      expect(stateMachine.transitionTo(GamePhase.PLANNING)).toBe(true);
+      expect(stateMachine.transitionTo(GamePhase.LOADOUT)).toBe(true);
     });
   });
 

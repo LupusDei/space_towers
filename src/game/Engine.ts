@@ -226,8 +226,18 @@ class GameEngine {
     this.stateNotifier.notify();
   }
 
+  enterLoadout(): void {
+    // Allow entering loadout from MENU, VICTORY, or DEFEAT phases
+    if (!this.stateMachine.canEnterLoadout()) {
+      return;
+    }
+
+    this.stateMachine.transitionTo(Phase.LOADOUT);
+    this.stateNotifier.notify();
+  }
+
   startGame(): void {
-    // Allow starting from MENU, DEFEAT, or VICTORY phases
+    // Allow starting from LOADOUT, DEFEAT, or VICTORY phases
     if (!this.stateMachine.canStartGame()) {
       return;
     }

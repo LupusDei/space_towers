@@ -4,6 +4,7 @@ import { useGameEngine } from './hooks/useGameEngine';
 import { GamePhase, TowerType } from './game/types';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from './game/config';
 import MainMenu from './components/MainMenu';
+import LoadoutScreen from './components/LoadoutScreen';
 import Game from './components/Game';
 import HUD from './components/HUD';
 import TowerPanel from './components/TowerPanel';
@@ -49,12 +50,16 @@ function App() {
   const { state, actions } = useGameEngine();
   const scale = useResponsiveScale();
 
+  const handleEnterLoadout = () => {
+    actions.enterLoadout();
+  };
+
   const handleStartGame = () => {
     actions.startGame();
   };
 
   const handlePlayAgain = () => {
-    actions.startGame();
+    actions.enterLoadout();
   };
 
   const handleSelectTowerType = (type: TowerType | null) => {
@@ -91,7 +96,21 @@ function App() {
   if (state.phase === GamePhase.MENU) {
     return (
       <div className="app">
-        <MainMenu onStartGame={handleStartGame} />
+        <MainMenu onStartGame={handleEnterLoadout} />
+      </div>
+    );
+  }
+
+  // Show LoadoutScreen when in LOADOUT phase
+  if (state.phase === GamePhase.LOADOUT) {
+    return (
+      <div className="app">
+        <LoadoutScreen
+          credits={state.credits}
+          selectedTowerType={state.selectedTowerType}
+          onSelectTowerType={handleSelectTowerType}
+          onStartGame={handleStartGame}
+        />
       </div>
     );
   }
