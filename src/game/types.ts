@@ -15,6 +15,7 @@ export interface Point {
 
 export const GamePhase = {
   MENU: 'menu',
+  TOWER_STORE: 'tower_store',
   PLANNING: 'planning',
   COMBAT: 'combat',
   PAUSED: 'paused',

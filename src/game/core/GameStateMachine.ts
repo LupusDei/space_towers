@@ -1,5 +1,5 @@
 // GameStateMachine - Phase state machine for game flow
-// Handles phase transitions: MENU → PLANNING → COMBAT → VICTORY/DEFEAT
+// Handles phase transitions: MENU → TOWER_STORE → PLANNING → COMBAT → VICTORY/DEFEAT
 
 import type { GamePhase } from '../types';
 import { GamePhase as Phase } from '../types';
@@ -20,12 +20,13 @@ export interface GameStateMachineConfig {
 // ============================================================================
 
 const VALID_TRANSITIONS: Record<GamePhase, GamePhase[]> = {
-  [Phase.MENU]: [Phase.PLANNING],
+  [Phase.MENU]: [Phase.TOWER_STORE],
+  [Phase.TOWER_STORE]: [Phase.PLANNING, Phase.MENU],
   [Phase.PLANNING]: [Phase.COMBAT, Phase.PAUSED, Phase.VICTORY, Phase.DEFEAT],
   [Phase.COMBAT]: [Phase.PLANNING, Phase.PAUSED, Phase.VICTORY, Phase.DEFEAT],
   [Phase.PAUSED]: [Phase.PLANNING, Phase.COMBAT],
-  [Phase.VICTORY]: [Phase.MENU, Phase.PLANNING],
-  [Phase.DEFEAT]: [Phase.MENU, Phase.PLANNING],
+  [Phase.VICTORY]: [Phase.MENU, Phase.PLANNING, Phase.TOWER_STORE],
+  [Phase.DEFEAT]: [Phase.MENU, Phase.PLANNING, Phase.TOWER_STORE],
 };
 
 // ============================================================================
@@ -121,6 +122,10 @@ export class GameStateMachine {
     return this.phase === Phase.MENU;
   }
 
+  isTowerStore(): boolean {
+    return this.phase === Phase.TOWER_STORE;
+  }
+
   isPlanning(): boolean {
     return this.phase === Phase.PLANNING;
   }
@@ -150,11 +155,12 @@ export class GameStateMachine {
   }
 
   /**
-   * Check if game can be started (from MENU, VICTORY, or DEFEAT).
+   * Check if game can be started (from MENU, TOWER_STORE, VICTORY, or DEFEAT).
    */
   canStartGame(): boolean {
     return (
       this.phase === Phase.MENU ||
+      this.phase === Phase.TOWER_STORE ||
       this.phase === Phase.VICTORY ||
       this.phase === Phase.DEFEAT
     );

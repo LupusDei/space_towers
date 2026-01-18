@@ -22,17 +22,16 @@ describe('GameStateMachine', () => {
 
   describe('transitionTo', () => {
     it('should transition to valid phase', () => {
-      const result = stateMachine.transitionTo(GamePhase.PLANNING);
+      const result = stateMachine.transitionTo(GamePhase.TOWER_STORE);
 
       expect(result).toBe(true);
-      expect(stateMachine.getPhase()).toBe(GamePhase.PLANNING);
+      expect(stateMachine.getPhase()).toBe(GamePhase.TOWER_STORE);
     });
 
     it('should reject invalid transitions', () => {
-      // MENU cannot go directly to COMBAT
-      const result = stateMachine.transitionTo(GamePhase.COMBAT);
-
-      expect(result).toBe(false);
+      // MENU cannot go directly to COMBAT or PLANNING (must go through TOWER_STORE)
+      expect(stateMachine.transitionTo(GamePhase.COMBAT)).toBe(false);
+      expect(stateMachine.transitionTo(GamePhase.PLANNING)).toBe(false);
       expect(stateMachine.getPhase()).toBe(GamePhase.MENU);
     });
 
@@ -46,13 +45,13 @@ describe('GameStateMachine', () => {
       const callback = vi.fn();
       stateMachine.setOnPhaseChange(callback);
 
-      stateMachine.transitionTo(GamePhase.PLANNING);
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
 
-      expect(callback).toHaveBeenCalledWith(GamePhase.MENU, GamePhase.PLANNING);
+      expect(callback).toHaveBeenCalledWith(GamePhase.MENU, GamePhase.TOWER_STORE);
     });
 
     it('should update previousPhase', () => {
-      stateMachine.transitionTo(GamePhase.PLANNING);
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
 
       expect(stateMachine.getPreviousPhase()).toBe(GamePhase.MENU);
     });
@@ -86,17 +85,18 @@ describe('GameStateMachine', () => {
 
   describe('canTransitionTo', () => {
     it('should return true for valid transitions', () => {
-      expect(stateMachine.canTransitionTo(GamePhase.PLANNING)).toBe(true);
+      expect(stateMachine.canTransitionTo(GamePhase.TOWER_STORE)).toBe(true);
     });
 
     it('should return false for invalid transitions', () => {
       expect(stateMachine.canTransitionTo(GamePhase.COMBAT)).toBe(false);
+      expect(stateMachine.canTransitionTo(GamePhase.PLANNING)).toBe(false);
     });
   });
 
   describe('reset', () => {
     it('should reset to MENU phase by default', () => {
-      stateMachine.transitionTo(GamePhase.PLANNING);
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
       stateMachine.reset();
 
       expect(stateMachine.getPhase()).toBe(GamePhase.MENU);
@@ -109,7 +109,7 @@ describe('GameStateMachine', () => {
     });
 
     it('should clear previousPhase', () => {
-      stateMachine.transitionTo(GamePhase.PLANNING);
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
       stateMachine.reset();
 
       expect(stateMachine.getPreviousPhase()).toBeNull();
@@ -119,22 +119,32 @@ describe('GameStateMachine', () => {
   describe('phase helpers', () => {
     it('isMenu should return true in MENU phase', () => {
       expect(stateMachine.isMenu()).toBe(true);
-      stateMachine.transitionTo(GamePhase.PLANNING);
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
       expect(stateMachine.isMenu()).toBe(false);
     });
 
+    it('isTowerStore should return true in TOWER_STORE phase', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
+      expect(stateMachine.isTowerStore()).toBe(true);
+      stateMachine.transitionTo(GamePhase.PLANNING);
+      expect(stateMachine.isTowerStore()).toBe(false);
+    });
+
     it('isPlanning should return true in PLANNING phase', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
       stateMachine.transitionTo(GamePhase.PLANNING);
       expect(stateMachine.isPlanning()).toBe(true);
     });
 
     it('isCombat should return true in COMBAT phase', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
       stateMachine.transitionTo(GamePhase.PLANNING);
       stateMachine.transitionTo(GamePhase.COMBAT);
       expect(stateMachine.isCombat()).toBe(true);
     });
 
     it('isPaused should return true in PAUSED phase', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
       stateMachine.transitionTo(GamePhase.PLANNING);
       stateMachine.transitionTo(GamePhase.PAUSED);
       expect(stateMachine.isPaused()).toBe(true);
@@ -162,6 +172,7 @@ describe('GameStateMachine', () => {
     });
 
     it('isActive should return true for PLANNING or COMBAT', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
       stateMachine.transitionTo(GamePhase.PLANNING);
       expect(stateMachine.isActive()).toBe(true);
 
@@ -178,6 +189,11 @@ describe('GameStateMachine', () => {
       expect(stateMachine.canStartGame()).toBe(true);
     });
 
+    it('should return true from TOWER_STORE', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
+      expect(stateMachine.canStartGame()).toBe(true);
+    });
+
     it('should return true from VICTORY', () => {
       stateMachine.forcePhase(GamePhase.VICTORY);
       expect(stateMachine.canStartGame()).toBe(true);
@@ -189,6 +205,7 @@ describe('GameStateMachine', () => {
     });
 
     it('should return false from PLANNING', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
       stateMachine.transitionTo(GamePhase.PLANNING);
       expect(stateMachine.canStartGame()).toBe(false);
     });
@@ -196,6 +213,7 @@ describe('GameStateMachine', () => {
 
   describe('canStartWave', () => {
     it('should return true from PLANNING', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
       stateMachine.transitionTo(GamePhase.PLANNING);
       expect(stateMachine.canStartWave()).toBe(true);
     });
@@ -208,6 +226,7 @@ describe('GameStateMachine', () => {
 
   describe('canPause', () => {
     it('should return true from PLANNING', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
       stateMachine.transitionTo(GamePhase.PLANNING);
       expect(stateMachine.canPause()).toBe(true);
     });
@@ -224,6 +243,7 @@ describe('GameStateMachine', () => {
 
   describe('canResume', () => {
     it('should return true from PAUSED', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
       stateMachine.transitionTo(GamePhase.PLANNING);
       stateMachine.transitionTo(GamePhase.PAUSED);
       expect(stateMachine.canResume()).toBe(true);
@@ -235,16 +255,28 @@ describe('GameStateMachine', () => {
   });
 
   describe('valid state transitions', () => {
-    it('MENU -> PLANNING', () => {
+    it('MENU -> TOWER_STORE', () => {
+      expect(stateMachine.transitionTo(GamePhase.TOWER_STORE)).toBe(true);
+    });
+
+    it('TOWER_STORE -> PLANNING', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
       expect(stateMachine.transitionTo(GamePhase.PLANNING)).toBe(true);
     });
 
+    it('TOWER_STORE -> MENU', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
+      expect(stateMachine.transitionTo(GamePhase.MENU)).toBe(true);
+    });
+
     it('PLANNING -> COMBAT', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
       stateMachine.transitionTo(GamePhase.PLANNING);
       expect(stateMachine.transitionTo(GamePhase.COMBAT)).toBe(true);
     });
 
     it('PLANNING -> PAUSED', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
       stateMachine.transitionTo(GamePhase.PLANNING);
       expect(stateMachine.transitionTo(GamePhase.PAUSED)).toBe(true);
     });
@@ -270,12 +302,14 @@ describe('GameStateMachine', () => {
     });
 
     it('PAUSED -> PLANNING', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
       stateMachine.transitionTo(GamePhase.PLANNING);
       stateMachine.transitionTo(GamePhase.PAUSED);
       expect(stateMachine.transitionTo(GamePhase.PLANNING)).toBe(true);
     });
 
     it('PAUSED -> COMBAT', () => {
+      stateMachine.transitionTo(GamePhase.TOWER_STORE);
       stateMachine.transitionTo(GamePhase.PLANNING);
       stateMachine.transitionTo(GamePhase.PAUSED);
       expect(stateMachine.transitionTo(GamePhase.COMBAT)).toBe(true);
@@ -291,6 +325,11 @@ describe('GameStateMachine', () => {
       expect(stateMachine.transitionTo(GamePhase.PLANNING)).toBe(true);
     });
 
+    it('VICTORY -> TOWER_STORE (change loadout)', () => {
+      stateMachine.forcePhase(GamePhase.VICTORY);
+      expect(stateMachine.transitionTo(GamePhase.TOWER_STORE)).toBe(true);
+    });
+
     it('DEFEAT -> MENU', () => {
       stateMachine.forcePhase(GamePhase.DEFEAT);
       expect(stateMachine.transitionTo(GamePhase.MENU)).toBe(true);
@@ -299,6 +338,11 @@ describe('GameStateMachine', () => {
     it('DEFEAT -> PLANNING (restart)', () => {
       stateMachine.forcePhase(GamePhase.DEFEAT);
       expect(stateMachine.transitionTo(GamePhase.PLANNING)).toBe(true);
+    });
+
+    it('DEFEAT -> TOWER_STORE (change loadout)', () => {
+      stateMachine.forcePhase(GamePhase.DEFEAT);
+      expect(stateMachine.transitionTo(GamePhase.TOWER_STORE)).toBe(true);
     });
   });
 
