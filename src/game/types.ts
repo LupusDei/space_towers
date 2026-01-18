@@ -147,6 +147,7 @@ export type GameEventType =
   | 'GAME_OVER'
   | 'WAVE_START'
   | 'WAVE_COMPLETE'
+  | 'WAVE_CREDITS_EARNED'
   | 'ENEMY_SPAWN'
   | 'ENEMY_KILLED'
   | 'ENEMY_ESCAPED'
@@ -183,6 +184,14 @@ export interface WaveStartEvent extends GameEvent<{ wave: number; definition: Wa
 
 export interface WaveCompleteEvent extends GameEvent<{ wave: number; reward: number }> {
   type: 'WAVE_COMPLETE';
+}
+
+export interface WaveCreditsEarnedEvent extends GameEvent<{
+  wave: number;
+  creditsEarned: number;
+  totalCredits: number;
+}> {
+  type: 'WAVE_CREDITS_EARNED';
 }
 
 export interface EnemySpawnEvent extends GameEvent<{ enemy: Enemy }> {
@@ -274,6 +283,7 @@ export type GameEvents =
   | GameOverEvent
   | WaveStartEvent
   | WaveCompleteEvent
+  | WaveCreditsEarnedEvent
   | EnemySpawnEvent
   | EnemyKilledEvent
   | EnemyEscapedEvent
