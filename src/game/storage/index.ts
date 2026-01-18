@@ -6,3 +6,13 @@ export {
   createMemoryStorage,
   type StorageBackend,
 } from './StorageService';
+
+export {
+  ProgressService,
+  getProgressService,
+  createProgressService,
+  getDefaultProgress,
+  loadProgress,
+  saveProgress,
+  unlockTower,
+} from './ProgressService';
