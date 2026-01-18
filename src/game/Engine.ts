@@ -34,6 +34,8 @@ import {
   GameLoopManager,
   GameStateMachine,
 } from './core';
+import { calculateWaveCredits } from '../data/waves';
+import { loadProgress, saveProgress } from './storage';
 
 // ============================================================================
 // Engine State (Data Container)
@@ -267,7 +269,9 @@ class GameEngine {
   endWave(): void {
     if (!this.stateMachine.isCombat()) return;
 
-    // Award wave completion reward
+    const completedWave = this.state.wave;
+
+    // Award wave completion reward (in-game credits)
     const waveReward = this.waveController.reward;
     if (waveReward > 0) {
       this.addCredits(waveReward);
@@ -276,9 +280,40 @@ class GameEngine {
     // Signal wave completion to controller (emits WAVE_COMPLETE event)
     this.waveController.completeWave();
 
+    // Award wave credits (persistent currency) and update progress
+    const waveCreditsEarned = calculateWaveCredits(completedWave);
+    this.awardWaveCredits(completedWave, waveCreditsEarned);
+
     // Advance to next wave
     this.state.wave++;
     this.stateMachine.transitionTo(Phase.PLANNING);
+  }
+
+  /**
+   * Award wave credits and update persistent user progress.
+   * Called after each wave completion.
+   */
+  private awardWaveCredits(completedWave: number, creditsEarned: number): void {
+    // Load current progress
+    const progress = loadProgress();
+
+    // Update wave credits
+    progress.waveCredits += creditsEarned;
+
+    // Update highest wave completed if this is a new record
+    if (completedWave > progress.highestWaveCompleted) {
+      progress.highestWaveCompleted = completedWave;
+    }
+
+    // Save updated progress
+    saveProgress(progress);
+
+    // Emit event for UI notification
+    this.eventBus.emit(createEvent('WAVE_CREDITS_EARNED', {
+      wave: completedWave,
+      creditsEarned,
+      totalCredits: progress.waveCredits,
+    }));
   }
 
   pause(): void {
