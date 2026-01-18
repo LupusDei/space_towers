@@ -69,6 +69,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     damage: 5,
     range: 150,
     fireRate: 0.5, // seconds between shots
+    unlockCost: 0, // Starter tower
     // Leveling: cheap, fast upgrades
     maxLevel: 5,
     upgradeCosts: [30, 45, 70, 100], // Total to max: 245
@@ -84,6 +85,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     damage: 20,
     range: 200,
     fireRate: 2.0,
+    unlockCost: 0, // Starter tower
     // Leveling: expensive but powerful AoE
     maxLevel: 5,
     upgradeCosts: [60, 90, 135, 200], // Total to max: 485
@@ -102,6 +104,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     damage: 8,
     range: 120,
     fireRate: 0.8,
+    unlockCost: 0, // Starter tower
     // Leveling: chain lightning specialist
     maxLevel: 5,
     upgradeCosts: [45, 70, 105, 155], // Total to max: 375
@@ -120,6 +123,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     damage: 30,
     range: 175,
     fireRate: 2.5,
+    unlockCost: 0, // Starter tower
     // Leveling: heavy single-target damage
     maxLevel: 5,
     upgradeCosts: [75, 115, 170, 250], // Total to max: 610
@@ -135,12 +139,29 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     damage: 5,
     range: 100,
     fireRate: 1.0,
+    unlockCost: 0, // Starter tower
     // Leveling: utility/slow tower
     maxLevel: 5,
     upgradeCosts: [90, 135, 200, 300], // Total to max: 725
     damagePerLevel: 3,
     rangePerLevel: 8,
     fireRatePerLevel: -0.05,
+  },
+
+  [TowerType.SNIPER]: {
+    type: TowerType.SNIPER,
+    name: 'Sniper Tower',
+    cost: 75,
+    damage: 50,
+    range: 350,
+    fireRate: 2.0,
+    unlockCost: 10, // Requires 10 wave credits to unlock
+    // Leveling: long-range precision
+    maxLevel: 5,
+    upgradeCosts: [85, 130, 195, 290], // Total to max: 700
+    damagePerLevel: 35,
+    rangePerLevel: 25,
+    fireRatePerLevel: -0.1,
   },
 };
 

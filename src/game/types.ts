@@ -39,6 +39,7 @@ export const TowerType = {
   TESLA: 'tesla',
   CANNON: 'cannon',
   GRAVITY: 'gravity',
+  SNIPER: 'sniper',
 } as const;
 export type TowerType = (typeof TowerType)[keyof typeof TowerType];
 
@@ -318,6 +319,7 @@ export interface TowerStats {
   damage: number;
   range: number;
   fireRate: number;
+  unlockCost: number; // Wave credits required to unlock this tower
   // Leveling system
   maxLevel: number;
   upgradeCosts: number[]; // Cost to upgrade to each level (index 0 = cost for level 2)

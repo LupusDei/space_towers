@@ -27,6 +27,7 @@ const towerSprites: Record<TowerType, TowerSprite> = {
   [TowerType.TESLA]: TeslaCoilSprite,
   [TowerType.CANNON]: PlasmaCannonSprite,
   [TowerType.GRAVITY]: LaserTurretSprite, // TODO: Replace with GravityWellSprite
+  [TowerType.SNIPER]: LaserTurretSprite, // TODO: Replace with SniperTowerSprite
 };
 
 // Enemy type to sprite mapping
