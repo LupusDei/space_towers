@@ -163,7 +163,8 @@ export type GameEventType =
   | 'DAMAGE_NUMBER_REQUESTED'
   | 'EXPLOSION_REQUESTED'
   | 'GOLD_NUMBER_REQUESTED'
-  | 'GRAVITY_PULSE_REQUESTED';
+  | 'GRAVITY_PULSE_REQUESTED'
+  | 'STORM_SPAWNED';
 
 export interface GameEvent<T = unknown> {
   type: GameEventType;
@@ -279,6 +280,15 @@ export interface GravityPulseRequestedEvent extends GameEvent<{
   type: 'GRAVITY_PULSE_REQUESTED';
 }
 
+export interface StormSpawnedEvent extends GameEvent<{
+  position: Point;
+  radius: number;
+  duration: number;
+  time: number;
+}> {
+  type: 'STORM_SPAWNED';
+}
+
 export type GameEvents =
   | GameStartEvent
   | GameOverEvent
@@ -299,7 +309,8 @@ export type GameEvents =
   | DamageNumberRequestedEvent
   | ExplosionRequestedEvent
   | GoldNumberRequestedEvent
-  | GravityPulseRequestedEvent;
+  | GravityPulseRequestedEvent
+  | StormSpawnedEvent;
 
 // ============================================================================
 // Module System

@@ -16,7 +16,8 @@ import { Tower as TowerClass } from '../towers/Tower';
 import { findTarget, findSniperTarget, findChainTargets, getEnemiesInSplash } from '../towers/Targeting';
 import { projectilePool } from '../pools';
 import { eventBus, createEvent } from '../events';
-import { GAME_CONFIG, COMBAT_CONFIG } from '../config';
+import { GAME_CONFIG, COMBAT_CONFIG, TOWER_STATS } from '../config';
+import { StormEffect } from '../entities/StormEffect';
 
 // ============================================================================
 // Visual Effect Tracking
@@ -54,8 +55,10 @@ interface CombatState {
   hitscanEffects: HitscanEffect[];
   chainEffects: ChainLightningEffect[];
   splashEffects: SplashEffect[];
+  storms: StormEffect[];
   towerInstances: Map<string, TowerClass>;
   eventUnsubscribers: (() => void)[];
+  nextStormId: number;
 }
 
 // ============================================================================
@@ -76,6 +79,10 @@ function isGravityTower(type: TowerType): boolean {
 
 function isSniperTower(type: TowerType): boolean {
   return type === TT.SNIPER;
+}
+
+function isStormTower(type: TowerType): boolean {
+  return type === TT.STORM;
 }
 
 function towerPositionToPixels(position: Point): Point {
@@ -103,8 +110,10 @@ class CombatModuleImpl implements GameModule {
     hitscanEffects: [],
     chainEffects: [],
     splashEffects: [],
+    storms: [],
     towerInstances: new Map(),
     eventUnsubscribers: [],
+    nextStormId: 0,
   };
 
   init(query: QueryInterface, commands: CommandInterface): void {
@@ -114,8 +123,10 @@ class CombatModuleImpl implements GameModule {
       hitscanEffects: [],
       chainEffects: [],
       splashEffects: [],
+      storms: [],
       towerInstances: new Map(),
       eventUnsubscribers: [],
+      nextStormId: 0,
     };
 
     // Subscribe to projectile hit events for splash damage
@@ -156,6 +167,9 @@ class CombatModuleImpl implements GameModule {
     // Process tower firing
     this.processTowerFiring(currentTime);
 
+    // Process storm tick damage
+    this.updateStorms(dt, currentTime);
+
     // Clean up expired visual effects
     this.cleanupEffects(currentTime);
   }
@@ -171,8 +185,10 @@ class CombatModuleImpl implements GameModule {
     this.state.hitscanEffects = [];
     this.state.chainEffects = [];
     this.state.splashEffects = [];
+    this.state.storms = [];
     this.state.towerInstances.clear();
     this.state.eventUnsubscribers = [];
+    this.state.nextStormId = 0;
   }
 
   // ==========================================================================
@@ -251,6 +267,8 @@ class CombatModuleImpl implements GameModule {
           this.handleGravityFire(towerData, target, currentTime);
         } else if (isSniperTower(towerData.type)) {
           this.handleSniperFire(towerData, target, currentTime);
+        } else if (isStormTower(towerData.type)) {
+          this.handleStormFire(towerData, target, currentTime);
         }
       }
     }
@@ -469,6 +487,137 @@ class CombatModuleImpl implements GameModule {
         },
       })
     );
+  }
+
+  // ==========================================================================
+  // Storm Tower
+  // ==========================================================================
+
+  private handleStormFire(tower: Tower, _target: Enemy, currentTime: number): void {
+    if (!this.commands) return;
+
+    // Get tower position in pixels for storm center
+    const towerPixelPos = towerPositionToPixels(tower.position);
+
+    // Get storm configuration from tower stats
+    const towerStats = TOWER_STATS[tower.type];
+    const stormDuration = (towerStats?.stormDuration ?? 3) +
+      (towerStats?.stormDurationPerLevel ?? 0) * (tower.level - 1);
+    const stormRadius = tower.range; // Use tower range as storm radius
+
+    // Spawn storm effect
+    this.spawnStorm(towerPixelPos, currentTime, stormRadius, stormDuration, tower.damage, tower.id);
+
+    // Emit storm spawned event (for visual effects/audio)
+    eventBus.emit(
+      createEvent('STORM_SPAWNED', {
+        position: towerPixelPos,
+        radius: stormRadius,
+        duration: stormDuration,
+        time: currentTime,
+      })
+    );
+
+    // Emit projectile fired event (for audio/other systems)
+    eventBus.emit(
+      createEvent('PROJECTILE_FIRED', {
+        projectile: {
+          id: `storm_${tower.id}_${currentTime}`,
+          sourceId: tower.id,
+          targetId: '',
+          towerType: tower.type,
+          position: towerPixelPos,
+          velocity: { x: 0, y: 0 },
+          damage: tower.damage,
+          speed: 0,
+          piercing: false,
+          aoe: stormRadius,
+        },
+      })
+    );
+  }
+
+  // ==========================================================================
+  // Storm Effect Management
+  // ==========================================================================
+
+  /**
+   * Spawn a new storm effect at the given position.
+   * @param position - Position in pixels
+   * @param startTime - Current game time in seconds
+   * @param radius - Storm radius in pixels
+   * @param duration - Duration in seconds
+   * @param damagePerSecond - Damage per second to enemies
+   * @param sourceId - ID of the tower that spawned this storm
+   */
+  spawnStorm(
+    position: Point,
+    startTime: number,
+    radius: number,
+    duration: number,
+    damagePerSecond: number,
+    sourceId: string
+  ): void {
+    const storm = new StormEffect();
+    const stormId = `storm_${this.state.nextStormId++}`;
+    storm.init(stormId, position, startTime, radius, duration, damagePerSecond);
+    // Store sourceId for kill/damage tracking
+    (storm as StormEffect & { sourceId: string }).sourceId = sourceId;
+    this.state.storms.push(storm);
+  }
+
+  /**
+   * Update all active storms: apply tick damage to enemies in radius, remove expired.
+   * @param dt - Delta time in seconds
+   * @param currentTime - Current game time in seconds
+   */
+  private updateStorms(dt: number, currentTime: number): void {
+    if (!this.query) return;
+
+    // Process each storm
+    this.state.storms = this.state.storms.filter((storm) => {
+      // Check if storm has expired
+      if (storm.update(currentTime)) {
+        return false; // Remove expired storm
+      }
+
+      // Calculate damage for this tick
+      const damage = storm.calculateDamage(dt);
+
+      // Get sourceId for kill tracking
+      const sourceId = (storm as StormEffect & { sourceId?: string }).sourceId ?? '';
+
+      // Find and damage all enemies within storm radius
+      const enemies = this.query!.getEnemies();
+      for (const enemy of enemies) {
+        // Validate enemy still exists (may have been killed by previous iteration)
+        const validEnemy = this.query!.getEnemyById(enemy.id);
+        if (!validEnemy) continue;
+
+        // Check if enemy position (in pixels) is within storm radius
+        if (storm.containsPoint(validEnemy.position)) {
+          // Apply damage (armor reduces damage)
+          const effectiveDamage = calculateDamage(damage, validEnemy.armor);
+          this.applyDamage(validEnemy, effectiveDamage, sourceId);
+        }
+      }
+
+      return true; // Keep active storm
+    });
+  }
+
+  /**
+   * Get all active storm effects (for rendering).
+   */
+  getActiveStorms(): StormEffect[] {
+    return this.state.storms;
+  }
+
+  /**
+   * Clear all active storms.
+   */
+  clearStorms(): void {
+    this.state.storms = [];
   }
 
   // ==========================================================================

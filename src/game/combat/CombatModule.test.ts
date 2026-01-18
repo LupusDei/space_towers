@@ -920,3 +920,362 @@ describe('Gravity Tower AOE', () => {
     unsubscribe();
   });
 });
+
+describe('Storm Tick Damage', () => {
+  beforeEach(() => {
+    eventBus.clear();
+    combatModule.destroy();
+  });
+
+  it('should spawn storm when storm tower fires', () => {
+    const tower = createMockTower({
+      type: TowerType.STORM,
+      damage: 10,
+      range: 100,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      position: { x: 220, y: 220 },
+    });
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    const storms = combatModule.getActiveStorms();
+    expect(storms.length).toBe(1);
+  });
+
+  it('should emit STORM_SPAWNED event when storm tower fires', () => {
+    const tower = createMockTower({
+      type: TowerType.STORM,
+      damage: 10,
+      range: 100,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      position: { x: 220, y: 220 },
+    });
+
+    let stormEventReceived = false;
+    const unsubscribe = eventBus.on('STORM_SPAWNED', () => {
+      stormEventReceived = true;
+    });
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(stormEventReceived).toBe(true);
+    unsubscribe();
+  });
+
+  it('should apply tick damage to enemies within storm radius', () => {
+    const tower = createMockTower({
+      type: TowerType.STORM,
+      damage: 30, // 30 DPS
+      range: 100,
+      position: { x: 5, y: 5 },
+    });
+
+    // Enemy positioned at tower center (which will also be storm center)
+    const cellSize = 44;
+    const stormCenterX = 5 * cellSize + cellSize / 2;
+    const stormCenterY = 5 * cellSize + cellSize / 2;
+    const enemy = createMockEnemy({
+      health: 100,
+      armor: 0,
+      position: { x: stormCenterX, y: stormCenterY },
+    });
+
+    let currentTime = 0;
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => currentTime,
+      applySlow: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+
+    // First update: tower fires and spawns storm
+    combatModule.update(0.1);
+
+    // Storm should exist now
+    expect(combatModule.getActiveStorms().length).toBe(1);
+
+    // After first update: enemy takes damage from storm tick (0.1s * 30 DPS = 3 damage)
+    // Note: first tick happens on second update because storm is spawned during first
+    currentTime = 0.1;
+    combatModule.update(0.1);
+
+    // With 30 DPS and 0.1s dt, damage = 30 * 0.1 = 3
+    // After second update, enemy should have taken 3 damage
+    expect(enemy.health).toBeLessThan(100);
+  });
+
+  it('should not damage enemies outside storm radius', () => {
+    const tower = createMockTower({
+      type: TowerType.STORM,
+      damage: 30,
+      range: 50, // Small storm radius
+      position: { x: 5, y: 5 },
+    });
+
+    // Enemy far from storm center
+    const enemy = createMockEnemy({
+      health: 100,
+      armor: 0,
+      position: { x: 500, y: 500 }, // Way outside storm radius
+    });
+
+    let currentTime = 0;
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => currentTime,
+      applySlow: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+
+    // First update spawns storm
+    combatModule.update(0.1);
+
+    // Second update processes storm tick damage
+    currentTime = 0.1;
+    combatModule.update(0.1);
+
+    // Enemy outside radius should not take damage
+    expect(enemy.health).toBe(100);
+  });
+
+  it('should remove expired storms', () => {
+    const tower = createMockTower({
+      type: TowerType.STORM,
+      damage: 10,
+      range: 100,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      position: { x: 220, y: 220 },
+    });
+
+    let currentTime = 0;
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => currentTime,
+      applySlow: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+
+    // First update spawns storm
+    combatModule.update(0.1);
+    expect(combatModule.getActiveStorms().length).toBe(1);
+
+    // Advance time beyond storm duration (default 3s)
+    currentTime = 4;
+    combatModule.update(0.1);
+
+    // Storm should be removed
+    expect(combatModule.getActiveStorms().length).toBe(0);
+  });
+
+  it('should damage multiple enemies in storm radius', () => {
+    const tower = createMockTower({
+      type: TowerType.STORM,
+      damage: 20, // 20 DPS
+      range: 200, // Large radius
+      position: { x: 5, y: 5 },
+    });
+
+    const cellSize = 44;
+    const stormCenterX = 5 * cellSize + cellSize / 2;
+    const stormCenterY = 5 * cellSize + cellSize / 2;
+
+    // Multiple enemies within storm radius
+    const enemy1 = createMockEnemy({
+      id: 'enemy_1',
+      health: 100,
+      armor: 0,
+      position: { x: stormCenterX + 10, y: stormCenterY },
+    });
+    const enemy2 = createMockEnemy({
+      id: 'enemy_2',
+      health: 100,
+      armor: 0,
+      position: { x: stormCenterX, y: stormCenterY + 10 },
+    });
+
+    let currentTime = 0;
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => currentTime,
+      applySlow: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy1, enemy2]);
+    combatModule.init(query, commands);
+
+    // First update spawns storm
+    combatModule.update(0.1);
+
+    // Second update applies damage
+    currentTime = 0.1;
+    combatModule.update(0.1);
+
+    // Both enemies should have taken damage
+    expect(enemy1.health).toBeLessThan(100);
+    expect(enemy2.health).toBeLessThan(100);
+  });
+
+  it('should reduce storm damage by armor', () => {
+    const tower = createMockTower({
+      type: TowerType.STORM,
+      damage: 50, // 50 DPS
+      range: 100,
+      position: { x: 5, y: 5 },
+    });
+
+    const cellSize = 44;
+    const stormCenterX = 5 * cellSize + cellSize / 2;
+    const stormCenterY = 5 * cellSize + cellSize / 2;
+
+    const enemy = createMockEnemy({
+      health: 100,
+      armor: 40, // High armor
+      position: { x: stormCenterX, y: stormCenterY },
+    });
+
+    let currentTime = 0;
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => currentTime,
+      applySlow: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+
+    // Spawn storm
+    combatModule.update(0.1);
+
+    // Apply tick damage (0.1s * (50 - 40) = 1 damage per tick)
+    currentTime = 0.1;
+    combatModule.update(0.1);
+
+    // 50 DPS - 40 armor = 10 effective DPS, 0.1s * 10 = 1 damage per tick
+    // Storm applies damage on both spawn frame and next frame, so 2 ticks = 2 damage
+    expect(enemy.health).toBe(98);
+  });
+
+  it('should clear all storms on clearStorms()', () => {
+    const tower = createMockTower({
+      type: TowerType.STORM,
+      damage: 10,
+      range: 100,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      position: { x: 220, y: 220 },
+    });
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, createMockCommands());
+
+    // Spawn storm
+    combatModule.update(0.1);
+    expect(combatModule.getActiveStorms().length).toBe(1);
+
+    // Clear all storms
+    combatModule.clearStorms();
+    expect(combatModule.getActiveStorms().length).toBe(0);
+  });
+
+  it('should kill enemy when storm damage exceeds health', () => {
+    const tower = createMockTower({
+      type: TowerType.STORM,
+      damage: 1000, // Very high DPS
+      range: 100,
+      position: { x: 5, y: 5 },
+    });
+
+    const cellSize = 44;
+    const stormCenterX = 5 * cellSize + cellSize / 2;
+    const stormCenterY = 5 * cellSize + cellSize / 2;
+
+    const enemy = createMockEnemy({
+      health: 50,
+      armor: 0,
+      position: { x: stormCenterX, y: stormCenterY },
+    });
+
+    let removedEnemyId: string | null = null;
+    let currentTime = 0;
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: (id: string) => {
+        removedEnemyId = id;
+      },
+      addCredits: () => {},
+      getTime: () => currentTime,
+      applySlow: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+
+    // Spawn storm
+    combatModule.update(0.1);
+
+    // Apply tick damage (should kill enemy)
+    currentTime = 0.1;
+    combatModule.update(0.1);
+
+    // 1000 DPS * 0.1s = 100 damage, enemy has 50 HP, should be killed
+    expect(removedEnemyId).toBe(enemy.id);
+  });
+
+  it('should spawn storm with correct position at tower center', () => {
+    const tower = createMockTower({
+      type: TowerType.STORM,
+      damage: 10,
+      range: 100,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      position: { x: 220, y: 220 },
+    });
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    const storms = combatModule.getActiveStorms();
+    expect(storms.length).toBe(1);
+
+    // Storm should be centered on tower position in pixels
+    const cellSize = 44;
+    const expectedX = 5 * cellSize + cellSize / 2;
+    const expectedY = 5 * cellSize + cellSize / 2;
+    expect(storms[0].position.x).toBe(expectedX);
+    expect(storms[0].position.y).toBe(expectedY);
+  });
+});
