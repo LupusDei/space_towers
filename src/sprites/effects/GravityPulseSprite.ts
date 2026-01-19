@@ -35,13 +35,15 @@ export function createGravityPulseSprite(): EffectSprite {
       const ringRadius = easeOut * maxRadius;
 
       // Outer glow (fades quickly)
-      if (clampedProgress < 0.6) {
+      // Skip if ringRadius is too small to prevent createRadialGradient errors
+      if (clampedProgress < 0.6 && ringRadius > 1) {
         const glowAlpha = (0.6 - clampedProgress) * 0.4;
         const glowRadius = ringRadius * 1.3;
+        const innerRadius = Math.max(0, ringRadius * 0.8);
         const gradient = ctx.createRadialGradient(
           centerX,
           centerY,
-          ringRadius * 0.8,
+          innerRadius,
           centerX,
           centerY,
           glowRadius
@@ -54,28 +56,34 @@ export function createGravityPulseSprite(): EffectSprite {
         ctx.fill();
       }
 
-      // Primary expanding ring
-      const ringWidth = Math.max(2, (1 - clampedProgress) * 6);
-      ctx.strokeStyle = PULSE_COLORS.ring;
-      ctx.globalAlpha = fadeOut * 0.8;
-      ctx.lineWidth = ringWidth;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
-      ctx.stroke();
+      // Primary expanding ring (skip if too small)
+      if (ringRadius > 1) {
+        const ringWidth = Math.max(2, (1 - clampedProgress) * 6);
+        ctx.strokeStyle = PULSE_COLORS.ring;
+        ctx.globalAlpha = fadeOut * 0.8;
+        ctx.lineWidth = ringWidth;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
 
       // Secondary inner ring (slightly delayed, creates ripple effect)
       if (clampedProgress > 0.1 && clampedProgress < 0.9) {
         const innerProgress = (clampedProgress - 0.1) / 0.8;
         const innerRadius = innerProgress * maxRadius * 0.7;
-        const innerAlpha = (1 - innerProgress) * 0.5;
-        const innerWidth = Math.max(1, (1 - innerProgress) * 3);
 
-        ctx.strokeStyle = PULSE_COLORS.core;
-        ctx.globalAlpha = innerAlpha;
-        ctx.lineWidth = innerWidth;
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2);
-        ctx.stroke();
+        // Only draw if radius is meaningful
+        if (innerRadius > 1) {
+          const innerAlpha = (1 - innerProgress) * 0.5;
+          const innerWidth = Math.max(1, (1 - innerProgress) * 3);
+
+          ctx.strokeStyle = PULSE_COLORS.core;
+          ctx.globalAlpha = innerAlpha;
+          ctx.lineWidth = innerWidth;
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2);
+          ctx.stroke();
+        }
       }
 
       // Center flash (brief, at start)
