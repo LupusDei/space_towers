@@ -218,6 +218,25 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     rangePerLevel: 8,
     fireRatePerLevel: -0.015, // Modest fire rate gains (diminishing returns on fast tower)
   },
+
+  [TowerType.GATLING]: {
+    type: TowerType.GATLING,
+    name: 'Gatling Tower',
+    description: 'Rapid-fire projectile tower with spin-up mechanic. Starts slow but accelerates to 5 shots per second. Devastating sustained DPS.',
+    cost: 120,
+    damage: 8, // Moderate damage per bullet
+    range: 140,
+    fireRate: 0.2, // 5 shots/sec at full spin (0.2s between shots)
+    unlockCost: 25,
+    maxLevel: 5,
+    upgradeCosts: [130, 200, 300, 450], // Total to max: 1080
+    damagePerLevel: 4, // +50% damage per level
+    rangePerLevel: 10,
+    fireRatePerLevel: -0.015, // Slight fire rate improvement
+    // Spin-up mechanic: starts at 25% fire rate, reaches full speed over 1.5 seconds
+    spinUpTime: 1.5, // seconds to reach max fire rate
+    spinUpFireRateMultiplier: 0.25, // starts at 25% of max fire rate
+  },
 };
 
 // ============================================================================

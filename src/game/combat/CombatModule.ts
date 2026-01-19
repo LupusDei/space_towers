@@ -55,6 +55,17 @@ export interface StormCastEffect {
 }
 
 // ============================================================================
+// Gatling Spin-Up State
+// ============================================================================
+
+interface GatlingSpinState {
+  towerId: string;
+  lastTargetId: string | null;
+  firingStartTime: number; // When continuous firing started
+  spinProgress: number; // 0-1, how spun up the barrel is
+}
+
+// ============================================================================
 // Combat State
 // ============================================================================
 
@@ -64,6 +75,7 @@ interface CombatState {
   splashEffects: SplashEffect[];
   stormCastEffects: StormCastEffect[];
   towerInstances: Map<string, TowerClass>;
+  gatlingSpinStates: Map<string, GatlingSpinState>;
   eventUnsubscribers: (() => void)[];
 }
 
@@ -89,6 +101,10 @@ function isSniperTower(type: TowerType): boolean {
 
 function isStormTower(type: TowerType): boolean {
   return type === TT.STORM;
+}
+
+function isGatlingTower(type: TowerType): boolean {
+  return type === TT.GATLING;
 }
 
 function towerPositionToPixels(position: Point): Point {
@@ -118,6 +134,7 @@ class CombatModuleImpl implements GameModule {
     splashEffects: [],
     stormCastEffects: [],
     towerInstances: new Map(),
+    gatlingSpinStates: new Map(),
     eventUnsubscribers: [],
   };
 
@@ -130,6 +147,7 @@ class CombatModuleImpl implements GameModule {
       splashEffects: [],
       stormCastEffects: [],
       towerInstances: new Map(),
+      gatlingSpinStates: new Map(),
       eventUnsubscribers: [],
     };
 
@@ -188,6 +206,7 @@ class CombatModuleImpl implements GameModule {
     this.state.splashEffects = [];
     this.state.stormCastEffects = [];
     this.state.towerInstances.clear();
+    this.state.gatlingSpinStates.clear();
     this.state.eventUnsubscribers = [];
   }
 
@@ -269,6 +288,8 @@ class CombatModuleImpl implements GameModule {
           this.handleSniperFire(towerData, target, currentTime);
         } else if (isStormTower(towerData.type)) {
           this.handleStormFire(towerData, target, currentTime);
+        } else if (isGatlingTower(towerData.type)) {
+          this.handleGatlingFire(towerData, tower, target, currentTime);
         }
       }
     }
@@ -566,6 +587,101 @@ class CombatModuleImpl implements GameModule {
         },
       })
     );
+  }
+
+  // ==========================================================================
+  // Gatling Tower
+  // ==========================================================================
+
+  private handleGatlingFire(tower: Tower, towerInstance: TowerClass, target: Enemy, currentTime: number): void {
+    if (!this.commands) return;
+
+    // Get or create spin-up state for this tower
+    let spinState = this.state.gatlingSpinStates.get(tower.id);
+    if (!spinState) {
+      spinState = {
+        towerId: tower.id,
+        lastTargetId: null,
+        firingStartTime: currentTime,
+        spinProgress: 0,
+      };
+      this.state.gatlingSpinStates.set(tower.id, spinState);
+    }
+
+    // Reset spin-up if target changed (lost acquisition)
+    if (spinState.lastTargetId !== target.id) {
+      spinState.lastTargetId = target.id;
+      spinState.firingStartTime = currentTime;
+      spinState.spinProgress = 0;
+    }
+
+    // Calculate spin-up progress
+    const stats = TOWER_STATS[tower.type];
+    const spinUpTime = (stats.spinUpTime ?? 1.5) * 1000; // Convert to ms
+    const spinUpMinMultiplier = stats.spinUpFireRateMultiplier ?? 0.25;
+
+    const timeFiring = currentTime - spinState.firingStartTime;
+    spinState.spinProgress = Math.min(1, timeFiring / spinUpTime);
+
+    // Calculate effective fire rate multiplier (interpolate from min to 1.0)
+    const fireRateMultiplier = spinUpMinMultiplier + spinState.spinProgress * (1 - spinUpMinMultiplier);
+
+    // Apply spin-up to next cooldown (fire rate is the cooldown duration)
+    // Lower multiplier = longer cooldown = slower fire rate at start
+    // Higher multiplier = shorter cooldown = faster fire rate when spun up
+    const baseFireRate = tower.fireRate;
+    const adjustedFireRate = baseFireRate / fireRateMultiplier;
+
+    // Override the cooldown that was just set by tower.fire()
+    // This makes the tower fire slower when cold, faster when spun up
+    towerInstance.setCooldown(adjustedFireRate);
+
+    // Fire projectile (similar to handleProjectileFire)
+    const startPosition = towerPositionToPixels(tower.position);
+    const projectile = projectilePool.acquire();
+
+    // Initialize projectile
+    projectile.sourceId = tower.id;
+    projectile.targetId = target.id;
+    projectile.towerType = tower.type;
+    projectile.position.x = startPosition.x;
+    projectile.position.y = startPosition.y;
+    projectile.velocity.x = 0;
+    projectile.velocity.y = 0;
+    projectile.damage = tower.damage;
+    projectile.speed = COMBAT_CONFIG.DEFAULT_PROJECTILE_SPEED * 1.5; // Gatling bullets are faster
+    projectile.piercing = false;
+    projectile.aoe = 0; // No splash damage
+
+    // Add to game engine
+    this.commands.addProjectile(projectile);
+
+    // Emit event
+    eventBus.emit(
+      createEvent('PROJECTILE_FIRED', {
+        projectile: {
+          id: projectile.id,
+          sourceId: projectile.sourceId,
+          targetId: projectile.targetId,
+          towerType: projectile.towerType,
+          position: { ...projectile.position },
+          velocity: projectile.velocity,
+          damage: projectile.damage,
+          speed: projectile.speed,
+          piercing: projectile.piercing,
+          aoe: projectile.aoe,
+        },
+      })
+    );
+  }
+
+  /**
+   * Get the spin progress for a Gatling tower (0-1).
+   * Used by rendering layer for barrel spin animation.
+   */
+  getGatlingSpinProgress(towerId: string): number {
+    const spinState = this.state.gatlingSpinStates.get(towerId);
+    return spinState?.spinProgress ?? 0;
   }
 
   // ==========================================================================

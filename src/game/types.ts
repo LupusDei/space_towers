@@ -43,6 +43,7 @@ export const TowerType = {
   STORM: 'storm',
   SNIPER: 'sniper',
   NEEDLE: 'needle',
+  GATLING: 'gatling',
 } as const;
 export type TowerType = (typeof TowerType)[keyof typeof TowerType];
 
@@ -368,6 +369,9 @@ export interface TowerStats {
   slowDurationPerLevel?: number; // Gravity tower slow duration increase per level
   slowMultiplier?: number; // Gravity tower base slow strength (0.5 = 50% speed)
   slowMultiplierPerLevel?: number; // Gravity tower slow improvement per level (negative = stronger slow)
+  // Gatling tower spin-up mechanic
+  spinUpTime?: number; // Gatling tower time to reach max fire rate (seconds)
+  spinUpFireRateMultiplier?: number; // Gatling tower initial fire rate multiplier (e.g., 0.25 = starts at 25% speed)
 }
 
 // ============================================================================

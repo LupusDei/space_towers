@@ -102,6 +102,14 @@ export class Tower implements TowerData {
   }
 
   /**
+   * Override the current cooldown (used by Gatling tower spin-up mechanic).
+   * @param cooldown - New cooldown value in seconds
+   */
+  setCooldown(cooldown: number): void {
+    this.cooldownRemaining = Math.max(0, cooldown);
+  }
+
+  /**
    * Check if a point is within this tower's range.
    * @param point - Position to check
    * @returns true if within range

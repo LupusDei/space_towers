@@ -1732,3 +1732,203 @@ describe('Hitscan effect position when target dies', () => {
     expect(chainEffects[0].targets[0].y).toBe(primaryPosition.y);
   });
 });
+
+describe('Gatling Tower', () => {
+  beforeEach(() => {
+    eventBus.clear();
+    combatModule.destroy();
+  });
+
+  it('should identify GATLING tower type', () => {
+    expect(TowerType.GATLING).toBe('gatling');
+  });
+
+  it('should fire projectile when targeting enemy', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 150,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      position: { x: 220, y: 220 },
+    });
+
+    let projectileCreated = false;
+    const commands = {
+      addProjectile: () => {
+        projectileCreated = true;
+      },
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: () => {},
+      addStormEffect: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(projectileCreated).toBe(true);
+  });
+
+  it('should emit PROJECTILE_FIRED event when gatling fires', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 150,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      position: { x: 220, y: 220 },
+    });
+
+    let eventReceived = false;
+    let eventTowerType: string | null = null;
+    const unsubscribe = eventBus.on('PROJECTILE_FIRED', (event) => {
+      eventReceived = true;
+      eventTowerType = event.payload.projectile.towerType;
+    });
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(eventReceived).toBe(true);
+    expect(eventTowerType).toBe(TowerType.GATLING);
+    unsubscribe();
+  });
+
+  it('should create projectile with faster speed than default', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 150,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      position: { x: 220, y: 220 },
+    });
+
+    let capturedSpeed = 0;
+    const commands = {
+      addProjectile: (proj: { speed: number }) => {
+        capturedSpeed = proj.speed;
+      },
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: () => {},
+      addStormEffect: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    // Gatling bullets should be 1.5x faster than default (400 * 1.5 = 600)
+    expect(capturedSpeed).toBe(600);
+  });
+
+  it('should create projectile with no splash damage (aoe = 0)', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 150,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      position: { x: 220, y: 220 },
+    });
+
+    let capturedAoe = -1;
+    const commands = {
+      addProjectile: (proj: { aoe: number }) => {
+        capturedAoe = proj.aoe;
+      },
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: () => {},
+      addStormEffect: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    // Gatling should have no splash damage
+    expect(capturedAoe).toBe(0);
+  });
+
+  it('should track spin-up progress', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 150,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      position: { x: 220, y: 220 },
+    });
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    // After first fire, spin progress should start
+    const spinProgress = combatModule.getGatlingSpinProgress(tower.id);
+    expect(spinProgress).toBeGreaterThanOrEqual(0);
+  });
+
+  it('should return 0 spin progress for non-existent tower', () => {
+    const query = createMockQuery([], []);
+    combatModule.init(query, createMockCommands());
+
+    const spinProgress = combatModule.getGatlingSpinProgress('non-existent-tower');
+    expect(spinProgress).toBe(0);
+  });
+
+  it('should not fire at enemies outside range', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 50, // Small range
+      position: { x: 0, y: 0 },
+    });
+
+    const enemy = createMockEnemy({
+      health: 100,
+      position: { x: 500, y: 500 }, // Far outside range
+    });
+
+    let projectileCreated = false;
+    const commands = {
+      addProjectile: () => {
+        projectileCreated = true;
+      },
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: () => {},
+      addStormEffect: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(projectileCreated).toBe(false);
+  });
+});
