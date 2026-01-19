@@ -27,6 +27,8 @@ function createMockContext(time: number = 0): SpriteRenderContext {
     restore: vi.fn(),
     clip: vi.fn(),
     setLineDash: vi.fn(),
+    rotate: vi.fn(),
+    translate: vi.fn(),
     createRadialGradient: vi.fn(() => ({
       addColorStop: vi.fn(),
     })),
@@ -137,8 +139,60 @@ describe('NeedleTowerSprite', () => {
 
       NeedleTowerSprite.draw(context, tower);
 
-      expect(context.ctx.save).not.toHaveBeenCalled();
+      // save is called for rotation, but clip should not be called (no hazard stripes)
       expect(context.ctx.clip).not.toHaveBeenCalled();
+    });
+
+    it('rotates to face target when targetPosition is set', () => {
+      const context = createMockContext();
+      const tower = createMockTower(1);
+      tower.targetPosition = { x: 10, y: 5 }; // target to the right
+
+      NeedleTowerSprite.draw(context, tower);
+
+      // rotate should be called for aiming at target
+      expect(context.ctx.rotate).toHaveBeenCalled();
+      expect(context.ctx.save).toHaveBeenCalled();
+      expect(context.ctx.restore).toHaveBeenCalled();
+    });
+
+    it('does not rotate when no target', () => {
+      const context = createMockContext();
+      const tower = createMockTower(1);
+      tower.targetPosition = null;
+
+      NeedleTowerSprite.draw(context, tower);
+
+      // rotate should be called with angle 0 (no rotation)
+      const rotateCalls = (context.ctx.rotate as ReturnType<typeof vi.fn>).mock.calls;
+      expect(rotateCalls.length).toBeGreaterThanOrEqual(1);
+      expect(rotateCalls[0][0]).toBe(0);
+    });
+
+    it('calculates correct angle to target above', () => {
+      const context = createMockContext();
+      const tower = createMockTower(1);
+      // Tower at (5,5), target at (5,0) - directly above
+      tower.targetPosition = { x: 5, y: 0 };
+
+      NeedleTowerSprite.draw(context, tower);
+
+      // Target above means angle should be close to 0 (needle points up)
+      const rotateCalls = (context.ctx.rotate as ReturnType<typeof vi.fn>).mock.calls;
+      expect(Math.abs(rotateCalls[0][0])).toBeLessThan(0.01);
+    });
+
+    it('calculates correct angle to target below', () => {
+      const context = createMockContext();
+      const tower = createMockTower(1);
+      // Tower at (5,5), target at (5,10) - directly below
+      tower.targetPosition = { x: 5, y: 10 };
+
+      NeedleTowerSprite.draw(context, tower);
+
+      // Target below means angle should be close to PI
+      const rotateCalls = (context.ctx.rotate as ReturnType<typeof vi.fn>).mock.calls;
+      expect(Math.abs(rotateCalls[0][0] - Math.PI)).toBeLessThan(0.01);
     });
   });
 
