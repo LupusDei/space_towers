@@ -218,6 +218,23 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     rangePerLevel: 8,
     fireRatePerLevel: -0.015, // Modest fire rate gains (diminishing returns on fast tower)
   },
+
+  [TowerType.GATLING]: {
+    type: TowerType.GATLING,
+    name: 'Gatling Tower',
+    description: 'Extremely fast-firing projectile tower with devastating sustained DPS. Low damage per bullet but overwhelming volume of fire.',
+    cost: 80,
+    damage: 4,
+    range: 140,
+    fireRate: 0.15, // Very fast (6.7 shots/sec) - higher DPS than Cannon
+    unlockCost: 0,
+    // Leveling: sustained DPS specialist
+    maxLevel: 5,
+    upgradeCosts: [40, 55, 80, 120], // Total to max: 375, final upgrade ~120
+    damagePerLevel: 2,
+    rangePerLevel: 10,
+    fireRatePerLevel: -0.01, // Modest fire rate gains (already very fast)
+  },
 };
 
 // ============================================================================
