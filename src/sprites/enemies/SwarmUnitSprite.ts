@@ -3,6 +3,7 @@
 import type { Enemy } from '../../game/types';
 import type { EnemySprite, SpriteRenderContext } from '../types';
 import { drawHealthBar } from '../effects/HealthBar';
+import { drawSlowIndicator } from '../effects/SlowIndicator';
 
 export const SwarmUnitSprite: EnemySprite = {
   draw(context: SpriteRenderContext, enemy: Enemy): void {
@@ -68,5 +69,8 @@ export const SwarmUnitSprite: EnemySprite = {
       ctx.arc(centerX, centerY, size * 1.2, 0, Math.PI * 2);
       ctx.fill();
     }
+
+    // Draw slow indicator if slowed
+    drawSlowIndicator(ctx, enemy, centerX, centerY, size, time);
   },
 };
