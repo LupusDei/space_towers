@@ -494,15 +494,22 @@ class CombatModuleImpl implements GameModule {
 
     // Get storm stats from tower config
     const stats = TOWER_STATS[tower.type];
-    const duration = stats.stormDuration ?? 3.0;
+    const levelBonus = tower.level - 1; // Level 1 = 0 bonus, level 5 = 4 bonus
+
+    // Calculate duration with level scaling
+    const baseDuration = stats.stormDuration ?? 3.0;
+    const durationPerLevel = stats.stormDurationPerLevel ?? 0;
+    const duration = baseDuration + levelBonus * durationPerLevel;
+
+    // Calculate radius with level scaling
+    const baseRadius = stats.stormRadius ?? 100;
+    const radiusPerLevel = stats.stormRadiusPerLevel ?? 0;
+    const stormRadius = baseRadius + levelBonus * radiusPerLevel;
+
     const damagePerSecond = tower.damage;
 
     // Storm spawns at target's position (enemy position is in pixels)
     const stormPosition = { ...target.position };
-
-    // Calculate storm radius from tower range (convert to pixels)
-    // Use a smaller radius than tower range for the actual storm effect
-    const stormRadius = tower.range * 0.5;
 
     // Create storm effect via Engine
     this.commands.addStormEffect(stormPosition, stormRadius, duration, damagePerSecond);

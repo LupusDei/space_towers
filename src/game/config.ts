@@ -177,9 +177,11 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     damagePerLevel: 5,
     rangePerLevel: 15,
     fireRatePerLevel: -0.2,
-    // Special: storm duration
+    // Special: storm duration and AOE
     stormDuration: 3.0, // seconds
     stormDurationPerLevel: 0.5, // +0.5s per level
+    stormRadius: 100, // pixels (base AOE size)
+    stormRadiusPerLevel: 10, // +10 pixels per level (max 140 at level 5)
   },
 
   [TowerType.SNIPER]: {
