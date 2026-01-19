@@ -13,6 +13,7 @@ import { PlasmaCannonSprite } from './towers/PlasmaCannonSprite';
 import { GravityTowerSprite } from './towers/GravityTowerSprite';
 import { SniperTowerSprite } from './towers/SniperTowerSprite';
 import { NeedleTowerSprite } from './towers/NeedleTowerSprite';
+import { StormTowerSprite } from './towers/StormTowerSprite';
 
 describe('SpriteRegistry', () => {
   describe('getTowerSprite', () => {
@@ -54,12 +55,8 @@ describe('SpriteRegistry', () => {
       expect(getTowerSprite(TowerType.NEEDLE)).toBe(NeedleTowerSprite);
     });
 
-    it('returns a placeholder for STORM type (sprite not yet implemented)', () => {
-      const sprite = getTowerSprite(TowerType.STORM);
-      expect(sprite).toBeDefined();
-      expect(sprite.draw).toBeDefined();
-      // STORM uses TeslaCoilSprite as placeholder until dedicated sprite is created
-      expect(sprite).toBe(TeslaCoilSprite);
+    it('returns StormTowerSprite for STORM type', () => {
+      expect(getTowerSprite(TowerType.STORM)).toBe(StormTowerSprite);
     });
   });
 
