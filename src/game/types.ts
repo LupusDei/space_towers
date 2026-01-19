@@ -325,6 +325,7 @@ export interface CommandInterface {
   addCredits(amount: number): void;
   getTime(): number;
   applySlow(enemyId: string, multiplier: number, duration: number): void;
+  addStormEffect(position: Point, radius: number, duration: number, damagePerSecond: number): void;
 }
 
 export interface GameModule {
