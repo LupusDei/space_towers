@@ -361,6 +361,8 @@ export interface TowerStats {
   chainCountPerLevel?: number; // Tesla tower chain increase per level
   stormDuration?: number; // Storm tower effect duration (seconds)
   stormDurationPerLevel?: number; // Storm tower duration increase per level
+  stormRadius?: number; // Storm tower base AOE radius (pixels)
+  stormRadiusPerLevel?: number; // Storm tower radius increase per level
   // Gravity tower slow effect
   slowDuration?: number; // Gravity tower base slow duration (seconds)
   slowDurationPerLevel?: number; // Gravity tower slow duration increase per level

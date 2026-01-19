@@ -35,6 +35,106 @@ describe('TOWER_STATS', () => {
     });
   });
 
+  describe('STORM tower', () => {
+    const stormStats = TOWER_STATS[TowerType.STORM];
+
+    it('should have correct cost', () => {
+      expect(stormStats.cost).toBe(100);
+    });
+
+    it('should have correct damage per second', () => {
+      expect(stormStats.damage).toBe(10);
+    });
+
+    it('should have correct range', () => {
+      expect(stormStats.range).toBe(200);
+    });
+
+    it('should have correct fire rate (cooldown)', () => {
+      expect(stormStats.fireRate).toBe(4.0);
+    });
+
+    it('should have correct unlock cost', () => {
+      expect(stormStats.unlockCost).toBe(0);
+    });
+
+    it('should have correct type', () => {
+      expect(stormStats.type).toBe(TowerType.STORM);
+    });
+
+    it('should have correct name', () => {
+      expect(stormStats.name).toBe('Storm Tower');
+    });
+
+    describe('level-up stats', () => {
+      it('should have correct damage per level', () => {
+        expect(stormStats.damagePerLevel).toBe(5);
+      });
+
+      it('should have correct range per level', () => {
+        expect(stormStats.rangePerLevel).toBe(15);
+      });
+
+      it('should have correct fire rate improvement', () => {
+        expect(stormStats.fireRatePerLevel).toBe(-0.2);
+      });
+
+      it('should have correct upgrade costs', () => {
+        expect(stormStats.upgradeCosts).toEqual([120, 180, 270, 400]);
+      });
+
+      it('should have correct max level', () => {
+        expect(stormStats.maxLevel).toBe(5);
+      });
+
+      it('should have correct base storm duration', () => {
+        expect(stormStats.stormDuration).toBe(3.0);
+      });
+
+      it('should have correct storm duration per level', () => {
+        expect(stormStats.stormDurationPerLevel).toBe(0.5);
+      });
+
+      it('should have correct base storm radius', () => {
+        expect(stormStats.stormRadius).toBe(100);
+      });
+
+      it('should have correct storm radius per level', () => {
+        expect(stormStats.stormRadiusPerLevel).toBe(10);
+      });
+
+      it('should have extended storm duration at max level', () => {
+        // Level 5: 3.0 + (4 * 0.5) = 5.0 seconds
+        const maxLevelDuration = stormStats.stormDuration! + (stormStats.maxLevel - 1) * stormStats.stormDurationPerLevel!;
+        expect(maxLevelDuration).toBe(5.0);
+      });
+
+      it('should have larger storm radius at max level', () => {
+        // Level 5: 100 + (4 * 10) = 140 pixels
+        const maxLevelRadius = stormStats.stormRadius! + (stormStats.maxLevel - 1) * stormStats.stormRadiusPerLevel!;
+        expect(maxLevelRadius).toBe(140);
+      });
+
+      it('should have higher damage at max level', () => {
+        // Level 5: 10 + (4 * 5) = 30 damage per second
+        const maxLevelDamage = stormStats.damage + (stormStats.maxLevel - 1) * stormStats.damagePerLevel;
+        expect(maxLevelDamage).toBe(30);
+      });
+
+      it('should have faster cooldown at max level', () => {
+        // Level 5: 4.0 - (4 * 0.2) = 3.2 seconds
+        const maxLevelFireRate = stormStats.fireRate + (stormStats.maxLevel - 1) * stormStats.fireRatePerLevel;
+        expect(maxLevelFireRate).toBeCloseTo(3.2, 2);
+      });
+
+      it('should have total upgrade cost appropriate for area denial tower', () => {
+        // Total cost to max: 100 (base) + 120 + 180 + 270 + 400 = 1070
+        const totalCost = stormStats.cost + stormStats.upgradeCosts.reduce((a, b) => a + b, 0);
+        expect(totalCost).toBe(1070);
+      });
+    });
+  });
+
   describe('NEEDLE tower', () => {
     const needleStats = TOWER_STATS[TowerType.NEEDLE];
 
