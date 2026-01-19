@@ -216,4 +216,22 @@ describe('TowerPanel', () => {
       expect(screen.getByText('$500')).toBeInTheDocument();
     });
   });
+
+  describe('special effects display', () => {
+    it('should display gravity tower slow effect', () => {
+      render(
+        <TowerPanel
+          credits={1000}
+          selectedTowerType={null}
+          selectedTower={null}
+          onSelectTowerType={mockOnSelectTowerType}
+          onSellTower={mockOnSellTower}
+          selectedTowers={[TowerType.GRAVITY]}
+        />
+      );
+
+      // Gravity tower should show slow duration as special effect
+      expect(screen.getByText('Slow 1s')).toBeInTheDocument();
+    });
+  });
 });

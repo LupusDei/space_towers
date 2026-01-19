@@ -10,6 +10,8 @@ function getSpecialEffect(type: TowerType): string | null {
       return `Splash ${COMBAT_CONFIG.MISSILE_SPLASH_RADIUS}`;
     case TowerType.TESLA:
       return `Chain ×${COMBAT_CONFIG.TESLA_MAX_CHAIN}`;
+    case TowerType.GRAVITY:
+      return `Slow ${COMBAT_CONFIG.GRAVITY_SLOW_DURATION}s`;
     default:
       return null;
   }
