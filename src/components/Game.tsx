@@ -25,6 +25,9 @@ import { eventBus } from '../game/events';
 // Import combat module for hitscan effects
 import { combatModule } from '../game/combat/CombatModule';
 
+// Import StormEffect type for rendering
+import type { StormEffect } from '../game/entities/StormEffect';
+
 // Import input handler
 import { inputHandler } from '../game/input';
 
@@ -163,6 +166,9 @@ export default function Game() {
 
       // Render gravity pulses
       gravityPulseManager.drawAll(renderContext);
+
+      // Render storm effects (persistent AOE zones)
+      renderStormEffects(renderContext, engine.getStormEffects(), timeRef.current);
 
       // Render damage numbers
       drawAllDamageNumbers(renderContext);
@@ -400,5 +406,102 @@ function renderHitscanEffects(context: SpriteRenderContext, towers: Tower[]): vo
     };
 
     sprite.drawFiring(context, tower, targetGridPos);
+  }
+}
+
+/**
+ * Render persistent storm effect areas.
+ * Shows a glowing circular zone with electrical effects where enemies take damage.
+ */
+function renderStormEffects(
+  context: SpriteRenderContext,
+  storms: StormEffect[],
+  currentTime: number
+): void {
+  const { ctx } = context;
+  const currentTimeSeconds = currentTime;
+
+  for (const storm of storms) {
+    if (!storm.active) continue;
+
+    const { x, y } = storm.position;
+    const radius = storm.radius;
+
+    // Calculate progress for fade effects
+    const elapsed = currentTimeSeconds - storm.startTime;
+    const progress = Math.min(1, elapsed / storm.duration);
+
+    // Fade in quickly, fade out at the end
+    const fadeIn = Math.min(1, elapsed * 3);
+    const fadeOut = Math.min(1, (1 - progress) * 4);
+    const alpha = fadeIn * fadeOut;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // Draw outer glow ring
+    const outerGradient = ctx.createRadialGradient(x, y, radius * 0.6, x, y, radius);
+    outerGradient.addColorStop(0, 'rgba(100, 150, 255, 0)');
+    outerGradient.addColorStop(0.7, 'rgba(100, 150, 255, 0.15)');
+    outerGradient.addColorStop(1, 'rgba(100, 150, 255, 0.3)');
+    ctx.fillStyle = outerGradient;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw inner storm area
+    const innerGradient = ctx.createRadialGradient(x, y, 0, x, y, radius * 0.8);
+    innerGradient.addColorStop(0, 'rgba(150, 180, 255, 0.25)');
+    innerGradient.addColorStop(0.5, 'rgba(100, 130, 200, 0.15)');
+    innerGradient.addColorStop(1, 'rgba(80, 100, 180, 0)');
+    ctx.fillStyle = innerGradient;
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw electrical crackle effects
+    const crackleCount = 4;
+    const crackleTime = currentTimeSeconds * 8;
+
+    for (let i = 0; i < crackleCount; i++) {
+      const angle = (i / crackleCount) * Math.PI * 2 + crackleTime;
+      const crackleRadius = radius * (0.3 + 0.4 * Math.sin(crackleTime * 2 + i));
+      const crackleX = x + Math.cos(angle) * crackleRadius;
+      const crackleY = y + Math.sin(angle) * crackleRadius;
+
+      // Small lightning spark
+      const sparkIntensity = 0.5 + 0.5 * Math.sin(crackleTime * 5 + i * 2);
+      ctx.strokeStyle = `rgba(200, 220, 255, ${sparkIntensity * alpha})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+
+      // Draw a small zigzag
+      const segments = 3;
+      let sx = crackleX;
+      let sy = crackleY;
+      ctx.moveTo(sx, sy);
+
+      for (let j = 0; j < segments; j++) {
+        const segAngle = angle + (Math.random() - 0.5) * 1.5;
+        const segLen = 5 + Math.random() * 8;
+        sx += Math.cos(segAngle) * segLen;
+        sy += Math.sin(segAngle) * segLen;
+        ctx.lineTo(sx, sy);
+      }
+      ctx.stroke();
+    }
+
+    // Draw pulsing border
+    const pulsePhase = (currentTimeSeconds * 3) % 1;
+    const borderAlpha = 0.3 + 0.2 * Math.sin(pulsePhase * Math.PI * 2);
+    ctx.strokeStyle = `rgba(150, 180, 255, ${borderAlpha * alpha})`;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 4]);
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.restore();
   }
 }
