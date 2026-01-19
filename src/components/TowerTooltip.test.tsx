@@ -91,12 +91,14 @@ describe('TowerTooltip', () => {
       expect(screen.queryByText('Special')).not.toBeInTheDocument();
     });
 
-    it('should show slow info for gravity tower', () => {
+    it('should show slow info for gravity tower with level-up stats', () => {
       render(<TowerTooltip type={TowerType.GRAVITY} position={defaultPosition} />);
+      const stats = TOWER_STATS[TowerType.GRAVITY];
       expect(screen.getByText('Special')).toBeInTheDocument();
+      // Gravity tower shows base slow stats plus level-up progression
       expect(
         screen.getByText(
-          `Slow: ${(COMBAT_CONFIG.GRAVITY_SLOW_MULTIPLIER * 100).toFixed(0)}% for ${COMBAT_CONFIG.GRAVITY_SLOW_DURATION}s`
+          `Slow: ${((stats.slowMultiplier ?? 0.5) * 100).toFixed(0)}% for ${stats.slowDuration ?? 1}s (+${stats.slowDurationPerLevel ?? 0}s/lvl, ${((stats.slowMultiplierPerLevel ?? 0) * 100).toFixed(0)}%/lvl)`
         )
       ).toBeInTheDocument();
     });

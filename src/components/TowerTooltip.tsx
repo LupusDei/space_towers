@@ -19,7 +19,7 @@ function getSpecialAbilityDetails(type: TowerType): string | null {
     case TowerType.CANNON:
       return null;
     case TowerType.GRAVITY:
-      return `Slow: ${(COMBAT_CONFIG.GRAVITY_SLOW_MULTIPLIER * 100).toFixed(0)}% for ${COMBAT_CONFIG.GRAVITY_SLOW_DURATION}s`;
+      return `Slow: ${((stats.slowMultiplier ?? 0.5) * 100).toFixed(0)}% for ${stats.slowDuration ?? 1}s (+${stats.slowDurationPerLevel ?? 0}s/lvl, ${((stats.slowMultiplierPerLevel ?? 0) * 100).toFixed(0)}%/lvl)`;
     case TowerType.STORM:
       return `Duration: ${stats.stormDuration}s (+${stats.stormDurationPerLevel}s/lvl)`;
     case TowerType.SNIPER:
