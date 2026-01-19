@@ -162,5 +162,37 @@ describe('GravityPulseSprite', () => {
       // Verify drawing occurred (arc was called for the rings)
       expect(context.ctx.arc).toHaveBeenCalled();
     });
+
+    it('converts cell-centered pixel position to correct grid position for sprite', () => {
+      // Tower at grid position (5, 5) with cellSize 44
+      // Cell-centered pixel position = 5 * 44 + 22 = 242
+      const cellSize = 44;
+      const gridX = 5;
+      const gridY = 5;
+      const pixelX = gridX * cellSize + cellSize / 2; // 242
+      const pixelY = gridY * cellSize + cellSize / 2; // 242
+
+      gravityPulseManager.spawn({ x: pixelX, y: pixelY }, 0);
+
+      const context = createMockContext();
+      context.cellSize = cellSize;
+      context.time = 0.1; // 100ms
+
+      gravityPulseManager.drawAll(context);
+
+      // The arc should be drawn at the correct pixel position
+      // After grid conversion (5, 5), the sprite calculates center as:
+      // centerX = 5 * 44 + 22 = 242
+      // centerY = 5 * 44 + 22 = 242
+      // The first arc call in draw() is for the outer glow at progress < 0.6
+      // It uses centerX, centerY for the gradient center
+      const arcCalls = (context.ctx.arc as ReturnType<typeof vi.fn>).mock.calls;
+      expect(arcCalls.length).toBeGreaterThan(0);
+
+      // Verify the arc is centered at the correct position (242, 242)
+      const [centerX, centerY] = arcCalls[0];
+      expect(centerX).toBe(pixelX);
+      expect(centerY).toBe(pixelY);
+    });
   });
 });

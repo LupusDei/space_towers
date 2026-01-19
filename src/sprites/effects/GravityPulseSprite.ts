@@ -153,10 +153,11 @@ class GravityPulseManager {
         return false; // Remove expired
       }
 
-      // Convert pixel position to grid position for sprite
+      // Convert pixel position (which is cell-centered) back to grid position for sprite
+      // The pixel position includes cellSize/2 offset, so we subtract it before dividing
       const gridPos: Point = {
-        x: pulse.position.x / context.cellSize,
-        y: pulse.position.y / context.cellSize,
+        x: (pulse.position.x - context.cellSize / 2) / context.cellSize,
+        y: (pulse.position.y - context.cellSize / 2) / context.cellSize,
       };
 
       pulse.sprite.draw(context, gridPos, progress);
