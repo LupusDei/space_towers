@@ -33,6 +33,61 @@ describe('TOWER_STATS', () => {
     it('should have correct name', () => {
       expect(sniperStats.name).toBe('Sniper Tower');
     });
+
+    describe('level-up stats', () => {
+      it('should have correct damage per level', () => {
+        // High base damage (50) with careful scaling (+35 per level)
+        expect(sniperStats.damagePerLevel).toBe(35);
+      });
+
+      it('should have correct range per level', () => {
+        // Already long range (350), modest increase per level
+        expect(sniperStats.rangePerLevel).toBe(25);
+      });
+
+      it('should have correct fire rate improvement', () => {
+        expect(sniperStats.fireRatePerLevel).toBe(-0.1);
+      });
+
+      it('should have correct upgrade costs', () => {
+        expect(sniperStats.upgradeCosts).toEqual([85, 130, 195, 290]);
+      });
+
+      it('should have correct max level', () => {
+        expect(sniperStats.maxLevel).toBe(5);
+      });
+
+      it('should have high damage at max level', () => {
+        // Level 5: 50 + (4 * 35) = 190 damage
+        const maxLevelDamage = sniperStats.damage + (sniperStats.maxLevel - 1) * sniperStats.damagePerLevel;
+        expect(maxLevelDamage).toBe(190);
+      });
+
+      it('should have extended range at max level', () => {
+        // Level 5: 350 + (4 * 25) = 450 range
+        const maxLevelRange = sniperStats.range + (sniperStats.maxLevel - 1) * sniperStats.rangePerLevel;
+        expect(maxLevelRange).toBe(450);
+      });
+
+      it('should have faster fire rate at max level', () => {
+        // Level 5: 2.0 - (4 * 0.1) = 1.6s between shots
+        const maxLevelFireRate = sniperStats.fireRate + (sniperStats.maxLevel - 1) * sniperStats.fireRatePerLevel;
+        expect(maxLevelFireRate).toBeCloseTo(1.6, 2);
+      });
+
+      it('should maintain reasonable upgrade cost progression', () => {
+        // Each upgrade should cost more than the previous
+        for (let i = 1; i < sniperStats.upgradeCosts.length; i++) {
+          expect(sniperStats.upgradeCosts[i]).toBeGreaterThan(sniperStats.upgradeCosts[i - 1]);
+        }
+      });
+
+      it('should have total upgrade cost appropriate for premium tower', () => {
+        // Total cost to max: 75 (base) + 85 + 130 + 195 + 290 = 775
+        const totalCost = sniperStats.cost + sniperStats.upgradeCosts.reduce((a, b) => a + b, 0);
+        expect(totalCost).toBe(775);
+      });
+    });
   });
 
   describe('STORM tower', () => {
