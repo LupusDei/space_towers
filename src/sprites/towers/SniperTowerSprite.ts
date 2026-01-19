@@ -30,8 +30,8 @@ export const SniperTowerSprite: TowerSprite = {
 
     // Draw based on level
     drawBase(ctx, centerX, centerY, cellSize, level, colors);
-    drawRifle(ctx, centerX, centerY, cellSize, time, level, colors);
-    drawScope(ctx, centerX, centerY, cellSize, time, level, colors);
+    drawRifle(ctx, centerX, centerY, cellSize, time, level, colors, tower.targetPosition);
+    drawScope(ctx, centerX, centerY, cellSize, time, level, colors, tower.targetPosition);
     drawStatusIndicators(ctx, centerX, centerY, cellSize, time, level, colors);
 
     // Level 3+ get ambient glow
@@ -259,11 +259,21 @@ function drawRifle(
   cellSize: number,
   time: number,
   level: number,
-  colors: typeof LEVEL_COLORS[0]
+  colors: typeof LEVEL_COLORS[0],
+  targetPosition: Point | null
 ): void {
-  // Slow rotation for scanning effect
-  const rotationSpeed = 0.2 + level * 0.05;
-  const angle = time * rotationSpeed;
+  // Calculate angle: aim at target if available, otherwise scan
+  let angle: number;
+  if (targetPosition) {
+    const targetX = targetPosition.x * cellSize + cellSize / 2;
+    const targetY = targetPosition.y * cellSize + cellSize / 2;
+    // Offset by -PI/2 because the rifle is drawn pointing up (negative Y direction)
+    angle = Math.atan2(targetY - centerY, targetX - centerX) + Math.PI / 2;
+  } else {
+    // Slow rotation for scanning effect when idle
+    const rotationSpeed = 0.2 + level * 0.05;
+    angle = time * rotationSpeed;
+  }
 
   ctx.save();
   ctx.translate(centerX, centerY);
@@ -385,11 +395,21 @@ function drawScope(
   cellSize: number,
   time: number,
   level: number,
-  _colors: typeof LEVEL_COLORS[0]
+  _colors: typeof LEVEL_COLORS[0],
+  targetPosition: Point | null
 ): void {
-  // Scope rotates with rifle
-  const rotationSpeed = 0.2 + level * 0.05;
-  const angle = time * rotationSpeed;
+  // Calculate angle: aim at target if available, otherwise scan
+  let angle: number;
+  if (targetPosition) {
+    const targetX = targetPosition.x * cellSize + cellSize / 2;
+    const targetY = targetPosition.y * cellSize + cellSize / 2;
+    // Offset by -PI/2 because the scope is drawn pointing up (negative Y direction)
+    angle = Math.atan2(targetY - centerY, targetX - centerX) + Math.PI / 2;
+  } else {
+    // Scope rotates with rifle when idle
+    const rotationSpeed = 0.2 + level * 0.05;
+    angle = time * rotationSpeed;
+  }
 
   ctx.save();
   ctx.translate(centerX, centerY);
