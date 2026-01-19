@@ -23,7 +23,7 @@ export function createGravityPulseSprite(): EffectSprite {
       const centerX = position.x * cellSize + cellSize / 2;
       const centerY = position.y * cellSize + cellSize / 2;
 
-      // Clamp progress to valid range to prevent negative radius values
+      // Clamp progress to valid range to prevent negative radii in createRadialGradient
       const clampedProgress = Math.max(0, Math.min(1, progress));
 
       // Easing for smooth expansion
