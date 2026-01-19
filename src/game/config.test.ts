@@ -97,6 +97,104 @@ describe('TOWER_STATS', () => {
     });
   });
 
+  describe('GRAVITY tower', () => {
+    const gravityStats = TOWER_STATS[TowerType.GRAVITY];
+
+    it('should have correct cost', () => {
+      expect(gravityStats.cost).toBe(80);
+    });
+
+    it('should have correct damage', () => {
+      expect(gravityStats.damage).toBe(5);
+    });
+
+    it('should have correct range', () => {
+      expect(gravityStats.range).toBe(100);
+    });
+
+    it('should have correct fire rate', () => {
+      expect(gravityStats.fireRate).toBe(1.0);
+    });
+
+    it('should be a starter tower (no unlock cost)', () => {
+      expect(gravityStats.unlockCost).toBe(0);
+    });
+
+    it('should have correct type', () => {
+      expect(gravityStats.type).toBe(TowerType.GRAVITY);
+    });
+
+    it('should have correct name', () => {
+      expect(gravityStats.name).toBe('Gravity Tower');
+    });
+
+    describe('slow effect properties', () => {
+      it('should have 50% slow multiplier', () => {
+        expect(gravityStats.slowMultiplier).toBe(0.5);
+      });
+
+      it('should have 1 second base slow duration', () => {
+        expect(gravityStats.slowDuration).toBe(1.0);
+      });
+
+      it('should have slow duration scaling per level', () => {
+        expect(gravityStats.slowDurationPerLevel).toBe(0.2);
+      });
+
+      it('should have max slow duration of 1.8s at level 5', () => {
+        // Level 5: 1.0 + (4 * 0.2) = 1.8s
+        const maxSlowDuration =
+          gravityStats.slowDuration! +
+          (gravityStats.maxLevel - 1) * gravityStats.slowDurationPerLevel!;
+        expect(maxSlowDuration).toBeCloseTo(1.8, 2);
+      });
+    });
+
+    describe('level-up stats', () => {
+      it('should have correct damage per level', () => {
+        expect(gravityStats.damagePerLevel).toBe(3);
+      });
+
+      it('should have correct range per level', () => {
+        expect(gravityStats.rangePerLevel).toBe(10);
+      });
+
+      it('should have correct fire rate per level', () => {
+        expect(gravityStats.fireRatePerLevel).toBe(-0.05);
+      });
+
+      it('should have correct upgrade costs', () => {
+        expect(gravityStats.upgradeCosts).toEqual([90, 135, 200, 300]);
+      });
+
+      it('should have max level of 5', () => {
+        expect(gravityStats.maxLevel).toBe(5);
+      });
+
+      it('should have meaningful damage at max level', () => {
+        // Level 5: 5 + (4 * 3) = 17 damage
+        const maxLevelDamage =
+          gravityStats.damage + (gravityStats.maxLevel - 1) * gravityStats.damagePerLevel;
+        expect(maxLevelDamage).toBe(17);
+      });
+
+      it('should have increased range at max level', () => {
+        // Level 5: 100 + (4 * 10) = 140 range
+        const maxLevelRange =
+          gravityStats.range + (gravityStats.maxLevel - 1) * gravityStats.rangePerLevel;
+        expect(maxLevelRange).toBe(140);
+      });
+
+      it('should have faster fire rate at max level', () => {
+        // Level 5: 1.0 - (4 * 0.05) = 0.8s (1.25 shots/sec)
+        const maxLevelFireRate =
+          gravityStats.fireRate + (gravityStats.maxLevel - 1) * gravityStats.fireRatePerLevel;
+        expect(maxLevelFireRate).toBeCloseTo(0.8, 2);
+        expect(maxLevelFireRate).toBeGreaterThan(0);
+      });
+    });
+  });
+
   describe('all tower types', () => {
     const towerTypes = Object.values(TowerType) as TowerType[];
 
