@@ -433,7 +433,7 @@ class CombatModuleImpl implements GameModule {
         this.commands.applySlow(
           validEnemy.id,
           slowMultiplier,
-          slowDuration
+          slowDuration * 1000 // Convert seconds to milliseconds
         );
       }
     }

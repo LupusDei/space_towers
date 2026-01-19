@@ -1125,7 +1125,7 @@ describe('Gravity Tower AOE', () => {
     expect(slowedEnemies.length).toBe(1);
     expect(slowedEnemies[0].id).toBe(enemy.id);
     expect(slowedEnemies[0].multiplier).toBe(0.5); // 50% slow
-    expect(slowedEnemies[0].duration).toBe(1.0); // 1 second
+    expect(slowedEnemies[0].duration).toBe(2000); // 2 seconds in milliseconds
   });
 
   it('should not damage or slow enemies outside range', () => {
@@ -1222,7 +1222,7 @@ describe('Gravity Tower AOE', () => {
   });
 
   it('should scale slow duration with tower level', () => {
-    // Level 3 tower: base 1.0s + 2 * 0.2s = 1.4s duration
+    // Level 3 tower: base 2.0s + 2 * 0.2s = 2.4s duration = 2400ms
     const tower = createMockTower({
       type: TowerType.GRAVITY,
       damage: 5,
@@ -1254,8 +1254,8 @@ describe('Gravity Tower AOE', () => {
     combatModule.update(0.1);
 
     expect(slowedEnemies.length).toBe(1);
-    // Level 3: 1.0 + 2 * 0.2 = 1.4s duration
-    expect(slowedEnemies[0].duration).toBeCloseTo(1.4, 2);
+    // Level 3: (2.0 + 2 * 0.2) * 1000 = 2400ms duration
+    expect(slowedEnemies[0].duration).toBeCloseTo(2400, 0);
   });
 
   it('should scale slow multiplier with tower level', () => {
@@ -1293,8 +1293,8 @@ describe('Gravity Tower AOE', () => {
     expect(slowedEnemies.length).toBe(1);
     // Level 5: 0.5 + 4 * (-0.05) = 0.3 multiplier (70% slow)
     expect(slowedEnemies[0].multiplier).toBeCloseTo(0.3, 2);
-    // Level 5: 1.0 + 4 * 0.2 = 1.8s duration
-    expect(slowedEnemies[0].duration).toBeCloseTo(1.8, 2);
+    // Level 5: (2.0 + 4 * 0.2) * 1000 = 2800ms duration
+    expect(slowedEnemies[0].duration).toBeCloseTo(2800, 0);
   });
 
   it('should use base stats for level 1 tower', () => {
@@ -1331,7 +1331,7 @@ describe('Gravity Tower AOE', () => {
     expect(slowedEnemies.length).toBe(1);
     // Level 1: base stats (no bonus)
     expect(slowedEnemies[0].multiplier).toBe(0.5);
-    expect(slowedEnemies[0].duration).toBe(1.0);
+    expect(slowedEnemies[0].duration).toBe(2000); // 2 seconds in milliseconds
   });
 });
 

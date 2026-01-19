@@ -54,7 +54,7 @@ export const COMBAT_CONFIG = {
 
   // Gravity tower
   GRAVITY_SLOW_MULTIPLIER: 0.5, // 50% slow (enemies move at half speed)
-  GRAVITY_SLOW_DURATION: 1.0, // 1 second slow duration
+  GRAVITY_SLOW_DURATION: 2.0, // 2 second slow duration
 
   // Visual effect durations (ms)
   HITSCAN_EFFECT_DURATION: 100, // Brief flash for laser/tesla
@@ -144,7 +144,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
   [TowerType.GRAVITY]: {
     type: TowerType.GRAVITY,
     name: 'Gravity Tower',
-    description: 'Emits gravity pulses that slow all enemies in range by 50% for 1 second. Essential for crowd control.',
+    description: 'Emits gravity pulses that slow all enemies in range by 50% for 2 seconds. Essential for crowd control.',
     cost: 80,
     damage: 5,
     range: 100,
@@ -157,8 +157,8 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     rangePerLevel: 10,
     fireRatePerLevel: -0.05,
     // Special: slow effect (scales with level)
-    slowDuration: 1.0, // 1 second base slow
-    slowDurationPerLevel: 0.2, // +0.2s per level (max 1.8s at level 5)
+    slowDuration: 2.0, // 2 second base slow
+    slowDurationPerLevel: 0.2, // +0.2s per level (max 2.8s at level 5)
     slowMultiplier: 0.5, // 50% slow (enemies move at half speed)
     slowMultiplierPerLevel: -0.05, // 5% stronger slow per level (max 70% slow at level 5)
   },
