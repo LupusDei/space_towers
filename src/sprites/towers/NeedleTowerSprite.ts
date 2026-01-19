@@ -210,6 +210,22 @@ export const NeedleTowerSprite: TowerSprite = {
       ctx.restore();
     }
 
+    // === ROTATION TOWARD TARGET ===
+    // Calculate rotation angle if we have a target
+    let rotationAngle = 0;
+    if (tower.targetPosition) {
+      const targetX = tower.targetPosition.x * cellSize + cellSize / 2;
+      const targetY = tower.targetPosition.y * cellSize + cellSize / 2;
+      // Offset by PI/2 because needle is drawn pointing up (negative Y direction)
+      rotationAngle = Math.atan2(targetY - centerY, targetX - centerX) + Math.PI / 2;
+    }
+
+    // Save context and apply rotation for everything above the base
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(rotationAngle);
+    ctx.translate(-centerX, -centerY);
+
     // === NEEDLE MOUNTING CYLINDER ===
     const cylinderHeight = cellSize * 0.12;
     const cylinderWidth = baseRadius * 0.5;
@@ -496,6 +512,9 @@ export const NeedleTowerSprite: TowerSprite = {
       ctx.arc(centerX, needleTip - 2, 1.5 + hitPulseIntensity, 0, Math.PI * 2);
       ctx.fill();
     }
+
+    // Restore context after rotation
+    ctx.restore();
   },
 
   drawFiring(context: SpriteRenderContext, tower: Tower, target: Point): void {
