@@ -1553,3 +1553,182 @@ describe('Storm Tower', () => {
     expect(combatModule.getStormCastEffects().length).toBe(0);
   });
 });
+
+describe('Hitscan effect position when target dies', () => {
+  beforeEach(() => {
+    eventBus.clear();
+    combatModule.destroy();
+  });
+
+  it('should capture sniper target position before damage is applied', () => {
+    // Sniper does 100 damage, enemy has 50 health - will be killed
+    const tower = createMockTower({
+      type: TowerType.SNIPER,
+      damage: 100,
+      range: 350,
+      position: { x: 5, y: 5 },
+    });
+    const originalPosition = { x: 300, y: 250 };
+    const enemy = createMockEnemy({
+      health: 50,
+      armor: 0,
+      position: { ...originalPosition },
+    });
+
+    // Create commands that simulate pool reset behavior:
+    // When removeEnemy is called, the enemy position is reset to (0,0)
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {
+        // Simulate pool reset - this is what happens in real game
+        enemy.position.x = 0;
+        enemy.position.y = 0;
+      },
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: () => {},
+      addStormEffect: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    // The hitscan effect should have captured the ORIGINAL position,
+    // not the reset position (0,0)
+    const effects = combatModule.getHitscanEffects();
+    expect(effects.length).toBe(1);
+    expect(effects[0].type).toBe('sniper');
+    expect(effects[0].targetPosition.x).toBe(originalPosition.x);
+    expect(effects[0].targetPosition.y).toBe(originalPosition.y);
+  });
+
+  it('should capture laser target position before damage is applied', () => {
+    // Laser does 100 damage, enemy has 50 health - will be killed
+    const tower = createMockTower({
+      type: TowerType.LASER,
+      damage: 100,
+      range: 150,
+      position: { x: 5, y: 5 },
+    });
+    const originalPosition = { x: 220, y: 220 };
+    const enemy = createMockEnemy({
+      health: 50,
+      armor: 0,
+      position: { ...originalPosition },
+    });
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {
+        enemy.position.x = 0;
+        enemy.position.y = 0;
+      },
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: () => {},
+      addStormEffect: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    const effects = combatModule.getHitscanEffects();
+    expect(effects.length).toBe(1);
+    expect(effects[0].type).toBe('laser');
+    expect(effects[0].targetPosition.x).toBe(originalPosition.x);
+    expect(effects[0].targetPosition.y).toBe(originalPosition.y);
+  });
+
+  it('should capture tesla target position before damage is applied', () => {
+    // Tesla does 100 damage, enemy has 50 health - will be killed
+    const tower = createMockTower({
+      type: TowerType.TESLA,
+      damage: 100,
+      range: 150,
+      position: { x: 5, y: 5 },
+    });
+    const originalPosition = { x: 220, y: 220 };
+    const enemy = createMockEnemy({
+      health: 50,
+      armor: 0,
+      position: { ...originalPosition },
+    });
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {
+        enemy.position.x = 0;
+        enemy.position.y = 0;
+      },
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: () => {},
+      addStormEffect: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    const effects = combatModule.getHitscanEffects();
+    expect(effects.length).toBe(1);
+    expect(effects[0].type).toBe('tesla');
+    expect(effects[0].targetPosition.x).toBe(originalPosition.x);
+    expect(effects[0].targetPosition.y).toBe(originalPosition.y);
+  });
+
+  it('should capture tesla chain targets positions before damage is applied', () => {
+    // Tesla does 100 damage, both enemies have 50 health - will be killed
+    const tower = createMockTower({
+      type: TowerType.TESLA,
+      damage: 100,
+      range: 150,
+      position: { x: 5, y: 5 },
+    });
+    const primaryPosition = { x: 220, y: 220 };
+    const chainPosition = { x: 230, y: 230 }; // Close enough for chain
+    const primaryEnemy = createMockEnemy({
+      id: 'enemy_primary',
+      health: 50,
+      armor: 0,
+      position: { ...primaryPosition },
+    });
+    const chainEnemy = createMockEnemy({
+      id: 'enemy_chain',
+      health: 50,
+      armor: 0,
+      position: { ...chainPosition },
+    });
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: (id: string) => {
+        if (id === 'enemy_primary') {
+          primaryEnemy.position.x = 0;
+          primaryEnemy.position.y = 0;
+        } else {
+          chainEnemy.position.x = 0;
+          chainEnemy.position.y = 0;
+        }
+      },
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: () => {},
+      addStormEffect: () => {},
+    };
+
+    const query = createMockQuery([tower], [primaryEnemy, chainEnemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    // Check chain effects captured correct positions
+    const chainEffects = combatModule.getChainEffects();
+    expect(chainEffects.length).toBe(1);
+    expect(chainEffects[0].targets.length).toBeGreaterThanOrEqual(1);
+    // Primary target position should be correct
+    expect(chainEffects[0].targets[0].x).toBe(primaryPosition.x);
+    expect(chainEffects[0].targets[0].y).toBe(primaryPosition.y);
+  });
+});
