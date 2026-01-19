@@ -955,6 +955,7 @@ describe('Gravity Tower AOE', () => {
       applySlow: (id: string, multiplier: number, duration: number) => {
         slowedEnemies.push({ id, multiplier, duration });
       },
+      addStormEffect: () => {},
     };
 
     const query = createMockQuery([tower], [enemy]);
@@ -991,6 +992,7 @@ describe('Gravity Tower AOE', () => {
       applySlow: (id: string, multiplier: number, duration: number) => {
         slowedEnemies.push({ id, multiplier, duration });
       },
+      addStormEffect: () => {},
     };
 
     const query = createMockQuery([tower], [enemy]);
@@ -1028,6 +1030,7 @@ describe('Gravity Tower AOE', () => {
       applySlow: (id: string, multiplier: number, duration: number) => {
         slowedEnemies.push({ id, multiplier, duration });
       },
+      addStormEffect: () => {},
     };
 
     const query = createMockQuery([tower], [enemy]);

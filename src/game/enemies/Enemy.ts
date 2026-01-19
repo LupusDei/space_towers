@@ -14,6 +14,9 @@ export class Enemy implements Poolable {
   pathIndex: number = 0;
   armor: number = 0;
   reward: number = 0;
+  path: Point[] = [];
+  slowMultiplier: number = 1;
+  slowEndTime: number = 0;
 
   update(dt: number, path: Point[]): boolean {
     if (path.length === 0 || this.pathIndex >= path.length) {
@@ -64,6 +67,9 @@ export class Enemy implements Poolable {
     this.pathIndex = 0;
     this.armor = 0;
     this.reward = 0;
+    this.path = [];
+    this.slowMultiplier = 1;
+    this.slowEndTime = 0;
   }
 
   init(id: string, type: EnemyType, startPosition: Point): void {
@@ -86,5 +92,36 @@ export class Enemy implements Poolable {
 
   get healthPercent(): number {
     return this.maxHealth > 0 ? this.health / this.maxHealth : 0;
+  }
+
+  /**
+   * Apply a slow effect to this enemy.
+   * Only updates if the new slow would last longer than the current one.
+   * @param multiplier - Speed multiplier (0.5 = 50% speed, 1 = full speed)
+   * @param endTime - Time when the slow effect ends (in milliseconds)
+   */
+  applySlow(multiplier: number, endTime: number): void {
+    if (endTime > this.slowEndTime) {
+      this.slowMultiplier = multiplier;
+      this.slowEndTime = endTime;
+    }
+  }
+
+  /**
+   * Check if this enemy is currently slowed.
+   * @param currentTime - Current game time in milliseconds
+   * @returns true if the enemy has an active slow effect
+   */
+  isSlowed(currentTime: number): boolean {
+    return currentTime < this.slowEndTime;
+  }
+
+  /**
+   * Get the effective speed considering any active slow effect.
+   * @param currentTime - Current game time in milliseconds
+   * @returns The effective speed (base speed * slow multiplier if slowed)
+   */
+  getEffectiveSpeed(currentTime: number): number {
+    return this.isSlowed(currentTime) ? this.speed * this.slowMultiplier : this.speed;
   }
 }
