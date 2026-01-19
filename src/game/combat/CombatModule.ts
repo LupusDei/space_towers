@@ -294,16 +294,20 @@ class CombatModuleImpl implements GameModule {
   }
 
   private fireLaser(tower: Tower, target: Enemy, currentTime: number): void {
+    // Capture target position BEFORE applying damage, since applyDamage may kill
+    // the enemy and release it to the pool (which resets position to 0,0)
+    const targetPosition = { ...target.position };
+
     // Apply instant damage
     const damage = calculateDamage(tower.damage, target.armor);
     this.applyDamage(target, damage, tower.id);
 
-    // Create visual effect
+    // Create visual effect using captured position
     this.state.hitscanEffects.push({
       type: 'laser',
       towerId: tower.id,
       towerPosition: { ...tower.position },
-      targetPosition: { ...target.position },
+      targetPosition,
       startTime: currentTime,
       duration: COMBAT_CONFIG.HITSCAN_EFFECT_DURATION,
     });
@@ -330,6 +334,10 @@ class CombatModuleImpl implements GameModule {
   private fireTesla(tower: Tower, target: Enemy, currentTime: number): void {
     if (!this.query) return;
 
+    // Capture target position BEFORE applying damage, since applyDamage may kill
+    // the enemy and release it to the pool (which resets position to 0,0)
+    const primaryTargetPosition = { ...target.position };
+
     // Primary target damage
     const primaryDamage = calculateDamage(tower.damage, target.armor);
     this.applyDamage(target, primaryDamage, tower.id);
@@ -337,16 +345,18 @@ class CombatModuleImpl implements GameModule {
     // Find chain targets
     const chainTargets = findChainTargets(target, this.query, COMBAT_CONFIG.TESLA_MAX_CHAIN, COMBAT_CONFIG.TESLA_CHAIN_RANGE);
 
-    // Build target positions for visual effect
-    const targetPositions: Point[] = [{ ...target.position }];
+    // Build target positions for visual effect, starting with captured primary position
+    const targetPositions: Point[] = [primaryTargetPosition];
 
     // Apply chain lightning damage with falloff
+    // Capture each chain target's position before applying damage
     let chainDamage = tower.damage;
     for (const chainTarget of chainTargets) {
+      const chainTargetPosition = { ...chainTarget.position };
       chainDamage *= COMBAT_CONFIG.CHAIN_DAMAGE_FALLOFF;
       const effectiveDamage = calculateDamage(chainDamage, chainTarget.armor);
       this.applyDamage(chainTarget, effectiveDamage, tower.id);
-      targetPositions.push({ ...chainTarget.position });
+      targetPositions.push(chainTargetPosition);
     }
 
     // Create chain lightning visual effect
@@ -363,7 +373,7 @@ class CombatModuleImpl implements GameModule {
       type: 'tesla',
       towerId: tower.id,
       towerPosition: { ...tower.position },
-      targetPosition: { ...target.position },
+      targetPosition: primaryTargetPosition,
       startTime: currentTime,
       duration: COMBAT_CONFIG.HITSCAN_EFFECT_DURATION,
     });
@@ -464,16 +474,20 @@ class CombatModuleImpl implements GameModule {
     const validTarget = this.query?.getEnemyById(target.id);
     if (!validTarget) return;
 
+    // Capture target position BEFORE applying damage, since applyDamage may kill
+    // the enemy and release it to the pool (which resets position to 0,0)
+    const targetPosition = { ...validTarget.position };
+
     // Apply instant damage (hitscan - no projectile travel)
     const damage = calculateDamage(tower.damage, validTarget.armor);
     this.applyDamage(validTarget, damage, tower.id);
 
-    // Create visual effect
+    // Create visual effect using captured position
     this.state.hitscanEffects.push({
       type: 'sniper',
       towerId: tower.id,
       towerPosition: { ...tower.position },
-      targetPosition: { ...validTarget.position },
+      targetPosition,
       startTime: currentTime,
       duration: COMBAT_CONFIG.HITSCAN_EFFECT_DURATION,
     });
