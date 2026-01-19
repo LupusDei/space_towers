@@ -13,10 +13,14 @@ vi.mock('./TowerIcon', () => ({
 
 describe('TowerStore', () => {
   const mockOnSelectTowerType = vi.fn();
+  const mockOnUnlockTower = vi.fn();
   const towerTypes = Object.values(TowerType) as TowerType[];
+  // All towers unlocked - used for tests that don't focus on unlock behavior
+  const allTowersUnlocked = towerTypes;
 
   beforeEach(() => {
     mockOnSelectTowerType.mockClear();
+    mockOnUnlockTower.mockClear();
   });
 
   // ============================================================================
@@ -27,6 +31,7 @@ describe('TowerStore', () => {
     it('should render all tower types', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           waveCredits={42}
           selectedTowerType={null}
@@ -43,6 +48,7 @@ describe('TowerStore', () => {
     it('should render tower icons for each tower type', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -57,6 +63,7 @@ describe('TowerStore', () => {
     it('should render the store header', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -69,6 +76,7 @@ describe('TowerStore', () => {
     it('should render empty cells for future towers', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           waveCredits={42}
           selectedTowerType={null}
@@ -84,6 +92,7 @@ describe('TowerStore', () => {
     it('should render question mark icons in empty cells', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           waveCredits={42}
           selectedTowerType={null}
@@ -99,6 +108,7 @@ describe('TowerStore', () => {
     it('should render buttons for each tower type', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -112,6 +122,7 @@ describe('TowerStore', () => {
     it('should display Wave Credits balance', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           waveCredits={42}
           selectedTowerType={null}
@@ -125,6 +136,7 @@ describe('TowerStore', () => {
     it('should display zero Wave Credits', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           waveCredits={0}
           selectedTowerType={null}
@@ -138,6 +150,7 @@ describe('TowerStore', () => {
     it('should update Wave Credits display reactively', () => {
       const { rerender } = render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           waveCredits={50}
           selectedTowerType={null}
@@ -150,6 +163,7 @@ describe('TowerStore', () => {
       // Simulate spending credits by rerendering with new value
       rerender(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           waveCredits={40}
           selectedTowerType={null}
@@ -170,6 +184,7 @@ describe('TowerStore', () => {
     it('should display cost for each tower', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -186,6 +201,7 @@ describe('TowerStore', () => {
     it('should display cost with dollar sign prefix', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -199,6 +215,7 @@ describe('TowerStore', () => {
     it('should include cost in aria-label for accessibility', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -223,6 +240,7 @@ describe('TowerStore', () => {
     it('should call onSelectTowerType with tower type when clicked', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           waveCredits={42}
           selectedTowerType={null}
@@ -239,6 +257,7 @@ describe('TowerStore', () => {
     it('should deselect tower when clicking already selected tower', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           waveCredits={42}
           selectedTowerType={TowerType.LASER}
@@ -255,6 +274,7 @@ describe('TowerStore', () => {
     it('should switch selection when clicking different tower', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           waveCredits={42}
           selectedTowerType={TowerType.LASER}
@@ -271,6 +291,7 @@ describe('TowerStore', () => {
     it('should allow selecting any affordable tower type', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -289,6 +310,7 @@ describe('TowerStore', () => {
     it('should handle rapid selection changes', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -311,6 +333,7 @@ describe('TowerStore', () => {
     it('should not call onSelectTowerType for empty cells', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -331,6 +354,7 @@ describe('TowerStore', () => {
     it('should disable towers player cannot afford', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={30}
           waveCredits={0}
           selectedTowerType={null}
@@ -351,6 +375,7 @@ describe('TowerStore', () => {
       const laserCost = TOWER_STATS[TowerType.LASER].cost;
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={laserCost}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -365,6 +390,7 @@ describe('TowerStore', () => {
       const laserCost = TOWER_STATS[TowerType.LASER].cost;
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={laserCost - 1}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -378,6 +404,7 @@ describe('TowerStore', () => {
     it('should not call onSelectTowerType when clicking disabled tower', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={10}
           waveCredits={0}
           selectedTowerType={null}
@@ -394,6 +421,7 @@ describe('TowerStore', () => {
     it('should enable all towers when player has max credits', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={10000}
           waveCredits={0}
           selectedTowerType={null}
@@ -410,6 +438,7 @@ describe('TowerStore', () => {
     it('should disable all towers when player has zero credits', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={0}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -425,6 +454,7 @@ describe('TowerStore', () => {
     it('should update affordability based on credits prop', () => {
       const { rerender } = render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={10}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -437,6 +467,7 @@ describe('TowerStore', () => {
       // Rerender with more credits
       rerender(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -455,6 +486,7 @@ describe('TowerStore', () => {
     it('should show selected state for selected tower', () => {
       const { container } = render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={TowerType.LASER}
           onSelectTowerType={mockOnSelectTowerType}
@@ -473,6 +505,7 @@ describe('TowerStore', () => {
     it('should not show selected state when no tower selected', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -487,6 +520,7 @@ describe('TowerStore', () => {
     it('should update selected state when selection changes', () => {
       const { rerender } = render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={TowerType.LASER}
           onSelectTowerType={mockOnSelectTowerType}
@@ -498,6 +532,7 @@ describe('TowerStore', () => {
 
       rerender(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={TowerType.MISSILE}
           onSelectTowerType={mockOnSelectTowerType}
@@ -517,6 +552,7 @@ describe('TowerStore', () => {
     it('should have aria-label with tower name and cost', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -533,6 +569,7 @@ describe('TowerStore', () => {
     it('should have button role for all tower cells', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -546,6 +583,7 @@ describe('TowerStore', () => {
     it('should mark disabled buttons as disabled in accessibility tree', () => {
       render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={0}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -567,6 +605,7 @@ describe('TowerStore', () => {
     it('should render 12 cells total (towers + empty)', () => {
       const { container } = render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -582,6 +621,7 @@ describe('TowerStore', () => {
     it('should render tower buttons before empty cells', () => {
       const { container } = render(
         <TowerStore
+          unlockedTowers={allTowersUnlocked}
           credits={1000}
           selectedTowerType={null}
           onSelectTowerType={mockOnSelectTowerType}
@@ -591,6 +631,199 @@ describe('TowerStore', () => {
       // Get all direct children of the grid
       const gridContainer = container.querySelector('[style*="grid"]');
       expect(gridContainer).toBeInTheDocument();
+    });
+  });
+
+  // ============================================================================
+  // Tower Unlocking Tests
+  // ============================================================================
+
+  describe('tower unlocking', () => {
+    // Only first 4 towers unlocked (LASER, MISSILE, TESLA, CANNON)
+    const starterTowers = [TowerType.LASER, TowerType.MISSILE, TowerType.TESLA, TowerType.CANNON];
+
+    it('should disable locked towers even if player can afford them', () => {
+      render(
+        <TowerStore
+          unlockedTowers={starterTowers}
+          credits={1000}
+          waveCredits={50}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      // SNIPER is locked (not in starterTowers)
+      const sniperButton = screen.getByRole('button', { name: /Sniper/i });
+      expect(sniperButton).toBeDisabled();
+    });
+
+    it('should allow selecting unlocked towers', () => {
+      render(
+        <TowerStore
+          unlockedTowers={starterTowers}
+          credits={1000}
+          waveCredits={50}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      // LASER is unlocked
+      const laserButton = screen.getByRole('button', { name: /Laser Tower/i });
+      expect(laserButton).not.toBeDisabled();
+      fireEvent.click(laserButton);
+      expect(mockOnSelectTowerType).toHaveBeenCalledWith(TowerType.LASER);
+    });
+
+    it('should not call onSelectTowerType when clicking locked tower', () => {
+      render(
+        <TowerStore
+          unlockedTowers={starterTowers}
+          credits={1000}
+          waveCredits={50}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      // SNIPER is locked
+      const sniperButton = screen.getByRole('button', { name: /Sniper/i });
+      fireEvent.click(sniperButton);
+      expect(mockOnSelectTowerType).not.toHaveBeenCalled();
+    });
+
+    it('should show lock icon on locked towers', () => {
+      render(
+        <TowerStore
+          unlockedTowers={starterTowers}
+          credits={1000}
+          waveCredits={50}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      // There should be lock icons for locked towers (4 locked out of 8)
+      const lockIcons = screen.getAllByText('🔒');
+      expect(lockIcons.length).toBe(towerTypes.length - starterTowers.length);
+    });
+
+    it('should show unlock button when onUnlockTower is provided', () => {
+      render(
+        <TowerStore
+          unlockedTowers={starterTowers}
+          credits={1000}
+          waveCredits={50}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+          onUnlockTower={mockOnUnlockTower}
+        />
+      );
+
+      // Should have unlock buttons with 🔓 icon for locked towers
+      const unlockIcons = screen.getAllByText(/🔓/);
+      expect(unlockIcons.length).toBe(towerTypes.length - starterTowers.length);
+    });
+
+    it('should call onUnlockTower when unlock button is clicked', () => {
+      render(
+        <TowerStore
+          unlockedTowers={starterTowers}
+          credits={1000}
+          waveCredits={50}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+          onUnlockTower={mockOnUnlockTower}
+        />
+      );
+
+      // Click the unlock button for SNIPER (unlockCost: 10)
+      const sniperUnlockButton = screen.getByRole('button', { name: /Unlock Sniper/i });
+      fireEvent.click(sniperUnlockButton);
+      expect(mockOnUnlockTower).toHaveBeenCalledWith(TowerType.SNIPER);
+    });
+
+    it('should disable unlock button when player cannot afford unlock', () => {
+      render(
+        <TowerStore
+          unlockedTowers={starterTowers}
+          credits={1000}
+          waveCredits={5}  // Not enough for SNIPER (10) or NEEDLE (20)
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+          onUnlockTower={mockOnUnlockTower}
+        />
+      );
+
+      // SNIPER unlock button should be disabled (costs 10, have 5)
+      const sniperUnlockButton = screen.getByRole('button', { name: /Cannot unlock Sniper/i });
+      expect(sniperUnlockButton).toBeDisabled();
+    });
+
+    it('should not call onUnlockTower when clicking disabled unlock button', () => {
+      render(
+        <TowerStore
+          unlockedTowers={starterTowers}
+          credits={1000}
+          waveCredits={5}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+          onUnlockTower={mockOnUnlockTower}
+        />
+      );
+
+      const sniperUnlockButton = screen.getByRole('button', { name: /Cannot unlock Sniper/i });
+      fireEvent.click(sniperUnlockButton);
+      expect(mockOnUnlockTower).not.toHaveBeenCalled();
+    });
+
+    it('should show unlock cost instead of build cost for locked towers', () => {
+      render(
+        <TowerStore
+          unlockedTowers={starterTowers}
+          credits={1000}
+          waveCredits={50}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      // Locked towers should show "UNLOCK" label
+      const unlockLabels = screen.getAllByText('UNLOCK');
+      expect(unlockLabels.length).toBe(towerTypes.length - starterTowers.length);
+    });
+
+    it('should not show unlock buttons when onUnlockTower is not provided', () => {
+      render(
+        <TowerStore
+          unlockedTowers={starterTowers}
+          credits={1000}
+          waveCredits={50}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      // Should not have unlock buttons (only lock icons)
+      const unlockIcons = screen.queryAllByText(/🔓/);
+      expect(unlockIcons.length).toBe(0);
+    });
+
+    it('should have appropriate aria-label for locked towers', () => {
+      render(
+        <TowerStore
+          unlockedTowers={starterTowers}
+          credits={1000}
+          waveCredits={50}
+          selectedTowerType={null}
+          onSelectTowerType={mockOnSelectTowerType}
+        />
+      );
+
+      // Locked tower should have aria-label mentioning "Locked"
+      const sniperButton = screen.getByRole('button', { name: /Sniper Tower - Locked/i });
+      expect(sniperButton).toBeInTheDocument();
     });
   });
 });
