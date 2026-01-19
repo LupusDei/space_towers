@@ -23,17 +23,20 @@ export function createGravityPulseSprite(): EffectSprite {
       const centerX = position.x * cellSize + cellSize / 2;
       const centerY = position.y * cellSize + cellSize / 2;
 
+      // Clamp progress to valid range to prevent negative radii in createRadialGradient
+      const clampedProgress = Math.max(0, Math.min(1, progress));
+
       // Easing for smooth expansion
-      const easeOut = 1 - Math.pow(1 - progress, 2);
-      const fadeOut = 1 - progress;
+      const easeOut = 1 - Math.pow(1 - clampedProgress, 2);
+      const fadeOut = 1 - clampedProgress;
 
       // Max radius is the tower's range (approximately 2.5 cells for gravity tower)
       const maxRadius = cellSize * 2.5;
       const ringRadius = easeOut * maxRadius;
 
       // Outer glow (fades quickly)
-      if (progress < 0.6) {
-        const glowAlpha = (0.6 - progress) * 0.4;
+      if (clampedProgress < 0.6) {
+        const glowAlpha = (0.6 - clampedProgress) * 0.4;
         const glowRadius = ringRadius * 1.3;
         const gradient = ctx.createRadialGradient(
           centerX,
@@ -52,7 +55,7 @@ export function createGravityPulseSprite(): EffectSprite {
       }
 
       // Primary expanding ring
-      const ringWidth = Math.max(2, (1 - progress) * 6);
+      const ringWidth = Math.max(2, (1 - clampedProgress) * 6);
       ctx.strokeStyle = PULSE_COLORS.ring;
       ctx.globalAlpha = fadeOut * 0.8;
       ctx.lineWidth = ringWidth;
@@ -61,8 +64,8 @@ export function createGravityPulseSprite(): EffectSprite {
       ctx.stroke();
 
       // Secondary inner ring (slightly delayed, creates ripple effect)
-      if (progress > 0.1 && progress < 0.9) {
-        const innerProgress = (progress - 0.1) / 0.8;
+      if (clampedProgress > 0.1 && clampedProgress < 0.9) {
+        const innerProgress = (clampedProgress - 0.1) / 0.8;
         const innerRadius = innerProgress * maxRadius * 0.7;
         const innerAlpha = (1 - innerProgress) * 0.5;
         const innerWidth = Math.max(1, (1 - innerProgress) * 3);
@@ -76,8 +79,8 @@ export function createGravityPulseSprite(): EffectSprite {
       }
 
       // Center flash (brief, at start)
-      if (progress < 0.2) {
-        const flashAlpha = (0.2 - progress) * 3;
+      if (clampedProgress < 0.2) {
+        const flashAlpha = (0.2 - clampedProgress) * 3;
         const flashRadius = cellSize * 0.4;
         const flashGradient = ctx.createRadialGradient(
           centerX,

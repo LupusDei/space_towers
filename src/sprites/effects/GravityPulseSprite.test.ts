@@ -61,6 +61,23 @@ describe('GravityPulseSprite', () => {
       expect(() => sprite.draw(context, position, 1)).not.toThrow();
     });
 
+    it('draws without errors with negative progress (edge case)', () => {
+      const sprite = createGravityPulseSprite();
+      const context = createMockContext();
+      const position = { x: 5, y: 5 };
+
+      // Negative progress can occur if currentTime < pulse.startTime
+      expect(() => sprite.draw(context, position, -0.1)).not.toThrow();
+    });
+
+    it('draws without errors with progress > 1 (edge case)', () => {
+      const sprite = createGravityPulseSprite();
+      const context = createMockContext();
+      const position = { x: 5, y: 5 };
+
+      expect(() => sprite.draw(context, position, 1.5)).not.toThrow();
+    });
+
     it('resets globalAlpha to 1 after drawing', () => {
       const sprite = createGravityPulseSprite();
       const context = createMockContext();
