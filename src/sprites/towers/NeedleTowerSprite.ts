@@ -73,6 +73,12 @@ class NeedleHitPulseManager {
 // Singleton instance for global access
 export const needleHitPulseManager = new NeedleHitPulseManager();
 
+// Seeded random for deterministic effects (consistent frame-to-frame)
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed * 12.9898) * 43758.5453;
+  return x - Math.floor(x);
+}
+
 // Level-based visual parameters
 function getLevelParams(level: number) {
   const clampedLevel = Math.max(1, Math.min(5, level));
@@ -413,23 +419,62 @@ export const NeedleTowerSprite: TowerSprite = {
       ctx.fill();
     }
 
-    // === GLOWING RED TIP ===
+    // === GLOWING RED TIP (Upgraded) ===
     // Get hit pulse intensity (0-1) for additional glow on successful hits
     const hitPulseIntensity = needleHitPulseManager.getPulseIntensity(
       tower.id,
       time * 1000
     );
 
-    // Base tip glow size, enhanced by hit pulse
+    // Base tip glow size, enhanced by hit pulse and level
     const baseTipGlowSize = cellSize * 0.1 * params.tipGlowRadius;
     const tipGlowSize = baseTipGlowSize * (1 + hitPulseIntensity * 0.8);
 
     // Base pulse from ambient animation, enhanced by hit pulse
     const baseTipPulse = params.tipGlowIntensity + 0.15 * Math.sin(time * 0.004);
     const tipPulse = Math.min(1, baseTipPulse + hitPulseIntensity * 0.5);
+    const hitBoost = hitPulseIntensity * 80;
 
-    // Outer glow (expands and brightens on hit)
-    const outerGlow = ctx.createRadialGradient(
+    // === OUTER HEAT HAZE (subtle distortion effect) ===
+    const hazeRadius = tipGlowSize * 1.8;
+    const hazePulse = 0.06 + 0.03 * Math.sin(time * 0.003);
+    const hazeGradient = ctx.createRadialGradient(
+      centerX,
+      needleTip,
+      tipGlowSize * 0.5,
+      centerX,
+      needleTip,
+      hazeRadius
+    );
+    hazeGradient.addColorStop(0, `rgba(255, 100, 80, ${hazePulse * (1 + level * 0.1)})`);
+    hazeGradient.addColorStop(0.5, `rgba(255, 60, 40, ${hazePulse * 0.5})`);
+    hazeGradient.addColorStop(1, 'rgba(200, 40, 20, 0)');
+    ctx.fillStyle = hazeGradient;
+    ctx.beginPath();
+    ctx.arc(centerX, needleTip, hazeRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // === MAIN OUTER GLOW (multi-layered) ===
+    // Layer 1: Diffuse red aura
+    const outerGlow1 = ctx.createRadialGradient(
+      centerX,
+      needleTip,
+      0,
+      centerX,
+      needleTip,
+      tipGlowSize * 1.3
+    );
+    outerGlow1.addColorStop(0, `rgba(255, ${120 + hitBoost}, ${100 + hitBoost}, ${tipPulse * 0.8})`);
+    outerGlow1.addColorStop(0.3, `rgba(255, ${80 + hitBoost * 0.7}, ${60 + hitBoost * 0.5}, ${tipPulse * 0.5})`);
+    outerGlow1.addColorStop(0.6, `rgba(220, 40, 30, ${tipPulse * 0.25})`);
+    outerGlow1.addColorStop(1, 'rgba(180, 20, 15, 0)');
+    ctx.fillStyle = outerGlow1;
+    ctx.beginPath();
+    ctx.arc(centerX, needleTip, tipGlowSize * 1.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Layer 2: Hot orange-red core glow
+    const outerGlow2 = ctx.createRadialGradient(
       centerX,
       needleTip,
       0,
@@ -437,24 +482,60 @@ export const NeedleTowerSprite: TowerSprite = {
       needleTip,
       tipGlowSize
     );
-    // Brighter colors when hit pulse is active
-    const hitBoost = hitPulseIntensity * 80;
-    outerGlow.addColorStop(
-      0,
-      `rgba(${255}, ${100 + hitBoost}, ${100 + hitBoost}, ${tipPulse})`
-    );
-    outerGlow.addColorStop(
-      0.4,
-      `rgba(255, ${50 + hitBoost * 0.5}, ${50 + hitBoost * 0.5}, ${tipPulse * 0.5})`
-    );
-    outerGlow.addColorStop(0.7, `rgba(200, 30, 30, ${tipPulse * 0.2})`);
-    outerGlow.addColorStop(1, 'rgba(150, 20, 20, 0)');
-    ctx.fillStyle = outerGlow;
+    outerGlow2.addColorStop(0, `rgba(255, ${180 + hitBoost * 0.5}, ${100 + hitBoost}, ${tipPulse})`);
+    outerGlow2.addColorStop(0.4, `rgba(255, ${100 + hitBoost * 0.3}, ${50 + hitBoost * 0.2}, ${tipPulse * 0.7})`);
+    outerGlow2.addColorStop(0.7, `rgba(230, 50, 30, ${tipPulse * 0.3})`);
+    outerGlow2.addColorStop(1, 'rgba(200, 30, 20, 0)');
+    ctx.fillStyle = outerGlow2;
     ctx.beginPath();
     ctx.arc(centerX, needleTip, tipGlowSize, 0, Math.PI * 2);
     ctx.fill();
 
-    // Hit pulse ring effect (expanding ring on hit)
+    // === ENERGY ARCS / CRACKLING (Level 2+) ===
+    if (level >= 2) {
+      const arcCount = 2 + Math.floor((level - 1) / 2); // 2, 2, 3, 3, 4
+      const arcBaseIntensity = 0.4 + (level - 2) * 0.1 + hitPulseIntensity * 0.3;
+
+      for (let i = 0; i < arcCount; i++) {
+        // Each arc has its own timing cycle
+        const arcCycle = (time * 0.004 + i * 1.3) % 1;
+        if (arcCycle > 0.25) continue; // Short flashes
+
+        const arcIntensity = arcBaseIntensity * (0.25 - arcCycle) / 0.25;
+        const arcAngle = seededRandom(Math.floor(time * 0.015) + i * 47) * Math.PI * 2;
+        const arcLength = cellSize * 0.06 * (1 + level * 0.15);
+
+        const arcStartX = centerX + Math.cos(arcAngle) * cellSize * 0.015;
+        const arcStartY = needleTip + Math.sin(arcAngle) * cellSize * 0.01;
+        const arcMidAngle = arcAngle + (seededRandom(i * 73 + Math.floor(time * 0.02)) - 0.5) * 0.8;
+        const arcMidX = centerX + Math.cos(arcMidAngle) * arcLength * 0.6;
+        const arcMidY = needleTip - arcLength * 0.3 + Math.sin(arcMidAngle) * arcLength * 0.4;
+        const arcEndX = centerX + Math.cos(arcAngle + 0.3) * arcLength;
+        const arcEndY = needleTip - arcLength * 0.5;
+
+        // Arc glow layer
+        ctx.strokeStyle = `rgba(255, 150, 100, ${arcIntensity * 0.4})`;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(arcStartX, arcStartY);
+        ctx.lineTo(arcMidX, arcMidY);
+        ctx.lineTo(arcEndX, arcEndY);
+        ctx.stroke();
+
+        // Arc core
+        ctx.strokeStyle = `rgba(255, 220, 180, ${arcIntensity})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(arcStartX, arcStartY);
+        ctx.lineTo(arcMidX, arcMidY);
+        ctx.lineTo(arcEndX, arcEndY);
+        ctx.stroke();
+      }
+    }
+
+    // === HIT PULSE RING EFFECT (expanding ring on hit) ===
     if (hitPulseIntensity > 0) {
       const ringRadius = baseTipGlowSize * (1 + (1 - hitPulseIntensity) * 1.5);
       const ringAlpha = hitPulseIntensity * 0.6;
@@ -463,10 +544,18 @@ export const NeedleTowerSprite: TowerSprite = {
       ctx.beginPath();
       ctx.arc(centerX, needleTip, ringRadius, 0, Math.PI * 2);
       ctx.stroke();
+
+      // Secondary inner ring
+      const innerRingRadius = baseTipGlowSize * (0.5 + (1 - hitPulseIntensity) * 0.8);
+      ctx.strokeStyle = `rgba(255, 255, 220, ${ringAlpha * 0.7})`;
+      ctx.lineWidth = 1.5 * hitPulseIntensity;
+      ctx.beginPath();
+      ctx.arc(centerX, needleTip, innerRingRadius, 0, Math.PI * 2);
+      ctx.stroke();
     }
 
-    // Inner bright core (intensifies on hit)
-    const coreSize = cellSize * 0.03 * (1 + hitPulseIntensity * 0.5);
+    // === INNER BRIGHT CORE (intensified) ===
+    const coreSize = cellSize * 0.035 * (1 + hitPulseIntensity * 0.5) * (1 + (level - 1) * 0.05);
     const innerGlow = ctx.createRadialGradient(
       centerX,
       needleTip,
@@ -475,26 +564,51 @@ export const NeedleTowerSprite: TowerSprite = {
       needleTip,
       coreSize
     );
-    // Whiter core when hit pulse is active
+    // Whiter, hotter core
     const coreWhiteness = hitPulseIntensity * 0.3;
     innerGlow.addColorStop(0, '#ffffff');
-    innerGlow.addColorStop(0.3, `rgb(255, ${204 + 51 * coreWhiteness}, ${204 + 51 * coreWhiteness})`);
-    innerGlow.addColorStop(0.6, `rgb(255, ${102 + 50 * coreWhiteness}, ${102 + 50 * coreWhiteness})`);
-    innerGlow.addColorStop(1, '#ff3333');
+    innerGlow.addColorStop(0.2, `rgb(255, ${240 + 15 * coreWhiteness}, ${220 + 35 * coreWhiteness})`);
+    innerGlow.addColorStop(0.4, `rgb(255, ${200 + 30 * coreWhiteness}, ${150 + 50 * coreWhiteness})`);
+    innerGlow.addColorStop(0.7, `rgb(255, ${120 + 50 * coreWhiteness}, ${80 + 50 * coreWhiteness})`);
+    innerGlow.addColorStop(1, '#ff4422');
     ctx.fillStyle = innerGlow;
     ctx.beginPath();
     ctx.arc(centerX, needleTip, coreSize, 0, Math.PI * 2);
     ctx.fill();
 
-    // Tip highlight spark (flickers, more frequent during hit pulse)
-    const sparkThreshold = hitPulseIntensity > 0 ? 0.3 : 0.6;
-    const sparkPhase = (time * 0.005) % 1;
-    if (sparkPhase > sparkThreshold) {
-      const sparkAlpha = hitPulseIntensity > 0 ? 1.0 : 0.8;
-      ctx.fillStyle = `rgba(255, 255, 255, ${sparkAlpha})`;
-      ctx.beginPath();
-      ctx.arc(centerX, needleTip - 2, 1.5 + hitPulseIntensity, 0, Math.PI * 2);
-      ctx.fill();
+    // === FLOATING EMBER PARTICLES (Level 3+) ===
+    if (level >= 3) {
+      const emberCount = 2 + Math.floor((level - 2) * 1.5); // 2, 3, 5
+      for (let i = 0; i < emberCount; i++) {
+        const emberCycle = ((time * 0.002 + i * 0.37) % 1);
+        const emberY = needleTip - emberCycle * cellSize * 0.15;
+        const emberX = centerX + Math.sin(time * 0.005 + i * 2.1) * cellSize * 0.04;
+        const emberAlpha = Math.sin(emberCycle * Math.PI) * (0.6 + hitPulseIntensity * 0.3);
+        const emberSize = 1 + (1 - emberCycle) * 1.5;
+
+        if (emberAlpha > 0.1) {
+          ctx.fillStyle = `rgba(255, ${180 + Math.floor(emberCycle * 75)}, ${100 + Math.floor(emberCycle * 50)}, ${emberAlpha})`;
+          ctx.beginPath();
+          ctx.arc(emberX, emberY, emberSize, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    // === TIP HIGHLIGHT SPARKS (multiple, more dynamic) ===
+    const sparkCount = 1 + Math.floor(level / 3); // 1, 1, 2, 2, 2
+    for (let i = 0; i < sparkCount; i++) {
+      const sparkThreshold = hitPulseIntensity > 0 ? 0.3 : 0.55;
+      const sparkPhase = (time * 0.006 + i * 0.4) % 1;
+      if (sparkPhase > sparkThreshold) {
+        const sparkAlpha = hitPulseIntensity > 0 ? 1.0 : 0.85;
+        const sparkOffsetX = Math.sin(time * 0.01 + i * 1.5) * 2;
+        const sparkOffsetY = -2 - i * 1.5;
+        ctx.fillStyle = `rgba(255, 255, 255, ${sparkAlpha})`;
+        ctx.beginPath();
+        ctx.arc(centerX + sparkOffsetX, needleTip + sparkOffsetY, 1.5 + hitPulseIntensity * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   },
 
@@ -521,8 +635,29 @@ export const NeedleTowerSprite: TowerSprite = {
     // Draw precision beam (thin, focused)
     drawNeedleBeam(ctx, centerX, needleTip, targetX, targetY, time, level);
 
-    // Enhanced tip glow when firing
-    const firingGlowRadius = cellSize * 0.15 * (1.5 + (level - 1) * 0.2);
+    // === ENHANCED TIP GLOW WHEN FIRING (Upgraded) ===
+    const firingPulse = 0.85 + 0.15 * Math.sin(time * 0.015);
+    const firingGlowRadius = cellSize * 0.18 * (1.5 + (level - 1) * 0.25);
+
+    // Outer heat bloom
+    const outerBloom = ctx.createRadialGradient(
+      centerX,
+      needleTip,
+      0,
+      centerX,
+      needleTip,
+      firingGlowRadius * 1.5
+    );
+    outerBloom.addColorStop(0, `rgba(255, 200, 150, ${firingPulse * 0.4})`);
+    outerBloom.addColorStop(0.4, `rgba(255, 120, 80, ${firingPulse * 0.25})`);
+    outerBloom.addColorStop(0.7, `rgba(220, 60, 40, ${firingPulse * 0.12})`);
+    outerBloom.addColorStop(1, 'rgba(180, 30, 20, 0)');
+    ctx.fillStyle = outerBloom;
+    ctx.beginPath();
+    ctx.arc(centerX, needleTip, firingGlowRadius * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Main firing glow
     const firingGlow = ctx.createRadialGradient(
       centerX,
       needleTip,
@@ -531,14 +666,50 @@ export const NeedleTowerSprite: TowerSprite = {
       needleTip,
       firingGlowRadius
     );
-    firingGlow.addColorStop(0, 'rgba(255, 150, 150, 0.9)');
-    firingGlow.addColorStop(0.3, 'rgba(255, 80, 80, 0.6)');
-    firingGlow.addColorStop(0.6, 'rgba(200, 50, 50, 0.3)');
-    firingGlow.addColorStop(1, 'rgba(150, 30, 30, 0)');
+    firingGlow.addColorStop(0, `rgba(255, 220, 200, ${firingPulse})`);
+    firingGlow.addColorStop(0.2, `rgba(255, 150, 120, ${firingPulse * 0.85})`);
+    firingGlow.addColorStop(0.5, `rgba(255, 80, 60, ${firingPulse * 0.5})`);
+    firingGlow.addColorStop(0.75, `rgba(200, 50, 40, ${firingPulse * 0.25})`);
+    firingGlow.addColorStop(1, 'rgba(150, 30, 25, 0)');
     ctx.fillStyle = firingGlow;
     ctx.beginPath();
     ctx.arc(centerX, needleTip, firingGlowRadius, 0, Math.PI * 2);
     ctx.fill();
+
+    // Intense white-hot core when firing
+    const coreRadius = cellSize * 0.04 * (1 + (level - 1) * 0.1);
+    const firingCore = ctx.createRadialGradient(
+      centerX,
+      needleTip,
+      0,
+      centerX,
+      needleTip,
+      coreRadius
+    );
+    firingCore.addColorStop(0, '#ffffff');
+    firingCore.addColorStop(0.3, '#ffffee');
+    firingCore.addColorStop(0.5, '#ffddaa');
+    firingCore.addColorStop(0.8, '#ff8855');
+    firingCore.addColorStop(1, '#ff4422');
+    ctx.fillStyle = firingCore;
+    ctx.beginPath();
+    ctx.arc(centerX, needleTip, coreRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Energy discharge sparks when firing (radiating from tip)
+    const sparkCount = 3 + level;
+    for (let i = 0; i < sparkCount; i++) {
+      const sparkAngle = (time * 0.008 + i * (Math.PI * 2 / sparkCount)) % (Math.PI * 2);
+      const sparkDist = cellSize * 0.03 + Math.sin(time * 0.02 + i) * cellSize * 0.015;
+      const sparkX = centerX + Math.cos(sparkAngle) * sparkDist;
+      const sparkY = needleTip + Math.sin(sparkAngle) * sparkDist * 0.5 - cellSize * 0.01;
+      const sparkAlpha = 0.7 + 0.3 * Math.sin(time * 0.025 + i * 1.2);
+
+      ctx.fillStyle = `rgba(255, 255, 220, ${sparkAlpha})`;
+      ctx.beginPath();
+      ctx.arc(sparkX, sparkY, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
   },
 
   drawRange(context: SpriteRenderContext, tower: Tower, isSelected?: boolean): void {
