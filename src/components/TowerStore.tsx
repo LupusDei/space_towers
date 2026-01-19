@@ -8,6 +8,10 @@ interface TowerStoreProps {
   waveCredits?: number;
   selectedTowerType: TowerType | null;
   onSelectTowerType: (type: TowerType | null) => void;
+  /** Array of tower types the player has unlocked. Locked towers cannot be selected. */
+  unlockedTowers: TowerType[];
+  /** Callback when player attempts to unlock a tower */
+  onUnlockTower?: (type: TowerType) => void;
 }
 
 const towerTypes = Object.values(TowerType) as TowerType[];
@@ -17,6 +21,8 @@ export default function TowerStore({
   waveCredits = 0,
   selectedTowerType,
   onSelectTowerType,
+  unlockedTowers,
+  onUnlockTower,
 }: TowerStoreProps) {
   return (
     <div style={styles.container}>
@@ -27,27 +33,61 @@ export default function TowerStore({
       <div style={styles.grid}>
         {towerTypes.map((type) => {
           const stats = TOWER_STATS[type];
+          const isUnlocked = unlockedTowers.includes(type);
           const canAfford = credits >= stats.cost;
+          const canAffordUnlock = waveCredits >= stats.unlockCost;
           const isSelected = selectedTowerType === type;
+          const isDisabled = !isUnlocked || !canAfford;
 
           return (
-            <button
-              key={type}
-              style={{
-                ...styles.towerCell,
-                ...(isSelected ? styles.towerCellSelected : {}),
-                ...(canAfford ? {} : styles.towerCellDisabled),
-              }}
-              disabled={!canAfford}
-              onClick={() => onSelectTowerType(isSelected ? null : type)}
-              aria-label={`${stats.name} - ${stats.cost} credits`}
-            >
-              <div style={styles.iconContainer}>
-                <TowerIcon type={type} size={48} />
-              </div>
-              <div style={styles.towerName}>{stats.name}</div>
-              <div style={styles.towerCost}>${stats.cost}</div>
-            </button>
+            <div key={type} style={styles.towerCellWrapper}>
+              <button
+                style={{
+                  ...styles.towerCell,
+                  ...(isSelected ? styles.towerCellSelected : {}),
+                  ...(isDisabled ? styles.towerCellDisabled : {}),
+                  ...(isUnlocked ? {} : styles.towerCellLocked),
+                }}
+                disabled={isDisabled}
+                onClick={() => onSelectTowerType(isSelected ? null : type)}
+                aria-label={
+                  isUnlocked
+                    ? `${stats.name} - ${stats.cost} credits`
+                    : `${stats.name} - Locked (${stats.unlockCost} wave credits to unlock)`
+                }
+              >
+                <div style={styles.iconContainer}>
+                  <TowerIcon type={type} size={48} />
+                  {!isUnlocked && <div style={styles.lockOverlay}>🔒</div>}
+                </div>
+                <div style={styles.towerName}>{stats.name}</div>
+                {isUnlocked ? (
+                  <div style={styles.towerCost}>${stats.cost}</div>
+                ) : (
+                  <div style={styles.unlockCostDisplay}>
+                    <span style={styles.unlockLabel}>UNLOCK</span>
+                    <span style={styles.unlockCostValue}>{stats.unlockCost}</span>
+                  </div>
+                )}
+              </button>
+              {!isUnlocked && onUnlockTower && (
+                <button
+                  style={{
+                    ...styles.unlockButton,
+                    ...(canAffordUnlock ? styles.unlockButtonAfford : styles.unlockButtonCantAfford),
+                  }}
+                  disabled={!canAffordUnlock}
+                  onClick={() => onUnlockTower(type)}
+                  aria-label={
+                    canAffordUnlock
+                      ? `Unlock ${stats.name} for ${stats.unlockCost} wave credits`
+                      : `Cannot unlock ${stats.name} - need ${stats.unlockCost} wave credits`
+                  }
+                >
+                  🔓 {stats.unlockCost}
+                </button>
+              )}
+            </div>
           );
         })}
         {/* Empty cells for future towers (grid expands as needed) */}
@@ -124,12 +164,34 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'not-allowed',
     borderColor: colors.text.muted,
   },
+  towerCellLocked: {
+    filter: 'grayscale(0.5)',
+  },
+  towerCellWrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+  },
   iconContainer: {
+    position: 'relative',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     width: '56px',
     height: '56px',
+  },
+  lockOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: '4px',
+    fontSize: typography.fontSize.lg,
   },
   towerName: {
     fontSize: typography.fontSize.xs,
@@ -169,5 +231,48 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: typography.fontSize.xs,
     color: colors.text.muted,
     fontStyle: 'italic',
+  },
+  unlockCostDisplay: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '2px',
+  },
+  unlockLabel: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.text.muted,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  unlockCostValue: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.bold,
+    fontFamily: typography.fontFamily.mono,
+    color: colors.accent,
+  },
+  unlockButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '4px',
+    padding: `${spacing.xs} ${spacing.sm}`,
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontFamily: typography.fontFamily.mono,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
+    transition: 'all 0.15s ease',
+  },
+  unlockButtonAfford: {
+    backgroundColor: colors.success,
+    color: colors.background,
+  },
+  unlockButtonCantAfford: {
+    backgroundColor: colors.text.muted,
+    color: colors.text.secondary,
+    cursor: 'not-allowed',
+    opacity: 0.6,
   },
 };
