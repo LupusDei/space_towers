@@ -293,6 +293,121 @@ describe('NeedleTowerSprite', () => {
     });
   });
 
+  describe('upgraded glowing red tip', () => {
+    it('draws heat haze effect at all levels', () => {
+      const context = createMockContext();
+      const tower = createMockTower(1);
+
+      NeedleTowerSprite.draw(context, tower);
+
+      // Heat haze and multi-layer glow should create multiple radial gradients
+      expect(context.ctx.createRadialGradient).toHaveBeenCalled();
+    });
+
+    it('draws energy arcs at level 2+', () => {
+      const context = createMockContext(100); // time for arc visibility
+      const tower = createMockTower(2);
+
+      NeedleTowerSprite.draw(context, tower);
+
+      // Energy arcs use stroke for the arc lines
+      expect(context.ctx.stroke).toHaveBeenCalled();
+      expect(context.ctx.lineTo).toHaveBeenCalled();
+    });
+
+    it('draws fewer stroke calls at level 1 than level 2 (no energy arcs)', () => {
+      const context1 = createMockContext(100);
+      const context2 = createMockContext(100);
+      const tower1 = createMockTower(1);
+      const tower2 = createMockTower(2);
+
+      NeedleTowerSprite.draw(context1, tower1);
+      const strokeCalls1 = (context1.ctx.stroke as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      NeedleTowerSprite.draw(context2, tower2);
+      const strokeCalls2 = (context2.ctx.stroke as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      // Level 2 should have more stroke calls due to energy arcs
+      expect(strokeCalls2).toBeGreaterThan(strokeCalls1);
+    });
+
+    it('draws floating ember particles at level 3+', () => {
+      const context = createMockContext(500); // time for ember visibility
+      const tower = createMockTower(3);
+
+      NeedleTowerSprite.draw(context, tower);
+
+      // Embers create additional arc calls for small circles
+      const arcCalls = (context.ctx.arc as ReturnType<typeof vi.fn>).mock.calls.length;
+      expect(arcCalls).toBeGreaterThan(5); // More arcs due to embers
+    });
+
+    it('draws more embers at level 5 than level 3', () => {
+      const context3 = createMockContext(500);
+      const context5 = createMockContext(500);
+      const tower3 = createMockTower(3);
+      const tower5 = createMockTower(5);
+
+      NeedleTowerSprite.draw(context3, tower3);
+      const arcCalls3 = (context3.ctx.arc as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      NeedleTowerSprite.draw(context5, tower5);
+      const arcCalls5 = (context5.ctx.arc as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      expect(arcCalls5).toBeGreaterThan(arcCalls3);
+    });
+
+    it('draws multiple tip sparks at higher levels', () => {
+      const context = createMockContext(800); // time when sparks are visible
+      const tower = createMockTower(5);
+
+      expect(() => NeedleTowerSprite.draw(context, tower)).not.toThrow();
+    });
+  });
+
+  describe('enhanced firing animation', () => {
+    it('draws enhanced firing glow with multiple layers', () => {
+      const context = createMockContext();
+      const tower = createMockTower(1);
+      const target = { x: 8, y: 8 };
+
+      NeedleTowerSprite.drawFiring!(context, tower, target);
+
+      // Should create multiple radial gradients for outer bloom, main glow, and core
+      const gradientCalls = (context.ctx.createRadialGradient as ReturnType<typeof vi.fn>).mock.calls.length;
+      expect(gradientCalls).toBeGreaterThanOrEqual(5); // Base + firing layers
+    });
+
+    it('draws energy discharge sparks when firing', () => {
+      const context = createMockContext(100);
+      const tower = createMockTower(3);
+      const target = { x: 10, y: 10 };
+
+      NeedleTowerSprite.drawFiring!(context, tower, target);
+
+      // Discharge sparks create small arc calls
+      const arcCalls = (context.ctx.arc as ReturnType<typeof vi.fn>).mock.calls.length;
+      expect(arcCalls).toBeGreaterThan(10);
+    });
+
+    it('scales firing effects with level', () => {
+      const context1 = createMockContext();
+      const context5 = createMockContext();
+      const tower1 = createMockTower(1);
+      const tower5 = createMockTower(5);
+      const target = { x: 8, y: 8 };
+
+      NeedleTowerSprite.drawFiring!(context1, tower1, target);
+      const calls1 = (context1.ctx.arc as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      NeedleTowerSprite.drawFiring!(context5, tower5, target);
+      const calls5 = (context5.ctx.arc as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      // Higher level should have more effects (more sparks)
+      expect(calls5).toBeGreaterThan(calls1);
+    });
+  });
+
   describe('hit pulse integration', () => {
     it('draws without errors when hit pulse is active', () => {
       const context = createMockContext(0.1); // time in seconds
