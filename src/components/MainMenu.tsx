@@ -1,4 +1,5 @@
 import Button from './Button';
+import DottedSurface from './ui/DottedSurface';
 import { colors, spacing, typography } from '../styles/theme';
 
 interface MainMenuProps {
@@ -14,6 +15,9 @@ export default function MainMenu({ onStartGame }: MainMenuProps) {
         <Button size="large" onClick={onStartGame}>
           Start Game
         </Button>
+        <div style={styles.animationContainer}>
+          <DottedSurface width={400} height={100} color={colors.accent} />
+        </div>
       </div>
     </div>
   );
@@ -61,5 +65,8 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.text.secondary,
     letterSpacing: '2px',
     marginBottom: spacing.lg,
+  },
+  animationContainer: {
+    marginTop: '20px',
   },
 };
