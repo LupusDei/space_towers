@@ -46,6 +46,10 @@ export const TowerType = {
 } as const;
 export type TowerType = (typeof TowerType)[keyof typeof TowerType];
 
+// Tower behavior types for extensibility
+export type FiringMode = 'hitscan' | 'projectile' | 'pulse' | 'storm';
+export type TargetingMode = 'default' | 'highest_hp';
+
 export const EnemyType = {
   SCOUT: 'scout',
   FIGHTER: 'fighter',
@@ -348,6 +352,9 @@ export interface TowerStats {
   range: number;
   fireRate: number;
   unlockCost: number; // Wave credits required to unlock this tower
+  // Behavior properties (for extensibility - avoids type checks in combat code)
+  firingMode: FiringMode; // How the tower fires: hitscan, projectile, pulse, or storm
+  targetingMode?: TargetingMode; // How the tower selects targets (default: 'default')
   // Leveling system
   maxLevel: number;
   upgradeCosts: number[]; // Cost to upgrade to each level (index 0 = cost for level 2)

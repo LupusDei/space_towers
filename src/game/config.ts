@@ -76,6 +76,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     range: 150,
     fireRate: 0.5, // seconds between shots
     unlockCost: 0, // Starter tower
+    firingMode: 'hitscan',
     // Leveling: cheap, fast upgrades
     maxLevel: 5,
     upgradeCosts: [30, 45, 70, 100], // Total to max: 245
@@ -93,6 +94,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     range: 200,
     fireRate: 2.0,
     unlockCost: 0, // Starter tower
+    firingMode: 'projectile',
     // Leveling: expensive but powerful AoE
     maxLevel: 5,
     upgradeCosts: [60, 90, 135, 200], // Total to max: 485
@@ -113,6 +115,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     range: 120,
     fireRate: 0.8,
     unlockCost: 0, // Starter tower
+    firingMode: 'hitscan',
     // Leveling: chain lightning specialist
     maxLevel: 5,
     upgradeCosts: [45, 70, 105, 155], // Total to max: 375
@@ -133,6 +136,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     range: 175,
     fireRate: 2.5,
     unlockCost: 0, // Starter tower
+    firingMode: 'projectile',
     // Leveling: heavy single-target damage
     maxLevel: 5,
     upgradeCosts: [75, 115, 170, 250], // Total to max: 610
@@ -150,6 +154,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     range: 100,
     fireRate: 1.0,
     unlockCost: 0, // Starter tower
+    firingMode: 'pulse',
     // Leveling: utility/slow tower
     maxLevel: 5,
     upgradeCosts: [90, 135, 200, 300], // Total to max: 725
@@ -172,6 +177,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     range: 200,
     fireRate: 4.0, // cooldown between storms
     unlockCost: 0,
+    firingMode: 'storm',
     // Leveling: area denial tower
     maxLevel: 5,
     upgradeCosts: [120, 180, 270, 400], // Total to max: 970
@@ -194,6 +200,8 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     range: 350,
     fireRate: 2.0,
     unlockCost: 10,
+    firingMode: 'hitscan',
+    targetingMode: 'highest_hp',
     maxLevel: 5,
     upgradeCosts: [85, 130, 195, 290],
     damagePerLevel: 35,
@@ -210,6 +218,7 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     range: 100,
     fireRate: 0.25, // Very fast base fire rate (4 shots/sec)
     unlockCost: 20,
+    firingMode: 'projectile',
     // Leveling: rapid-fire specialist with diminishing returns
     // Already fast, so fire rate gains are modest to avoid overpowered attack speed
     maxLevel: 5,

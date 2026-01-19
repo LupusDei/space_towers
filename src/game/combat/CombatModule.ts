@@ -5,7 +5,6 @@ import type {
   Tower,
   Enemy,
   Point,
-  TowerType,
   GameModule,
   QueryInterface,
   CommandInterface,
@@ -70,26 +69,6 @@ interface CombatState {
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-function isHitscanTower(type: TowerType): boolean {
-  return type === TT.LASER || type === TT.TESLA;
-}
-
-function isProjectileTower(type: TowerType): boolean {
-  return type === TT.MISSILE || type === TT.CANNON;
-}
-
-function isGravityTower(type: TowerType): boolean {
-  return type === TT.GRAVITY;
-}
-
-function isSniperTower(type: TowerType): boolean {
-  return type === TT.SNIPER;
-}
-
-function isStormTower(type: TowerType): boolean {
-  return type === TT.STORM;
-}
 
 function towerPositionToPixels(position: Point): Point {
   return {
@@ -239,8 +218,9 @@ class CombatModuleImpl implements GameModule {
       const towerData = this.query.getTowerById(towerId);
       if (!towerData) continue;
 
-      // Use special targeting for sniper towers (prioritize highest HP)
-      const target = isSniperTower(towerData.type)
+      // Use targeting mode from config (e.g., 'highest_hp' for sniper)
+      const stats = TOWER_STATS[towerData.type];
+      const target = stats.targetingMode === 'highest_hp'
         ? findSniperTarget(towerData, this.query)
         : findTarget(towerData, this.query);
       if (!target) {
@@ -259,23 +239,27 @@ class CombatModuleImpl implements GameModule {
       const fireResult = tower.fire(currentTime);
 
       if (fireResult) {
-        if (isHitscanTower(towerData.type)) {
-          this.handleHitscanFire(towerData, target, currentTime);
-        } else if (isProjectileTower(towerData.type)) {
-          this.handleProjectileFire(towerData, target, currentTime);
-        } else if (isGravityTower(towerData.type)) {
-          this.handleGravityFire(towerData, target, currentTime);
-        } else if (isSniperTower(towerData.type)) {
-          this.handleSniperFire(towerData, target, currentTime);
-        } else if (isStormTower(towerData.type)) {
-          this.handleStormFire(towerData, target, currentTime);
+        // Use firingMode from config to determine firing behavior
+        switch (stats.firingMode) {
+          case 'hitscan':
+            this.handleHitscanFire(towerData, target, currentTime);
+            break;
+          case 'projectile':
+            this.handleProjectileFire(towerData, target, currentTime);
+            break;
+          case 'pulse':
+            this.handleGravityFire(towerData, target, currentTime);
+            break;
+          case 'storm':
+            this.handleStormFire(towerData, target, currentTime);
+            break;
         }
       }
     }
   }
 
   // ==========================================================================
-  // Hitscan Towers (Laser, Tesla)
+  // Hitscan Towers (Laser, Tesla, Sniper)
   // ==========================================================================
 
   private handleHitscanFire(tower: Tower, target: Enemy, currentTime: number): void {
@@ -286,14 +270,16 @@ class CombatModuleImpl implements GameModule {
     const validTarget = this.query.getEnemyById(target.id);
     if (!validTarget) return;
 
-    if (tower.type === TT.LASER) {
-      this.fireLaser(tower, validTarget, currentTime);
-    } else if (tower.type === TT.TESLA) {
+    // Use chainCount property to determine if tower has chain lightning
+    const stats = TOWER_STATS[tower.type];
+    if (stats.chainCount) {
       this.fireTesla(tower, validTarget, currentTime);
+    } else {
+      this.fireHitscan(tower, validTarget, currentTime);
     }
   }
 
-  private fireLaser(tower: Tower, target: Enemy, currentTime: number): void {
+  private fireHitscan(tower: Tower, target: Enemy, currentTime: number): void {
     // Capture target position BEFORE applying damage, since applyDamage may kill
     // the enemy and release it to the pool (which resets position to 0,0)
     const targetPosition = { ...target.position };
@@ -302,9 +288,12 @@ class CombatModuleImpl implements GameModule {
     const damage = calculateDamage(tower.damage, target.armor);
     this.applyDamage(target, damage, tower.id);
 
+    // Determine visual effect type based on tower type
+    const effectType: 'laser' | 'sniper' = tower.type === TT.SNIPER ? 'sniper' : 'laser';
+
     // Create visual effect using captured position
     this.state.hitscanEffects.push({
-      type: 'laser',
+      type: effectType,
       towerId: tower.id,
       towerPosition: { ...tower.position },
       targetPosition,
@@ -316,7 +305,7 @@ class CombatModuleImpl implements GameModule {
     eventBus.emit(
       createEvent('PROJECTILE_FIRED', {
         projectile: {
-          id: `laser_${tower.id}_${currentTime}`,
+          id: `${effectType}_${tower.id}_${currentTime}`,
           sourceId: tower.id,
           targetId: target.id,
           towerType: tower.type,
@@ -466,52 +455,6 @@ class CombatModuleImpl implements GameModule {
   }
 
   // ==========================================================================
-  // Sniper Tower
-  // ==========================================================================
-
-  private handleSniperFire(tower: Tower, target: Enemy, currentTime: number): void {
-    // Validate target still exists
-    const validTarget = this.query?.getEnemyById(target.id);
-    if (!validTarget) return;
-
-    // Capture target position BEFORE applying damage, since applyDamage may kill
-    // the enemy and release it to the pool (which resets position to 0,0)
-    const targetPosition = { ...validTarget.position };
-
-    // Apply instant damage (hitscan - no projectile travel)
-    const damage = calculateDamage(tower.damage, validTarget.armor);
-    this.applyDamage(validTarget, damage, tower.id);
-
-    // Create visual effect using captured position
-    this.state.hitscanEffects.push({
-      type: 'sniper',
-      towerId: tower.id,
-      towerPosition: { ...tower.position },
-      targetPosition,
-      startTime: currentTime,
-      duration: COMBAT_CONFIG.HITSCAN_EFFECT_DURATION,
-    });
-
-    // Emit projectile fired event (for audio/other systems)
-    eventBus.emit(
-      createEvent('PROJECTILE_FIRED', {
-        projectile: {
-          id: `sniper_${tower.id}_${currentTime}`,
-          sourceId: tower.id,
-          targetId: target.id,
-          towerType: tower.type,
-          position: towerPositionToPixels(tower.position),
-          velocity: { x: 0, y: 0 },
-          damage: tower.damage,
-          speed: 0,
-          piercing: false,
-          aoe: 0,
-        },
-      })
-    );
-  }
-
-  // ==========================================================================
   // Storm Tower
   // ==========================================================================
 
@@ -578,9 +521,9 @@ class CombatModuleImpl implements GameModule {
     // Acquire projectile from pool
     const projectile = projectilePool.acquire();
 
-    // Determine if this is a splash projectile
-    const isSplash = tower.type === TT.MISSILE;
-    const aoeRadius = isSplash ? COMBAT_CONFIG.MISSILE_SPLASH_RADIUS * GAME_CONFIG.CELL_SIZE : 0;
+    // Determine splash radius from tower config (0 if not a splash tower)
+    const stats = TOWER_STATS[tower.type];
+    const aoeRadius = stats.splashRadius ? stats.splashRadius * GAME_CONFIG.CELL_SIZE : 0;
 
     // Calculate projectile start position based on tower type
     // Cannon fires from barrel tip (top middle), missile from center
