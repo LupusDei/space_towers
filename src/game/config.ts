@@ -153,8 +153,13 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     maxLevel: 5,
     upgradeCosts: [90, 135, 200, 300], // Total to max: 725
     damagePerLevel: 3,
-    rangePerLevel: 8,
+    rangePerLevel: 10,
     fireRatePerLevel: -0.05,
+    // Special: slow effect (scales with level)
+    slowDuration: 1.0, // 1 second base slow
+    slowDurationPerLevel: 0.2, // +0.2s per level (max 1.8s at level 5)
+    slowMultiplier: 0.5, // 50% slow (enemies move at half speed)
+    slowMultiplierPerLevel: -0.05, // 5% stronger slow per level (max 70% slow at level 5)
   },
 
   [TowerType.STORM]: {

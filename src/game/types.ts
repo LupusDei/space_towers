@@ -361,6 +361,11 @@ export interface TowerStats {
   chainCountPerLevel?: number; // Tesla tower chain increase per level
   stormDuration?: number; // Storm tower effect duration (seconds)
   stormDurationPerLevel?: number; // Storm tower duration increase per level
+  // Gravity tower slow effect
+  slowDuration?: number; // Gravity tower base slow duration (seconds)
+  slowDurationPerLevel?: number; // Gravity tower slow duration increase per level
+  slowMultiplier?: number; // Gravity tower base slow strength (0.5 = 50% speed)
+  slowMultiplierPerLevel?: number; // Gravity tower slow improvement per level (negative = stronger slow)
 }
 
 // ============================================================================

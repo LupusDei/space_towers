@@ -385,6 +385,14 @@ class CombatModuleImpl implements GameModule {
     // Get tower position in pixels for range calculation
     const towerPixelPos = towerPositionToPixels(tower.position);
 
+    // Calculate slow stats based on tower level
+    const stats = TOWER_STATS[tower.type];
+    const levelBonus = (tower.level || 1) - 1; // Levels 2-5 give 1-4 bonuses
+    const slowDuration = (stats.slowDuration ?? COMBAT_CONFIG.GRAVITY_SLOW_DURATION) +
+      levelBonus * (stats.slowDurationPerLevel ?? 0);
+    const slowMultiplier = (stats.slowMultiplier ?? COMBAT_CONFIG.GRAVITY_SLOW_MULTIPLIER) +
+      levelBonus * (stats.slowMultiplierPerLevel ?? 0);
+
     // AOE pulse: damage all enemies in range
     const enemiesInRange = this.query.getEnemiesInRange(tower.position, tower.range);
 
@@ -397,13 +405,13 @@ class CombatModuleImpl implements GameModule {
       const damage = calculateDamage(tower.damage, validEnemy.armor);
       this.applyDamage(validEnemy, damage, tower.id);
 
-      // Apply slow effect (50% slow for 1 second)
+      // Apply slow effect (scales with tower level)
       // Only apply if enemy is still alive after damage
       if (validEnemy.health > 0) {
         this.commands.applySlow(
           validEnemy.id,
-          COMBAT_CONFIG.GRAVITY_SLOW_MULTIPLIER,
-          COMBAT_CONFIG.GRAVITY_SLOW_DURATION
+          slowMultiplier,
+          slowDuration
         );
       }
     }
