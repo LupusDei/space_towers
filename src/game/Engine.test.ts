@@ -1113,6 +1113,132 @@ describe('Engine Integration', () => {
   });
 
   // ==========================================================================
+  // Storm Effect System Tests
+  // ==========================================================================
+
+  describe('Storm Effect System', () => {
+    beforeEach(() => {
+      startGameInPlanning();
+    });
+
+    it('addStormEffect creates a storm effect', () => {
+      const stormsBefore = engine.getStormEffects();
+      expect(stormsBefore.length).toBe(0);
+
+      engine.addStormEffect({ x: 200, y: 200 }, 100, 3, 10);
+
+      const stormsAfter = engine.getStormEffects();
+      expect(stormsAfter.length).toBe(1);
+      expect(stormsAfter[0].position.x).toBe(200);
+      expect(stormsAfter[0].position.y).toBe(200);
+      expect(stormsAfter[0].radius).toBe(100);
+      expect(stormsAfter[0].duration).toBe(3);
+      expect(stormsAfter[0].damagePerSecond).toBe(10);
+    });
+
+    it('storm effect damages enemies within radius', () => {
+      engine.startWave();
+
+      // Add enemy at position (220, 220) - within storm radius
+      const enemy = engine['enemyPool'].acquire();
+      enemy.type = EnemyType.SCOUT;
+      enemy.health = 100;
+      enemy.maxHealth = 100;
+      enemy.position = { x: 220, y: 220 };
+      engine.addEnemy(enemy);
+
+      // Create storm at (200, 200) with radius 100
+      engine.addStormEffect({ x: 200, y: 200 }, 100, 3, 10);
+
+      const initialHealth = enemy.health;
+
+      // Simulate one frame update (0.1 seconds = 1 damage at 10 DPS)
+      engine['updateStormEffects'](0.1);
+
+      // Enemy should take damage
+      expect(engine.getEnemyById(enemy.id)?.health).toBeLessThan(initialHealth);
+    });
+
+    it('storm effect does not damage enemies outside radius', () => {
+      engine.startWave();
+
+      // Add enemy at position (500, 500) - far outside storm radius
+      const enemy = engine['enemyPool'].acquire();
+      enemy.type = EnemyType.SCOUT;
+      enemy.health = 100;
+      enemy.maxHealth = 100;
+      enemy.position = { x: 500, y: 500 };
+      engine.addEnemy(enemy);
+
+      // Create storm at (200, 200) with radius 100
+      engine.addStormEffect({ x: 200, y: 200 }, 100, 3, 10);
+
+      const initialHealth = enemy.health;
+
+      // Simulate one frame update
+      engine['updateStormEffects'](0.1);
+
+      // Enemy should NOT take damage
+      expect(engine.getEnemyById(enemy.id)?.health).toBe(initialHealth);
+    });
+
+    it('expired storm effects are removed', () => {
+      engine.startWave();
+
+      // Create storm with 1 second duration
+      engine.addStormEffect({ x: 200, y: 200 }, 100, 1, 10);
+
+      expect(engine.getStormEffects().length).toBe(1);
+
+      // Advance time past storm duration
+      engine['state'].time = 2000; // 2 seconds in ms
+
+      // Update storm effects - should remove expired storm
+      engine['updateStormEffects'](0.1);
+
+      expect(engine.getStormEffects().length).toBe(0);
+    });
+
+    it('storm kills enemy and awards credits', () => {
+      engine.startWave();
+
+      const initialCredits = engine.getCredits();
+
+      // Add weak enemy within storm radius
+      const enemy = engine['enemyPool'].acquire();
+      enemy.type = EnemyType.SCOUT;
+      enemy.health = 5; // Very low health
+      enemy.maxHealth = 5;
+      enemy.reward = 10;
+      enemy.position = { x: 200, y: 200 };
+      engine.addEnemy(enemy);
+
+      expect(engine.getEnemies().length).toBe(1);
+
+      // Create storm with high damage
+      engine.addStormEffect({ x: 200, y: 200 }, 100, 3, 100);
+
+      // Simulate update - should kill enemy
+      engine['updateStormEffects'](0.1);
+
+      // Enemy should be dead and removed
+      expect(engine.getEnemies().length).toBe(0);
+      // Credits should increase by reward
+      expect(engine.getCredits()).toBe(initialCredits + 10);
+    });
+
+    it('CommandInterface exposes addStormEffect method', () => {
+      const commands = engine.getCommandInterface();
+
+      expect(engine.getStormEffects().length).toBe(0);
+
+      commands.addStormEffect({ x: 100, y: 100 }, 50, 2, 5);
+
+      expect(engine.getStormEffects().length).toBe(1);
+    });
+  });
+
+  // ==========================================================================
   // Reset and Cleanup Tests
   // ==========================================================================
 

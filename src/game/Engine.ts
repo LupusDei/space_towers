@@ -416,6 +416,9 @@ class GameEngine {
       }
     }
 
+    // Update storm effects (damage enemies in AOE)
+    this.updateStormEffects(dt);
+
     // Check for wave completion (all spawned and all killed)
     if (this.waveController.spawningComplete && this.state.enemies.size === 0) {
       this.endWave();
@@ -501,6 +504,96 @@ class GameEngine {
     projectile.position.y += dy * ratio;
 
     return false;
+  }
+
+  /**
+   * Update all active storm effects - apply damage to enemies and remove expired storms.
+   * @param dt - Delta time in seconds
+   */
+  private updateStormEffects(dt: number): void {
+    const currentTimeSeconds = this.state.time / 1000;
+    const expiredStorms: string[] = [];
+
+    for (const [stormId, storm] of this.state.stormEffects) {
+      // Check if storm has expired
+      if (storm.update(currentTimeSeconds)) {
+        expiredStorms.push(stormId);
+        continue;
+      }
+
+      // Apply damage to all enemies within the storm's radius
+      const damage = storm.calculateDamage(dt);
+      for (const enemy of this.state.enemies.values()) {
+        if (storm.containsPoint(enemy.position)) {
+          // Apply damage (no armor reduction for storm - it's area denial)
+          enemy.health -= damage;
+
+          // Emit damage number event
+          const damagePos = {
+            x: enemy.position.x + GAME_CONFIG.CELL_SIZE / 2,
+            y: enemy.position.y + GAME_CONFIG.CELL_SIZE / 2,
+          };
+          this.eventBus.emit(createEvent('DAMAGE_NUMBER_REQUESTED', {
+            damage: Math.round(damage),
+            position: damagePos,
+            time: this.state.time,
+          }));
+
+          // Check if enemy was killed
+          if (enemy.health <= 0) {
+            this.enemyKilledByStorm(enemy, stormId);
+          }
+        }
+      }
+    }
+
+    // Remove expired storms
+    for (const stormId of expiredStorms) {
+      this.state.stormEffects.delete(stormId);
+    }
+
+    if (expiredStorms.length > 0) {
+      this.stateNotifier.notify();
+    }
+  }
+
+  /**
+   * Handle enemy killed by storm effect.
+   * Similar to enemyKilled but with storm-specific source tracking.
+   */
+  private enemyKilledByStorm(enemy: Enemy, stormId: string): void {
+    this.state.enemies.delete(enemy.id);
+    this.enemiesCacheDirty = true;
+    this.spatialHash.remove(enemy);
+    this.invalidateSortedEnemiesCache();
+    this.state.credits += enemy.reward;
+    this.state.score += enemy.reward;
+
+    // Request explosion visual effect
+    const deathPos = {
+      x: enemy.position.x + GAME_CONFIG.CELL_SIZE / 2,
+      y: enemy.position.y + GAME_CONFIG.CELL_SIZE / 2,
+    };
+    this.eventBus.emit(createEvent('EXPLOSION_REQUESTED', {
+      position: deathPos,
+      enemyType: enemy.type,
+      time: this.state.time,
+    }));
+
+    // Request gold number visual effect
+    this.eventBus.emit(createEvent('GOLD_NUMBER_REQUESTED', {
+      amount: enemy.reward,
+      position: deathPos,
+      time: this.state.time,
+    }));
+
+    this.eventBus.emit(createEvent('ENEMY_KILLED', { enemy, towerId: stormId, reward: enemy.reward }));
+    this.eventBus.emit(createEvent('CREDITS_CHANGED', { amount: enemy.reward, newTotal: this.state.credits }));
+
+    console.log(`[Storm Kill] Enemy ${enemy.type} killed by storm ${stormId} → +$${enemy.reward}`);
+
+    this.enemyPool.release(enemy);
+    this.stateNotifier.notify();
   }
 
   private handleSpawnEnemy(type: EnemyType, health: number): Enemy | null {
