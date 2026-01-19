@@ -421,6 +421,7 @@ class CombatModuleImpl implements GameModule {
       createEvent('GRAVITY_PULSE_REQUESTED', {
         position: towerPixelPos,
         time: currentTime,
+        level: tower.level || 1,
       })
     );
 

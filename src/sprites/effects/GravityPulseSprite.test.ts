@@ -36,6 +36,22 @@ describe('GravityPulseSprite', () => {
       expect(typeof sprite.draw).toBe('function');
     });
 
+    it('creates sprite with default level 1', () => {
+      const sprite = createGravityPulseSprite();
+      const context = createMockContext();
+      const position = { x: 5, y: 5 };
+
+      expect(() => sprite.draw(context, position, 0.5)).not.toThrow();
+    });
+
+    it('creates sprite with explicit level parameter', () => {
+      for (let level = 1; level <= 5; level++) {
+        const sprite = createGravityPulseSprite(level);
+        expect(sprite).toBeDefined();
+        expect(typeof sprite.draw).toBe('function');
+      }
+    });
+
     it('draws without errors at progress 0', () => {
       const sprite = createGravityPulseSprite();
       const context = createMockContext();
@@ -69,6 +85,56 @@ describe('GravityPulseSprite', () => {
       sprite.draw(context, position, 0.5);
       expect(context.ctx.globalAlpha).toBe(1);
     });
+
+    it('draws level 2 with distortion waves', () => {
+      const sprite = createGravityPulseSprite(2);
+      const context = createMockContext();
+      const position = { x: 5, y: 5 };
+
+      expect(() => sprite.draw(context, position, 0.3)).not.toThrow();
+      // Distortion waves use additional stroke calls
+      expect(context.ctx.stroke).toHaveBeenCalled();
+    });
+
+    it('draws level 3 with extra ring', () => {
+      const sprite = createGravityPulseSprite(3);
+      const context = createMockContext();
+      const position = { x: 5, y: 5 };
+
+      expect(() => sprite.draw(context, position, 0.4)).not.toThrow();
+      expect(context.ctx.arc).toHaveBeenCalled();
+    });
+
+    it('draws level 4 with particles', () => {
+      const sprite = createGravityPulseSprite(4);
+      const context = createMockContext();
+      const position = { x: 5, y: 5 };
+
+      expect(() => sprite.draw(context, position, 0.3)).not.toThrow();
+      // Particles use fill calls
+      expect(context.ctx.fill).toHaveBeenCalled();
+    });
+
+    it('draws level 5 with quantum ripple', () => {
+      const sprite = createGravityPulseSprite(5);
+      const context = createMockContext();
+      const position = { x: 5, y: 5 };
+
+      expect(() => sprite.draw(context, position, 0.3)).not.toThrow();
+      expect(context.ctx.stroke).toHaveBeenCalled();
+    });
+
+    it('clamps level to valid range', () => {
+      // Level below 1 should work (clamped to 1)
+      const spriteBelow = createGravityPulseSprite(0);
+      const context = createMockContext();
+      const position = { x: 5, y: 5 };
+      expect(() => spriteBelow.draw(context, position, 0.5)).not.toThrow();
+
+      // Level above 5 should work (clamped to 5)
+      const spriteAbove = createGravityPulseSprite(10);
+      expect(() => spriteAbove.draw(context, position, 0.5)).not.toThrow();
+    });
   });
 
   describe('gravityPulseManager', () => {
@@ -88,6 +154,34 @@ describe('GravityPulseSprite', () => {
       expect(active).toHaveLength(1);
       expect(active[0].position).toEqual(position);
       expect(active[0].startTime).toBe(1000);
+    });
+
+    it('spawns a pulse with default level 1', () => {
+      gravityPulseManager.spawn({ x: 100, y: 100 }, 1000);
+
+      const active = gravityPulseManager.getActive();
+      expect(active).toHaveLength(1);
+      expect(active[0].level).toBe(1);
+    });
+
+    it('spawns a pulse with explicit level', () => {
+      gravityPulseManager.spawn({ x: 100, y: 100 }, 1000, 3);
+
+      const active = gravityPulseManager.getActive();
+      expect(active).toHaveLength(1);
+      expect(active[0].level).toBe(3);
+    });
+
+    it('spawns multiple pulses with different levels', () => {
+      gravityPulseManager.spawn({ x: 100, y: 100 }, 1000, 1);
+      gravityPulseManager.spawn({ x: 200, y: 200 }, 1100, 3);
+      gravityPulseManager.spawn({ x: 300, y: 300 }, 1200, 5);
+
+      const active = gravityPulseManager.getActive();
+      expect(active).toHaveLength(3);
+      expect(active[0].level).toBe(1);
+      expect(active[1].level).toBe(3);
+      expect(active[2].level).toBe(5);
     });
 
     it('spawns multiple pulses', () => {

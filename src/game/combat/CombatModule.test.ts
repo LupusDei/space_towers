@@ -1198,10 +1198,11 @@ describe('Gravity Tower AOE', () => {
     expect(slowedEnemies.length).toBe(0);
   });
 
-  it('should emit GRAVITY_PULSE_REQUESTED event', () => {
+  it('should emit GRAVITY_PULSE_REQUESTED event with level', () => {
     const tower = createMockTower({
       type: TowerType.GRAVITY,
       position: { x: 5, y: 5 },
+      level: 3,
     });
 
     const enemy = createMockEnemy({
@@ -1209,8 +1210,10 @@ describe('Gravity Tower AOE', () => {
     });
 
     let pulseEventReceived = false;
-    const unsubscribe = eventBus.on('GRAVITY_PULSE_REQUESTED', () => {
+    let eventLevel: number | undefined;
+    const unsubscribe = eventBus.on('GRAVITY_PULSE_REQUESTED', (event) => {
       pulseEventReceived = true;
+      eventLevel = event.payload.level;
     });
 
     const query = createMockQuery([tower], [enemy]);
@@ -1218,6 +1221,7 @@ describe('Gravity Tower AOE', () => {
     combatModule.update(0.1);
 
     expect(pulseEventReceived).toBe(true);
+    expect(eventLevel).toBe(3);
     unsubscribe();
   });
 

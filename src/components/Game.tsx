@@ -93,7 +93,7 @@ export default function Game() {
       spawnGoldNumber(event.payload.amount, event.payload.position, event.payload.time);
     });
     const unsubGravityPulse = eventBus.on('GRAVITY_PULSE_REQUESTED', (event) => {
-      gravityPulseManager.spawn(event.payload.position, event.payload.time);
+      gravityPulseManager.spawn(event.payload.position, event.payload.time, event.payload.level);
     });
 
     // Start the game automatically for now

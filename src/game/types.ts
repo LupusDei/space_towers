@@ -275,6 +275,7 @@ export interface GoldNumberRequestedEvent extends GameEvent<{
 export interface GravityPulseRequestedEvent extends GameEvent<{
   position: Point;
   time: number;
+  level: number;
 }> {
   type: 'GRAVITY_PULSE_REQUESTED';
 }
