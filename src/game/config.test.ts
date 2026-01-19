@@ -350,6 +350,99 @@ describe('TOWER_STATS', () => {
     });
   });
 
+  describe('GATLING tower', () => {
+    const gatlingStats = TOWER_STATS[TowerType.GATLING];
+
+    it('should have correct cost', () => {
+      expect(gatlingStats.cost).toBe(85);
+    });
+
+    it('should have correct damage', () => {
+      expect(gatlingStats.damage).toBe(5);
+    });
+
+    it('should have correct range', () => {
+      expect(gatlingStats.range).toBe(115);
+    });
+
+    it('should have extremely fast fire rate', () => {
+      expect(gatlingStats.fireRate).toBe(0.12);
+    });
+
+    it('should have correct unlock cost', () => {
+      expect(gatlingStats.unlockCost).toBe(15);
+    });
+
+    it('should have correct type', () => {
+      expect(gatlingStats.type).toBe(TowerType.GATLING);
+    });
+
+    it('should have correct name', () => {
+      expect(gatlingStats.name).toBe('Gatling Tower');
+    });
+
+    describe('level-up stats', () => {
+      it('should have correct damage per level', () => {
+        expect(gatlingStats.damagePerLevel).toBe(3);
+      });
+
+      it('should have correct range per level', () => {
+        expect(gatlingStats.rangePerLevel).toBe(10);
+      });
+
+      it('should have correct fire rate improvement', () => {
+        expect(gatlingStats.fireRatePerLevel).toBe(-0.008);
+      });
+
+      it('should have correct upgrade costs', () => {
+        expect(gatlingStats.upgradeCosts).toEqual([95, 145, 215, 320]);
+      });
+
+      it('should have correct max level', () => {
+        expect(gatlingStats.maxLevel).toBe(5);
+      });
+
+      it('should have higher damage at max level', () => {
+        // Level 5: 5 + (4 * 3) = 17 damage
+        const maxLevelDamage = gatlingStats.damage + (gatlingStats.maxLevel - 1) * gatlingStats.damagePerLevel;
+        expect(maxLevelDamage).toBe(17);
+      });
+
+      it('should have extended range at max level', () => {
+        // Level 5: 115 + (4 * 10) = 155 range
+        const maxLevelRange = gatlingStats.range + (gatlingStats.maxLevel - 1) * gatlingStats.rangePerLevel;
+        expect(maxLevelRange).toBe(155);
+      });
+
+      it('should have faster fire rate at max level', () => {
+        // Level 5: 0.12 - (4 * 0.008) = 0.088s between shots (11.36 shots/sec)
+        const maxLevelFireRate = gatlingStats.fireRate + (gatlingStats.maxLevel - 1) * gatlingStats.fireRatePerLevel;
+        expect(maxLevelFireRate).toBeCloseTo(0.088, 3);
+      });
+
+      it('should have total upgrade cost appropriate for rapid-fire tower', () => {
+        // Total cost to max: 85 (base) + 95 + 145 + 215 + 320 = 860
+        const totalCost = gatlingStats.cost + gatlingStats.upgradeCosts.reduce((a, b) => a + b, 0);
+        expect(totalCost).toBe(860);
+      });
+
+      it('should exceed Cannon tower DPS at max level', () => {
+        // Gatling Level 5 DPS: 17 / 0.088 ≈ 193
+        const gatlingMaxDamage = gatlingStats.damage + (gatlingStats.maxLevel - 1) * gatlingStats.damagePerLevel;
+        const gatlingMaxFireRate = gatlingStats.fireRate + (gatlingStats.maxLevel - 1) * gatlingStats.fireRatePerLevel;
+        const gatlingDps = gatlingMaxDamage / gatlingMaxFireRate;
+
+        // Cannon Level 5 DPS: 130 / 2.02 ≈ 64
+        const cannonStats = TOWER_STATS[TowerType.CANNON];
+        const cannonMaxDamage = cannonStats.damage + (cannonStats.maxLevel - 1) * cannonStats.damagePerLevel;
+        const cannonMaxFireRate = cannonStats.fireRate + (cannonStats.maxLevel - 1) * cannonStats.fireRatePerLevel;
+        const cannonDps = cannonMaxDamage / cannonMaxFireRate;
+
+        expect(gatlingDps).toBeGreaterThan(cannonDps);
+      });
+    });
+  });
+
   describe('all tower types', () => {
     const towerTypes = Object.values(TowerType) as TowerType[];
 
