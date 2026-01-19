@@ -1484,4 +1484,72 @@ describe('Storm Tower', () => {
 
     expect(stormCreated).toBe(false);
   });
+
+  it('should create storm cast effect for visual animation when firing', () => {
+    const tower = createMockTower({
+      type: TowerType.STORM,
+      damage: 10,
+      range: 200,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      position: { x: 220, y: 220 },
+    });
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 1000,
+      applySlow: () => {},
+      addStormEffect: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    const stormCastEffects = combatModule.getStormCastEffects();
+    expect(stormCastEffects.length).toBe(1);
+    expect(stormCastEffects[0].towerId).toBe(tower.id);
+    expect(stormCastEffects[0].towerPosition).toEqual(tower.position);
+    expect(stormCastEffects[0].targetPosition).toEqual(enemy.position);
+    expect(stormCastEffects[0].startTime).toBe(1000);
+  });
+
+  it('should clean up storm cast effects after duration expires', () => {
+    const tower = createMockTower({
+      type: TowerType.STORM,
+      damage: 10,
+      range: 200,
+      position: { x: 5, y: 5 },
+    });
+
+    const enemy = createMockEnemy({
+      position: { x: 220, y: 220 },
+    });
+
+    let currentTime = 0;
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => currentTime,
+      applySlow: () => {},
+      addStormEffect: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+
+    // Fire the tower
+    combatModule.update(0.1);
+    expect(combatModule.getStormCastEffects().length).toBe(1);
+
+    // Move time past the effect duration (150ms)
+    currentTime = 200;
+    combatModule.update(0.1);
+    expect(combatModule.getStormCastEffects().length).toBe(0);
+  });
 });

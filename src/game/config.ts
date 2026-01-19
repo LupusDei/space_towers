@@ -59,6 +59,7 @@ export const COMBAT_CONFIG = {
   // Visual effect durations (ms)
   HITSCAN_EFFECT_DURATION: 100, // Brief flash for laser/tesla
   SPLASH_EFFECT_DURATION: 200,
+  STORM_CAST_EFFECT_DURATION: 150, // Lightning bolt from cloud to target
 } as const;
 
 // ============================================================================

@@ -56,7 +56,11 @@ describe('SpriteRegistry', () => {
     });
 
     it('returns StormTowerSprite for STORM type', () => {
-      expect(getTowerSprite(TowerType.STORM)).toBe(StormTowerSprite);
+      const sprite = getTowerSprite(TowerType.STORM);
+      expect(sprite).toBe(StormTowerSprite);
+      expect(sprite.draw).toBeDefined();
+      expect(sprite.drawFiring).toBeDefined();
+      expect(sprite.drawRange).toBeDefined();
     });
   });
 

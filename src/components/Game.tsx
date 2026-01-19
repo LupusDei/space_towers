@@ -382,4 +382,23 @@ function renderHitscanEffects(context: SpriteRenderContext, towers: Tower[]): vo
       // (The TeslaCoilSprite already handles multi-target in some way)
     }
   }
+
+  // Render storm cast effects (lightning bolt from tower to storm spawn point)
+  const stormCastEffects = combatModule.getStormCastEffects();
+  for (const effect of stormCastEffects) {
+    const tower = towerMap.get(effect.towerId);
+    if (!tower || tower.type !== TowerType.STORM) continue;
+
+    const sprite = getTowerSprite(tower.type);
+    if (!sprite || !sprite.drawFiring) continue;
+
+    // Convert target position to grid coordinates for drawFiring
+    // Storm target positions are in pixels (enemy positions)
+    const targetGridPos: Point = {
+      x: effect.targetPosition.x / context.cellSize,
+      y: effect.targetPosition.y / context.cellSize,
+    };
+
+    sprite.drawFiring(context, tower, targetGridPos);
+  }
 }
