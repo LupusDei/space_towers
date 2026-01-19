@@ -57,7 +57,9 @@ function createMockTower(overrides: Partial<Tower> = {}): Tower {
     fireRate: 1,
     lastFired: 0,
     kills: 0,
-    damageDealt: 0,
+    totalDamage: 0,
+    target: null,
+    targetPosition: null,
     ...overrides,
   } as Tower;
 }
@@ -219,6 +221,74 @@ describe('SniperTowerSprite', () => {
 
       // Level 3 should have more gradient calls due to ambient glow
       expect(callsLevel3).toBeGreaterThan(callsLevel2);
+    });
+  });
+
+  describe('targeting rotation', () => {
+    it('should rotate to face target when targetPosition is set', () => {
+      // Tower at (5, 5), target at (10, 5) - directly to the right
+      tower.targetPosition = { x: 10, y: 5 };
+      SniperTowerSprite.draw(context, tower);
+
+      // Verify rotate was called
+      expect(context.ctx.rotate).toHaveBeenCalled();
+
+      // Get the rotation angle used (rifle is drawn pointing up, so right target = PI rotation)
+      const rotateCalls = (context.ctx.rotate as ReturnType<typeof vi.fn>).mock.calls;
+      // Should have been called at least once for rifle and scope
+      expect(rotateCalls.length).toBeGreaterThanOrEqual(2);
+
+      // The angle should be Math.atan2(0, targetX - centerX) + PI/2 = 0 + PI/2 = PI/2
+      // But with cell positioning: target is to the right, so angle should make rifle point right
+      const firstAngle = rotateCalls[0][0];
+      expect(typeof firstAngle).toBe('number');
+      expect(Number.isNaN(firstAngle)).toBe(false);
+    });
+
+    it('should use time-based rotation when no target', () => {
+      tower.targetPosition = null;
+      context.time = 5;
+      SniperTowerSprite.draw(context, tower);
+
+      const rotateCalls1 = (context.ctx.rotate as ReturnType<typeof vi.fn>).mock.calls;
+      const angle1 = rotateCalls1[0][0];
+
+      // Draw again with different time
+      context = createMockContext();
+      context.time = 10;
+      tower = createMockTower({ targetPosition: null });
+      SniperTowerSprite.draw(context, tower);
+
+      const rotateCalls2 = (context.ctx.rotate as ReturnType<typeof vi.fn>).mock.calls;
+      const angle2 = rotateCalls2[0][0];
+
+      // Angles should be different because time is different
+      expect(angle1).not.toBe(angle2);
+    });
+
+    it('should calculate correct angle to target above tower', () => {
+      // Tower at (5, 5), target at (5, 0) - directly above
+      tower.targetPosition = { x: 5, y: 0 };
+      SniperTowerSprite.draw(context, tower);
+
+      const rotateCalls = (context.ctx.rotate as ReturnType<typeof vi.fn>).mock.calls;
+      const angle = rotateCalls[0][0];
+
+      // Target above means atan2(negative dy, 0) = -PI/2, plus PI/2 offset = 0
+      // So angle should be close to 0 (rifle points up at target above)
+      expect(Math.abs(angle)).toBeLessThan(0.01);
+    });
+
+    it('should calculate correct angle to target below tower', () => {
+      // Tower at (5, 5), target at (5, 10) - directly below
+      tower.targetPosition = { x: 5, y: 10 };
+      SniperTowerSprite.draw(context, tower);
+
+      const rotateCalls = (context.ctx.rotate as ReturnType<typeof vi.fn>).mock.calls;
+      const angle = rotateCalls[0][0];
+
+      // Target below means atan2(positive dy, 0) = PI/2, plus PI/2 offset = PI
+      expect(Math.abs(angle - Math.PI)).toBeLessThan(0.01);
     });
   });
 });
