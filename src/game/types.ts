@@ -43,6 +43,7 @@ export const TowerType = {
   STORM: 'storm',
   SNIPER: 'sniper',
   NEEDLE: 'needle',
+  GATLING: 'gatling',
 } as const;
 export type TowerType = (typeof TowerType)[keyof typeof TowerType];
 

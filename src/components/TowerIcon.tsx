@@ -9,6 +9,7 @@ import { GravityTowerSprite } from '../sprites/towers/GravityTowerSprite';
 import { StormTowerSprite } from '../sprites/towers/StormTowerSprite';
 import { SniperTowerSprite } from '../sprites/towers/SniperTowerSprite';
 import { NeedleTowerSprite } from '../sprites/towers/NeedleTowerSprite';
+import { GatlingTowerSprite } from '../sprites/towers/GatlingTowerSprite';
 
 // Map tower types to their sprites
 const towerSprites: Record<TowerType, typeof LaserTurretSprite> = {
@@ -20,6 +21,7 @@ const towerSprites: Record<TowerType, typeof LaserTurretSprite> = {
   [TowerType.STORM]: StormTowerSprite,
   [TowerType.SNIPER]: SniperTowerSprite,
   [TowerType.NEEDLE]: NeedleTowerSprite,
+  [TowerType.GATLING]: GatlingTowerSprite,
 };
 
 // Tower type to color mapping for background glow
@@ -32,6 +34,7 @@ const towerColors: Record<TowerType, string> = {
   [TowerType.STORM]: '#44AAFF',
   [TowerType.SNIPER]: '#44FF44', // Green for sniper
   [TowerType.NEEDLE]: '#FF8800', // Orange glow for rapid-fire needle
+  [TowerType.GATLING]: '#FFC864', // Brass/gold glow for gatling
 };
 
 interface TowerIconProps {

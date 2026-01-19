@@ -218,6 +218,23 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     rangePerLevel: 8,
     fireRatePerLevel: -0.015, // Modest fire rate gains (diminishing returns on fast tower)
   },
+
+  [TowerType.GATLING]: {
+    type: TowerType.GATLING,
+    name: 'Gatling Tower',
+    description: 'Multi-barrel rotary cannon with extremely high fire rate. Spinning barrels deal sustained damage, perfect for mowing down waves of enemies.',
+    cost: 120,
+    damage: 8,
+    range: 130,
+    fireRate: 0.15, // Extremely fast (6.67 shots/sec)
+    unlockCost: 30,
+    // Leveling: sustained DPS machine
+    maxLevel: 5,
+    upgradeCosts: [130, 195, 295, 440], // Total to max: 1060
+    damagePerLevel: 5,
+    rangePerLevel: 10,
+    fireRatePerLevel: -0.01, // Small fire rate gains (already very fast)
+  },
 };
 
 // ============================================================================

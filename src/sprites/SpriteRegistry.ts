@@ -13,6 +13,7 @@ import { GravityTowerSprite } from './towers/GravityTowerSprite';
 import { SniperTowerSprite } from './towers/SniperTowerSprite';
 import { NeedleTowerSprite } from './towers/NeedleTowerSprite';
 import { StormTowerSprite } from './towers/StormTowerSprite';
+import { GatlingTowerSprite } from './towers/GatlingTowerSprite';
 
 // Enemy sprites
 import { ScoutDroneSprite } from './enemies/ScoutDroneSprite';
@@ -34,6 +35,7 @@ const towerSprites: Record<TowerType, TowerSprite> = {
   [TowerType.STORM]: StormTowerSprite,
   [TowerType.SNIPER]: SniperTowerSprite,
   [TowerType.NEEDLE]: NeedleTowerSprite,
+  [TowerType.GATLING]: GatlingTowerSprite,
 };
 
 // Enemy type to sprite mapping
