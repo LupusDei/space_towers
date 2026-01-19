@@ -63,6 +63,7 @@ const baseButtonStyle: React.CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
   whiteSpace: 'nowrap',
+  textAlign: 'center',
 };
 
 const enabledStyle: React.CSSProperties = {
