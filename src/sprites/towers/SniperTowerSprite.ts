@@ -51,6 +51,13 @@ export const SniperTowerSprite: TowerSprite = {
     const endX = target.x * cellSize + cellSize / 2;
     const endY = target.y * cellSize + cellSize / 2;
 
+    // Redraw rifle and scope pointing at the actual firing target
+    // This ensures the turret visually points at the target when firing
+    // Convert target from grid to pixel coordinates (drawRifle/drawScope expect pixels)
+    const targetPixels = { x: target.x * cellSize, y: target.y * cellSize };
+    drawRifle(ctx, startX, startY, cellSize, time, level, colors, targetPixels);
+    drawScope(ctx, startX, startY, cellSize, time, level, colors, targetPixels);
+
     // Sniper bullet trail - thin, fast, precise
     const trailScale = 0.8 + level * 0.1;
 
@@ -265,9 +272,10 @@ function drawRifle(
   // Calculate angle: aim at target if available, otherwise scan
   let angle: number;
   if (targetPosition) {
-    const targetX = targetPosition.x * cellSize + cellSize / 2;
-    const targetY = targetPosition.y * cellSize + cellSize / 2;
-    // Offset by -PI/2 because the rifle is drawn pointing up (negative Y direction)
+    // Target position is in pixels, calculate angle
+    const targetX = targetPosition.x + cellSize / 2;
+    const targetY = targetPosition.y + cellSize / 2;
+    // Offset by PI/2 because the rifle is drawn pointing up (negative Y direction)
     angle = Math.atan2(targetY - centerY, targetX - centerX) + Math.PI / 2;
   } else {
     // Slow rotation for scanning effect when idle
@@ -401,9 +409,10 @@ function drawScope(
   // Calculate angle: aim at target if available, otherwise scan
   let angle: number;
   if (targetPosition) {
-    const targetX = targetPosition.x * cellSize + cellSize / 2;
-    const targetY = targetPosition.y * cellSize + cellSize / 2;
-    // Offset by -PI/2 because the scope is drawn pointing up (negative Y direction)
+    // Target position is in pixels, calculate angle
+    const targetX = targetPosition.x + cellSize / 2;
+    const targetY = targetPosition.y + cellSize / 2;
+    // Offset by PI/2 because the scope is drawn pointing up (negative Y direction)
     angle = Math.atan2(targetY - centerY, targetX - centerX) + Math.PI / 2;
   } else {
     // Scope rotates with rifle when idle
