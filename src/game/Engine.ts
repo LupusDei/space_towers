@@ -385,6 +385,9 @@ class GameEngine {
     // Update combat module (tower targeting and firing)
     combatModule.update(dt);
 
+    // Update storm effects (tick damage to enemies in storms)
+    this.updateStormEffects(dt);
+
     // Update enemies
     for (const enemy of this.state.enemies.values()) {
       const reachedEnd = this.updateEnemy(enemy, dt);
@@ -486,6 +489,103 @@ class GameEngine {
     projectile.position.y += dy * ratio;
 
     return false;
+  }
+
+  /**
+   * Update all storm effects - apply tick damage and remove expired storms.
+   * @param dt - Delta time in seconds
+   */
+  private updateStormEffects(dt: number): void {
+    const currentTimeSeconds = this.state.time / 1000;
+    const expiredStorms: string[] = [];
+
+    for (const [stormId, storm] of this.state.stormEffects) {
+      // Check if storm has expired
+      if (storm.isExpired(currentTimeSeconds)) {
+        expiredStorms.push(stormId);
+        continue;
+      }
+
+      // Calculate damage for this tick
+      const tickDamage = storm.calculateDamage(dt);
+
+      // Find all enemies within storm radius and apply damage
+      for (const enemy of this.state.enemies.values()) {
+        // Enemy position is in pixels, storm position is in pixels
+        if (storm.containsPoint(enemy.position)) {
+          // Apply tick damage (minimum 1 damage)
+          const effectiveDamage = Math.max(1, tickDamage - enemy.armor);
+          enemy.health -= effectiveDamage;
+
+          // Track damage on source tower
+          const tower = this.state.towers.get(storm.sourceId);
+          if (tower && effectiveDamage > 0) {
+            tower.totalDamage += effectiveDamage;
+          }
+
+          // Check if enemy was killed
+          if (enemy.health <= 0) {
+            this.stormKilledEnemy(enemy, storm.sourceId);
+          }
+        }
+      }
+    }
+
+    // Remove expired storms
+    for (const stormId of expiredStorms) {
+      this.state.stormEffects.delete(stormId);
+    }
+
+    if (expiredStorms.length > 0) {
+      this.stateNotifier.notify();
+    }
+  }
+
+  /**
+   * Handle an enemy killed by storm damage.
+   * Similar to enemyKilled but with proper attribution to storm's source tower.
+   */
+  private stormKilledEnemy(enemy: Enemy, towerId: string): void {
+    // Track kill on tower
+    const tower = this.state.towers.get(towerId);
+    if (tower) {
+      tower.kills++;
+    }
+
+    this.state.enemies.delete(enemy.id);
+    this.enemiesCacheDirty = true;
+    this.spatialHash.remove(enemy);
+    this.invalidateSortedEnemiesCache();
+    this.state.credits += enemy.reward;
+    this.state.score += enemy.reward;
+
+    // Request gold number visual effect (floating +$X)
+    const deathPos = {
+      x: enemy.position.x + GAME_CONFIG.CELL_SIZE / 2,
+      y: enemy.position.y + GAME_CONFIG.CELL_SIZE / 2,
+    };
+    this.eventBus.emit(createEvent('GOLD_NUMBER_REQUESTED', {
+      amount: enemy.reward,
+      position: deathPos,
+      time: this.state.time,
+    }));
+
+    // Request explosion visual effect
+    this.eventBus.emit(createEvent('EXPLOSION_REQUESTED', {
+      position: deathPos,
+      enemyType: enemy.type,
+      time: this.state.time,
+    }));
+
+    console.log(`[Kill] Enemy ${enemy.type} killed by storm (tower ${towerId}) → +$${enemy.reward}`);
+
+    this.eventBus.emit(createEvent('ENEMY_KILLED', { enemy, towerId, reward: enemy.reward }));
+    this.eventBus.emit(
+      createEvent('CREDITS_CHANGED', { amount: enemy.reward, newTotal: this.state.credits })
+    );
+
+    this.enemyPool.release(enemy);
+    this.stateNotifier.notify();
   }
 
   private handleSpawnEnemy(type: EnemyType, health: number): Enemy | null {
@@ -772,8 +872,8 @@ class GameEngine {
       addCredits: (amount) => this.addCredits(amount),
       getTime: () => this.getTime(),
       applySlow: (enemyId, multiplier, duration) => this.applySlow(enemyId, multiplier, duration),
-      addStormEffect: (position, radius, duration, damagePerSecond) =>
-        this.addStormEffect(position, radius, duration, damagePerSecond),
+      addStormEffect: (position, radius, duration, damagePerSecond, sourceId) =>
+        this.addStormEffect(position, radius, duration, damagePerSecond, sourceId),
     };
   }
 
@@ -876,13 +976,14 @@ class GameEngine {
    * @param radius - Radius of the storm effect
    * @param duration - Duration in seconds
    * @param damagePerSecond - Damage dealt per second to enemies in the storm
+   * @param sourceId - Tower ID that created this storm (for kill attribution)
    */
-  addStormEffect(position: Point, radius: number, duration: number, damagePerSecond: number): void {
+  addStormEffect(position: Point, radius: number, duration: number, damagePerSecond: number, sourceId: string): void {
     const storm = new StormEffect();
     const stormId = `storm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     // StormEffect uses seconds for time, so convert from Engine's milliseconds
     const startTimeSeconds = this.state.time / 1000;
-    storm.init(stormId, position, startTimeSeconds, radius, duration, damagePerSecond);
+    storm.init(stormId, position, startTimeSeconds, radius, duration, damagePerSecond, sourceId);
     this.state.stormEffects.set(stormId, storm);
     this.stateNotifier.notify();
   }

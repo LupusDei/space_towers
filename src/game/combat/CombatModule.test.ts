@@ -1362,7 +1362,7 @@ describe('Storm Tower', () => {
       addCredits: () => {},
       getTime: () => 0,
       applySlow: () => {},
-      addStormEffect: (position: { x: number; y: number }) => {
+      addStormEffect: (position: { x: number; y: number }, _radius: number, _duration: number, _damagePerSecond: number, _sourceId: string) => {
         stormCreated = true;
         stormPosition = { ...position };
       },
@@ -1394,6 +1394,7 @@ describe('Storm Tower', () => {
       radius: number;
       duration: number;
       damagePerSecond: number;
+      sourceId: string;
     } | null = null;
 
     const commands = {
@@ -1406,9 +1407,10 @@ describe('Storm Tower', () => {
         position: { x: number; y: number },
         radius: number,
         duration: number,
-        damagePerSecond: number
+        damagePerSecond: number,
+        sourceId: string
       ) => {
-        capturedParams = { position, radius, duration, damagePerSecond };
+        capturedParams = { position, radius, duration, damagePerSecond, sourceId };
       },
     };
 
@@ -1421,6 +1423,7 @@ describe('Storm Tower', () => {
     expect(capturedParams!.radius).toBe(100); // range * 0.5 = 200 * 0.5 = 100
     expect(capturedParams!.duration).toBe(3.0); // from TOWER_STATS
     expect(capturedParams!.damagePerSecond).toBe(15); // tower damage
+    expect(capturedParams!.sourceId).toBe(tower.id); // tower ID for kill attribution
   });
 
   it('should emit PROJECTILE_FIRED event when storm is created', () => {

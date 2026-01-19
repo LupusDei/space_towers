@@ -40,6 +40,18 @@ describe('StormEffect', () => {
       expect(storm.duration).toBe(5);
       expect(storm.damagePerSecond).toBe(25);
     });
+
+    it('should initialize with sourceId for kill attribution', () => {
+      storm.init('storm_3', { x: 50, y: 50 }, 0, 100, 5, 25, 'tower_123');
+
+      expect(storm.sourceId).toBe('tower_123');
+    });
+
+    it('should default sourceId to empty string', () => {
+      storm.init('storm_4', { x: 50, y: 50 }, 0);
+
+      expect(storm.sourceId).toBe('');
+    });
   });
 
   describe('update', () => {
@@ -139,7 +151,7 @@ describe('StormEffect', () => {
 
   describe('reset', () => {
     it('should reset all values to defaults', () => {
-      storm.init('storm_1', { x: 100, y: 200 }, 5, 75, 10, 20);
+      storm.init('storm_1', { x: 100, y: 200 }, 5, 75, 10, 20, 'tower_123');
       storm.reset();
 
       expect(storm.id).toBe('');
@@ -149,6 +161,7 @@ describe('StormEffect', () => {
       expect(storm.damagePerSecond).toBe(STORM_DEFAULTS.DAMAGE_PER_SECOND);
       expect(storm.startTime).toBe(0);
       expect(storm.active).toBe(false);
+      expect(storm.sourceId).toBe('');
     });
   });
 

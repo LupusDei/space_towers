@@ -511,8 +511,8 @@ class CombatModuleImpl implements GameModule {
     // Storm spawns at target's position (enemy position is in pixels)
     const stormPosition = { ...target.position };
 
-    // Create storm effect via Engine
-    this.commands.addStormEffect(stormPosition, stormRadius, duration, damagePerSecond);
+    // Create storm effect via Engine (pass tower.id for kill attribution)
+    this.commands.addStormEffect(stormPosition, stormRadius, duration, damagePerSecond, tower.id);
 
     // Emit projectile fired event (for audio/other systems)
     eventBus.emit(

@@ -1126,4 +1126,249 @@ describe('Engine Integration', () => {
       expect(engine.getCredits()).toBe(GAME_CONFIG.STARTING_CREDITS);
     });
   });
+
+  // ==========================================================================
+  // Storm Tick Damage Tests
+  // ==========================================================================
+
+  describe('Storm Tick Damage', () => {
+    beforeEach(() => {
+      engine.startGame();
+    });
+
+    it('adds storm effect with sourceId', () => {
+      engine.startWave();
+
+      const position = { x: 100, y: 100 };
+      engine.addStormEffect(position, 50, 3, 10, 'tower_123');
+
+      const storms = engine.getStormEffects();
+      expect(storms.length).toBe(1);
+      expect(storms[0].sourceId).toBe('tower_123');
+      expect(storms[0].position).toEqual(position);
+      expect(storms[0].radius).toBe(50);
+      expect(storms[0].damagePerSecond).toBe(10);
+    });
+
+    it('storm damages enemy within radius', () => {
+      engine.startWave();
+
+      // Create an enemy at a known position
+      const enemy = engine['enemyPool'].acquire();
+      enemy.type = EnemyType.SCOUT;
+      enemy.health = 100;
+      enemy.maxHealth = 100;
+      enemy.speed = 0; // Stationary for test
+      enemy.armor = 0;
+      enemy.reward = 10;
+      enemy.position = { x: 100, y: 100 };
+      enemy.pathIndex = 0;
+      engine.addEnemy(enemy);
+
+      // Create storm at same position
+      engine.addStormEffect({ x: 100, y: 100 }, 50, 3, 20, 'tower_123');
+
+      // Simulate game update (0.5 seconds = 10 damage at 20 DPS)
+      engine['updateStormEffects'](0.5);
+
+      // Enemy should have taken damage
+      const foundEnemy = engine.getEnemyById(enemy.id);
+      expect(foundEnemy!.health).toBe(90); // 100 - 10 damage
+    });
+
+    it('storm does not damage enemy outside radius', () => {
+      engine.startWave();
+
+      // Create an enemy at a distance
+      const enemy = engine['enemyPool'].acquire();
+      enemy.type = EnemyType.SCOUT;
+      enemy.health = 100;
+      enemy.maxHealth = 100;
+      enemy.speed = 0;
+      enemy.armor = 0;
+      enemy.reward = 10;
+      enemy.position = { x: 300, y: 300 }; // Far from storm
+      enemy.pathIndex = 0;
+      engine.addEnemy(enemy);
+
+      // Create storm at different position
+      engine.addStormEffect({ x: 100, y: 100 }, 50, 3, 20, 'tower_123');
+
+      // Simulate game update
+      engine['updateStormEffects'](0.5);
+
+      // Enemy should not have taken damage
+      const foundEnemy = engine.getEnemyById(enemy.id);
+      expect(foundEnemy!.health).toBe(100);
+    });
+
+    it('storm kills enemy and awards credits', () => {
+      engine.startWave();
+
+      // Create a weak enemy
+      const enemy = engine['enemyPool'].acquire();
+      enemy.type = EnemyType.SCOUT;
+      enemy.health = 5; // Low health
+      enemy.maxHealth = 30;
+      enemy.speed = 0;
+      enemy.armor = 0;
+      enemy.reward = 10;
+      enemy.position = { x: 100, y: 100 };
+      enemy.pathIndex = 0;
+      engine.addEnemy(enemy);
+
+      const initialCredits = engine.getCredits();
+
+      // Create storm that will kill the enemy
+      engine.addStormEffect({ x: 100, y: 100 }, 50, 3, 20, 'tower_123');
+
+      // Simulate game update (0.5 seconds = 10 damage, kills 5 HP enemy)
+      engine['updateStormEffects'](0.5);
+
+      // Enemy should be killed and credits awarded
+      expect(engine.getEnemies().length).toBe(0);
+      expect(engine.getCredits()).toBe(initialCredits + 10);
+    });
+
+    it('storm tracks damage on source tower', () => {
+      // Place a tower during planning phase (before startWave)
+      const tower = engine.placeTower(TowerType.STORM, { x: 5, y: 5 });
+      expect(tower).not.toBeNull();
+
+      engine.startWave();
+
+      // Create an enemy
+      const enemy = engine['enemyPool'].acquire();
+      enemy.type = EnemyType.SCOUT;
+      enemy.health = 100;
+      enemy.maxHealth = 100;
+      enemy.speed = 0;
+      enemy.armor = 0;
+      enemy.reward = 10;
+      enemy.position = { x: 100, y: 100 };
+      enemy.pathIndex = 0;
+      engine.addEnemy(enemy);
+
+      // Create storm from tower
+      engine.addStormEffect({ x: 100, y: 100 }, 50, 3, 20, tower!.id);
+
+      // Simulate game update
+      engine['updateStormEffects'](0.5);
+
+      // Tower should have damage tracked
+      const foundTower = engine.getTowerById(tower!.id);
+      expect(foundTower!.totalDamage).toBe(10);
+    });
+
+    it('storm tracks kills on source tower', () => {
+      // Place a tower during planning phase (before startWave)
+      const tower = engine.placeTower(TowerType.STORM, { x: 5, y: 5 });
+      expect(tower).not.toBeNull();
+
+      engine.startWave();
+
+      // Create a weak enemy
+      const enemy = engine['enemyPool'].acquire();
+      enemy.type = EnemyType.SCOUT;
+      enemy.health = 5;
+      enemy.maxHealth = 30;
+      enemy.speed = 0;
+      enemy.armor = 0;
+      enemy.reward = 10;
+      enemy.position = { x: 100, y: 100 };
+      enemy.pathIndex = 0;
+      engine.addEnemy(enemy);
+
+      // Create storm from tower
+      engine.addStormEffect({ x: 100, y: 100 }, 50, 3, 20, tower!.id);
+
+      // Simulate game update (kills the enemy)
+      engine['updateStormEffects'](0.5);
+
+      // Tower should have kill tracked
+      const foundTower = engine.getTowerById(tower!.id);
+      expect(foundTower!.kills).toBe(1);
+    });
+
+    it('storm expires after duration', () => {
+      engine.startWave();
+
+      // Add some game time
+      engine['state'].time = 0;
+
+      // Create storm
+      engine.addStormEffect({ x: 100, y: 100 }, 50, 3, 20, 'tower_123');
+      expect(engine.getStormEffects().length).toBe(1);
+
+      // Advance time past duration (3 seconds = 3000ms)
+      engine['state'].time = 4000;
+
+      // Update should remove expired storm
+      engine['updateStormEffects'](0.1);
+
+      expect(engine.getStormEffects().length).toBe(0);
+    });
+
+    it('damages multiple enemies in storm area', () => {
+      engine.startWave();
+
+      // Create two enemies in storm area
+      const enemy1 = engine['enemyPool'].acquire();
+      enemy1.type = EnemyType.SCOUT;
+      enemy1.health = 100;
+      enemy1.maxHealth = 100;
+      enemy1.speed = 0;
+      enemy1.armor = 0;
+      enemy1.reward = 10;
+      enemy1.position = { x: 100, y: 100 };
+      enemy1.pathIndex = 0;
+      engine.addEnemy(enemy1);
+
+      const enemy2 = engine['enemyPool'].acquire();
+      enemy2.type = EnemyType.SCOUT;
+      enemy2.health = 100;
+      enemy2.maxHealth = 100;
+      enemy2.speed = 0;
+      enemy2.armor = 0;
+      enemy2.reward = 10;
+      enemy2.position = { x: 120, y: 100 }; // Within 50 radius
+      enemy2.pathIndex = 0;
+      engine.addEnemy(enemy2);
+
+      // Create storm
+      engine.addStormEffect({ x: 100, y: 100 }, 50, 3, 20, 'tower_123');
+
+      // Simulate game update
+      engine['updateStormEffects'](0.5);
+
+      // Both enemies should be damaged
+      expect(engine.getEnemyById(enemy1.id)!.health).toBe(90);
+      expect(engine.getEnemyById(enemy2.id)!.health).toBe(90);
+    });
+
+    it('armor reduces storm damage (minimum 1 damage)', () => {
+      engine.startWave();
+
+      // Create armored enemy
+      const enemy = engine['enemyPool'].acquire();
+      enemy.type = EnemyType.TANK;
+      enemy.health = 100;
+      enemy.maxHealth = 100;
+      enemy.speed = 0;
+      enemy.armor = 15; // High armor
+      enemy.reward = 50;
+      enemy.position = { x: 100, y: 100 };
+      enemy.pathIndex = 0;
+      engine.addEnemy(enemy);
+
+      // Create storm with 10 DPS (5 damage per 0.5s tick, less than armor)
+      engine.addStormEffect({ x: 100, y: 100 }, 50, 3, 10, 'tower_123');
+
+      // Simulate game update (tick damage = 5, armor = 15, minimum 1)
+      engine['updateStormEffects'](0.5);
+
+      // Enemy should take minimum 1 damage
+      expect(engine.getEnemyById(enemy.id)!.health).toBe(99);
+    });
+  });
 });

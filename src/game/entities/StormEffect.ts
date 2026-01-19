@@ -19,6 +19,7 @@ export class StormEffect implements Poolable {
   damagePerSecond: number = STORM_DEFAULTS.DAMAGE_PER_SECOND;
   startTime: number = 0;
   active: boolean = false;
+  sourceId: string = ''; // Tower ID that created this storm (for kill attribution)
 
   /**
    * Update the storm effect
@@ -85,6 +86,7 @@ export class StormEffect implements Poolable {
     this.damagePerSecond = STORM_DEFAULTS.DAMAGE_PER_SECOND;
     this.startTime = 0;
     this.active = false;
+    this.sourceId = '';
   }
 
   /**
@@ -95,6 +97,7 @@ export class StormEffect implements Poolable {
    * @param radius - Radius of the storm effect (default: 50)
    * @param duration - Duration in seconds (default: 3)
    * @param damagePerSecond - Damage per second to enemies (default: 10)
+   * @param sourceId - Tower ID that created this storm (for kill attribution)
    */
   init(
     id: string,
@@ -102,7 +105,8 @@ export class StormEffect implements Poolable {
     startTime: number,
     radius: number = STORM_DEFAULTS.RADIUS,
     duration: number = STORM_DEFAULTS.DURATION,
-    damagePerSecond: number = STORM_DEFAULTS.DAMAGE_PER_SECOND
+    damagePerSecond: number = STORM_DEFAULTS.DAMAGE_PER_SECOND,
+    sourceId: string = ''
   ): void {
     this.id = id;
     this.position.x = position.x;
@@ -112,6 +116,7 @@ export class StormEffect implements Poolable {
     this.damagePerSecond = damagePerSecond;
     this.startTime = startTime;
     this.active = true;
+    this.sourceId = sourceId;
   }
 
   /**
