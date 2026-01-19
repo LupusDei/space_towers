@@ -288,20 +288,20 @@ describe('TOWER_STATS', () => {
         expect(gravityStats.slowMultiplier).toBe(0.5);
       });
 
-      it('should have 1 second base slow duration', () => {
-        expect(gravityStats.slowDuration).toBe(1.0);
+      it('should have 2 second base slow duration', () => {
+        expect(gravityStats.slowDuration).toBe(2.0);
       });
 
       it('should have slow duration scaling per level', () => {
         expect(gravityStats.slowDurationPerLevel).toBe(0.2);
       });
 
-      it('should have max slow duration of 1.8s at level 5', () => {
-        // Level 5: 1.0 + (4 * 0.2) = 1.8s
+      it('should have max slow duration of 2.8s at level 5', () => {
+        // Level 5: 2.0 + (4 * 0.2) = 2.8s
         const maxSlowDuration =
           gravityStats.slowDuration! +
           (gravityStats.maxLevel - 1) * gravityStats.slowDurationPerLevel!;
-        expect(maxSlowDuration).toBeCloseTo(1.8, 2);
+        expect(maxSlowDuration).toBeCloseTo(2.8, 2);
       });
     });
 

@@ -231,7 +231,7 @@ describe('TowerPanel', () => {
       );
 
       // Gravity tower should show slow duration as special effect
-      expect(screen.getByText('Slow 1s')).toBeInTheDocument();
+      expect(screen.getByText('Slow 2s')).toBeInTheDocument();
     });
   });
 });
