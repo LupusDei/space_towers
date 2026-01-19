@@ -46,6 +46,14 @@ export interface SplashEffect {
   duration: number;
 }
 
+export interface StormCastEffect {
+  towerId: string;
+  towerPosition: Point;
+  targetPosition: Point;
+  startTime: number;
+  duration: number;
+}
+
 // ============================================================================
 // Combat State
 // ============================================================================
@@ -54,6 +62,7 @@ interface CombatState {
   hitscanEffects: HitscanEffect[];
   chainEffects: ChainLightningEffect[];
   splashEffects: SplashEffect[];
+  stormCastEffects: StormCastEffect[];
   towerInstances: Map<string, TowerClass>;
   eventUnsubscribers: (() => void)[];
 }
@@ -107,6 +116,7 @@ class CombatModuleImpl implements GameModule {
     hitscanEffects: [],
     chainEffects: [],
     splashEffects: [],
+    stormCastEffects: [],
     towerInstances: new Map(),
     eventUnsubscribers: [],
   };
@@ -118,6 +128,7 @@ class CombatModuleImpl implements GameModule {
       hitscanEffects: [],
       chainEffects: [],
       splashEffects: [],
+      stormCastEffects: [],
       towerInstances: new Map(),
       eventUnsubscribers: [],
     };
@@ -175,6 +186,7 @@ class CombatModuleImpl implements GameModule {
     this.state.hitscanEffects = [];
     this.state.chainEffects = [];
     this.state.splashEffects = [];
+    this.state.stormCastEffects = [];
     this.state.towerInstances.clear();
     this.state.eventUnsubscribers = [];
   }
@@ -514,6 +526,15 @@ class CombatModuleImpl implements GameModule {
     // Create storm effect via Engine
     this.commands.addStormEffect(stormPosition, stormRadius, duration, damagePerSecond);
 
+    // Create storm cast visual effect (lightning bolt from tower to target)
+    this.state.stormCastEffects.push({
+      towerId: tower.id,
+      towerPosition: { ...tower.position },
+      targetPosition: { ...target.position },
+      startTime: currentTime,
+      duration: COMBAT_CONFIG.STORM_CAST_EFFECT_DURATION,
+    });
+
     // Emit projectile fired event (for audio/other systems)
     eventBus.emit(
       createEvent('PROJECTILE_FIRED', {
@@ -747,6 +768,11 @@ class CombatModuleImpl implements GameModule {
     this.state.splashEffects = this.state.splashEffects.filter(
       (effect) => currentTime - effect.startTime < effect.duration
     );
+
+    // Clean storm cast effects
+    this.state.stormCastEffects = this.state.stormCastEffects.filter(
+      (effect) => currentTime - effect.startTime < effect.duration
+    );
   }
 
   // ==========================================================================
@@ -763,6 +789,10 @@ class CombatModuleImpl implements GameModule {
 
   getSplashEffects(): SplashEffect[] {
     return this.state.splashEffects;
+  }
+
+  getStormCastEffects(): StormCastEffect[] {
+    return this.state.stormCastEffects;
   }
 
   getTowerInstance(towerId: string): TowerClass | undefined {
