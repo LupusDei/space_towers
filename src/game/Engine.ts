@@ -590,8 +590,6 @@ class GameEngine {
     this.eventBus.emit(createEvent('ENEMY_KILLED', { enemy, towerId: stormId, reward: enemy.reward }));
     this.eventBus.emit(createEvent('CREDITS_CHANGED', { amount: enemy.reward, newTotal: this.state.credits }));
 
-    console.log(`[Storm Kill] Enemy ${enemy.type} killed by storm ${stormId} → +$${enemy.reward}`);
-
     this.enemyPool.release(enemy);
     this.stateNotifier.notify();
   }
@@ -696,8 +694,6 @@ class GameEngine {
       enemyType: enemy.type,
       time: this.state.time,
     }));
-
-    console.log(`[Kill] Enemy ${enemy.type} killed by tower ${towerId} → +$${enemy.reward}`);
 
     this.eventBus.emit(createEvent('ENEMY_KILLED', { enemy, towerId, reward: enemy.reward }));
     this.eventBus.emit(

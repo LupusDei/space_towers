@@ -692,8 +692,6 @@ class CombatModuleImpl implements GameModule {
       time: currentTime,
     }));
 
-    console.log(`[Kill] Enemy ${enemy.type} killed by tower ${towerId} → +$${enemy.reward}`);
-
     // Save reward before removing enemy (removeEnemy releases to pool which resets reward to 0)
     const reward = enemy.reward;
 
