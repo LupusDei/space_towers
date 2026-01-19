@@ -30,12 +30,20 @@ describe('useUserProgress', () => {
     storage.remove('user_progress');
   });
 
+  // Default starter towers that are unlocked from the beginning
+  const DEFAULT_UNLOCKED_TOWERS = [
+    TowerType.LASER,
+    TowerType.MISSILE,
+    TowerType.TESLA,
+    TowerType.CANNON,
+  ];
+
   describe('initial state', () => {
     it('should return default progress on first load', () => {
       const { result } = renderHook(() => useUserProgress());
 
       expect(result.current.progress.waveCredits).toBe(0);
-      expect(result.current.progress.unlockedTowers).toEqual([]);
+      expect(result.current.progress.unlockedTowers).toEqual(DEFAULT_UNLOCKED_TOWERS);
       expect(result.current.progress.highestWaveCompleted).toBe(0);
       expect(result.current.progress.lastSelectedLoadout).toBeNull();
     });
@@ -178,9 +186,10 @@ describe('useUserProgress', () => {
         result.current.actions.unlockTower(TowerType.GRAVITY);
       });
 
+      // Should have default towers + newly unlocked towers
       expect(result.current.progress.unlockedTowers).toContain(TowerType.SNIPER);
       expect(result.current.progress.unlockedTowers).toContain(TowerType.GRAVITY);
-      expect(result.current.progress.unlockedTowers.length).toBe(2);
+      expect(result.current.progress.unlockedTowers.length).toBe(DEFAULT_UNLOCKED_TOWERS.length + 2);
     });
   });
 
@@ -266,7 +275,7 @@ describe('useUserProgress', () => {
       });
 
       expect(result.current.progress.waveCredits).toBe(0);
-      expect(result.current.progress.unlockedTowers).toEqual([]);
+      expect(result.current.progress.unlockedTowers).toEqual(DEFAULT_UNLOCKED_TOWERS);
       expect(result.current.progress.highestWaveCompleted).toBe(0);
       expect(result.current.progress.lastSelectedLoadout).toBeNull();
     });

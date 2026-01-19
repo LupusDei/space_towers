@@ -3,14 +3,22 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { createStorageService } from '../game/storage/StorageService';
-import type { UserProgress, TowerType } from '../game/types';
+import { TowerType, type UserProgress } from '../game/types';
 
 const PROGRESS_STORAGE_KEY = 'user_progress';
+
+// Default starter towers that are unlocked from the beginning
+const DEFAULT_UNLOCKED_TOWERS: TowerType[] = [
+  TowerType.LASER,
+  TowerType.MISSILE,
+  TowerType.TESLA,
+  TowerType.CANNON,
+];
 
 // Default progress for new users
 const DEFAULT_PROGRESS: UserProgress = {
   waveCredits: 0,
-  unlockedTowers: [],
+  unlockedTowers: [...DEFAULT_UNLOCKED_TOWERS],
   highestWaveCompleted: 0,
   lastSelectedLoadout: null,
 };

@@ -15,6 +15,12 @@ describe('Engine Integration', () => {
   let engine: GameEngineType;
   let eventBus: EventBus;
 
+  // Helper to start a game and skip tower store (go directly to PLANNING phase)
+  const startGameInPlanning = () => {
+    engine.startGame();
+    engine.confirmTowerSelection();
+  };
+
   beforeEach(() => {
     eventBus = createEventBus();
     engine = createEngine({
@@ -37,21 +43,28 @@ describe('Engine Integration', () => {
       expect(engine.getPhase()).toBe(GamePhase.MENU);
     });
 
-    it('transitions to planning phase on startGame', () => {
+    it('transitions to tower store phase on startGame', () => {
       engine.startGame();
+      expect(engine.getPhase()).toBe(GamePhase.TOWER_STORE);
+    });
+
+    it('transitions to planning phase on confirmTowerSelection', () => {
+      engine.startGame();
+      engine.confirmTowerSelection();
       expect(engine.getPhase()).toBe(GamePhase.PLANNING);
       expect(engine.getWave()).toBe(1);
     });
 
-    it('initializes with correct starting values', () => {
+    it('initializes with correct starting values after confirmTowerSelection', () => {
       engine.startGame();
+      engine.confirmTowerSelection();
       expect(engine.getCredits()).toBe(GAME_CONFIG.STARTING_CREDITS);
       expect(engine.getLives()).toBe(GAME_CONFIG.STARTING_LIVES);
       expect(engine.getScore()).toBe(0);
     });
 
     it('transitions to combat phase on startWave', () => {
-      engine.startGame();
+      startGameInPlanning();
       engine.startWave();
       expect(engine.getPhase()).toBe(GamePhase.COMBAT);
     });
@@ -62,7 +75,7 @@ describe('Engine Integration', () => {
     });
 
     it('can pause and resume', () => {
-      engine.startGame();
+      startGameInPlanning();
       engine.startWave();
 
       // Add an enemy so resume goes to combat (not planning)
@@ -83,7 +96,7 @@ describe('Engine Integration', () => {
 
   describe('Tower Placement', () => {
     beforeEach(() => {
-      engine.startGame();
+      startGameInPlanning();
     });
 
     it('places tower at valid position', () => {
@@ -176,7 +189,7 @@ describe('Engine Integration', () => {
 
   describe('Allowed Towers', () => {
     beforeEach(() => {
-      engine.startGame();
+      startGameInPlanning();
     });
 
     it('allows all towers by default (allowedTowers is null)', () => {
@@ -265,7 +278,7 @@ describe('Engine Integration', () => {
 
   describe('Tower Selling', () => {
     beforeEach(() => {
-      engine.startGame();
+      startGameInPlanning();
     });
 
     it('gives 100% refund for tower placed this round', () => {
@@ -317,7 +330,7 @@ describe('Engine Integration', () => {
 
   describe('Tower Upgrading', () => {
     beforeEach(() => {
-      engine.startGame();
+      startGameInPlanning();
     });
 
     it('upgrades tower and deducts credits', () => {
@@ -440,7 +453,7 @@ describe('Engine Integration', () => {
 
   describe('Tower Selection', () => {
     beforeEach(() => {
-      engine.startGame();
+      startGameInPlanning();
     });
 
     it('can select a placed tower', () => {
@@ -500,7 +513,7 @@ describe('Engine Integration', () => {
 
   describe('Enemy Spawning', () => {
     beforeEach(() => {
-      engine.startGame();
+      startGameInPlanning();
     });
 
     it('spawns enemies when wave starts and time advances', () => {
@@ -523,7 +536,7 @@ describe('Engine Integration', () => {
     });
 
     it('enemies follow path', () => {
-      engine.startGame();
+      startGameInPlanning();
       const path = engine.getPath();
       expect(path.length).toBeGreaterThan(0);
 
@@ -539,7 +552,7 @@ describe('Engine Integration', () => {
 
   describe('Combat System', () => {
     beforeEach(() => {
-      engine.startGame();
+      startGameInPlanning();
     });
 
     it('enemy takes damage and dies', () => {
@@ -587,7 +600,7 @@ describe('Engine Integration', () => {
 
   describe('Lives System', () => {
     beforeEach(() => {
-      engine.startGame();
+      startGameInPlanning();
     });
 
     it('starts with correct number of lives', () => {
@@ -606,7 +619,7 @@ describe('Engine Integration', () => {
 
   describe('Wave Completion', () => {
     beforeEach(() => {
-      engine.startGame();
+      startGameInPlanning();
     });
 
     it('tracks wave number', () => {
@@ -634,7 +647,7 @@ describe('Engine Integration', () => {
 
   describe('Query Interface', () => {
     beforeEach(() => {
-      engine.startGame();
+      startGameInPlanning();
     });
 
     it('getTowers returns all placed towers', () => {
@@ -763,7 +776,7 @@ describe('Engine Integration', () => {
 
   describe('Event System', () => {
     beforeEach(() => {
-      engine.startGame();
+      startGameInPlanning();
     });
 
     it('emits TOWER_PLACED event', () => {
@@ -820,7 +833,7 @@ describe('Engine Integration', () => {
 
   describe('Subscription System', () => {
     it('notifies subscribers on state change', () => {
-      engine.startGame();
+      startGameInPlanning();
 
       let notified = false;
       engine.subscribe(() => {
@@ -833,7 +846,7 @@ describe('Engine Integration', () => {
     });
 
     it('can unsubscribe', () => {
-      engine.startGame();
+      startGameInPlanning();
 
       let notifyCount = 0;
       const unsubscribe = engine.subscribe(() => {
@@ -853,7 +866,7 @@ describe('Engine Integration', () => {
     });
 
     it('getVersion increments on changes', () => {
-      engine.startGame();
+      startGameInPlanning();
 
       const v1 = engine.getVersion();
       engine.placeTower(TowerType.LASER, { x: 5, y: 5 });
@@ -869,7 +882,7 @@ describe('Engine Integration', () => {
 
   describe('Snapshot Caching', () => {
     it('returns same snapshot object when called multiple times without state changes', () => {
-      engine.startGame();
+      startGameInPlanning();
 
       const snapshot1 = engine.getSnapshot();
       const snapshot2 = engine.getSnapshot();
@@ -879,7 +892,7 @@ describe('Engine Integration', () => {
     });
 
     it('returns new snapshot after state changes', () => {
-      engine.startGame();
+      startGameInPlanning();
 
       const snapshot1 = engine.getSnapshot();
 
@@ -896,7 +909,7 @@ describe('Engine Integration', () => {
     });
 
     it('caches the Maps inside snapshot (no new allocations)', () => {
-      engine.startGame();
+      startGameInPlanning();
       engine.placeTower(TowerType.LASER, { x: 5, y: 5 });
 
       const snapshot1 = engine.getSnapshot();
@@ -913,7 +926,7 @@ describe('Engine Integration', () => {
     });
 
     it('clears snapshot cache on reset', () => {
-      engine.startGame();
+      startGameInPlanning();
       engine.placeTower(TowerType.LASER, { x: 5, y: 5 });
 
       const snapshot1 = engine.getSnapshot();
@@ -931,7 +944,7 @@ describe('Engine Integration', () => {
     });
 
     it('invalidates cache when setSelectedTowerType is called', () => {
-      engine.startGame();
+      startGameInPlanning();
 
       const snapshot1 = engine.getSnapshot();
 
@@ -944,7 +957,7 @@ describe('Engine Integration', () => {
     });
 
     it('invalidates cache when addCredits is called', () => {
-      engine.startGame();
+      startGameInPlanning();
 
       const snapshot1 = engine.getSnapshot();
       const credits1 = snapshot1.credits;
@@ -958,7 +971,7 @@ describe('Engine Integration', () => {
     });
 
     it('invalidates cache when addProjectile is called', () => {
-      engine.startGame();
+      startGameInPlanning();
 
       const snapshot1 = engine.getSnapshot();
       expect(snapshot1.projectiles.size).toBe(0);
@@ -992,7 +1005,7 @@ describe('Engine Integration', () => {
 
   describe('Slow Effect System', () => {
     beforeEach(() => {
-      engine.startGame();
+      startGameInPlanning();
     });
 
     it('applySlow sets slowMultiplier and slowEndTime on enemy', () => {
@@ -1105,7 +1118,7 @@ describe('Engine Integration', () => {
 
   describe('Reset and Cleanup', () => {
     it('reset clears all state', () => {
-      engine.startGame();
+      startGameInPlanning();
       engine.placeTower(TowerType.LASER, { x: 5, y: 5 });
       engine.startWave();
 
@@ -1118,9 +1131,9 @@ describe('Engine Integration', () => {
     });
 
     it('can start new game after reset', () => {
-      engine.startGame();
+      startGameInPlanning();
       engine.reset();
-      engine.startGame();
+      startGameInPlanning();
 
       expect(engine.getPhase()).toBe(GamePhase.PLANNING);
       expect(engine.getCredits()).toBe(GAME_CONFIG.STARTING_CREDITS);

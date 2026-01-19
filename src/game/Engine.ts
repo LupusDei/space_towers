@@ -243,6 +243,21 @@ class GameEngine {
     // Stop any running game loop when restarting
     this.loopManager.stop();
 
+    // Transition to TOWER_STORE phase for tower selection
+    this.stateMachine.forcePhase(Phase.TOWER_STORE);
+    this.stateNotifier.notify();
+  }
+
+  /**
+   * Confirm tower selection and start the actual game.
+   * Call this after the player has finished selecting towers in the Tower Store.
+   */
+  confirmTowerSelection(): void {
+    // Only allow from TOWER_STORE phase
+    if (this.stateMachine.getPhase() !== Phase.TOWER_STORE) {
+      return;
+    }
+
     this.state = this.createInitialState();
     this.state.wave = 1;
     this.stateMachine.forcePhase(Phase.PLANNING);

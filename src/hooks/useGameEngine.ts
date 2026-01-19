@@ -15,6 +15,7 @@ export interface GameActions {
   selectTower: (towerId: string | null) => void;
   selectTowerType: (type: TowerType | null) => void;
   startGame: () => void;
+  confirmTowerSelection: () => void;
 }
 
 export interface UseGameEngineResult {
@@ -95,9 +96,14 @@ export function useGameEngine(): UseGameEngineResult {
     engine.setSelectedTowerType(type);
   }, []);
 
-  // Action: Start the game
+  // Action: Start the game (goes to Tower Store)
   const startGame = useCallback(() => {
     engine.startGame();
+  }, []);
+
+  // Action: Confirm tower selection and start playing
+  const confirmTowerSelection = useCallback(() => {
+    engine.confirmTowerSelection();
   }, []);
 
   const actions: GameActions = {
@@ -108,6 +114,7 @@ export function useGameEngine(): UseGameEngineResult {
     selectTower,
     selectTowerType,
     startGame,
+    confirmTowerSelection,
   };
 
   return { state, actions };

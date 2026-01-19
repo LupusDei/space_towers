@@ -1,12 +1,14 @@
 import { useState, useLayoutEffect, useCallback } from 'react';
 import './App.css';
 import { useGameEngine } from './hooks/useGameEngine';
+import { useUserProgress } from './hooks/useUserProgress';
 import { GamePhase, TowerType } from './game/types';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from './game/config';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, TOWER_STATS } from './game/config';
 import MainMenu from './components/MainMenu';
 import Game from './components/Game';
 import HUD from './components/HUD';
 import TowerPanel from './components/TowerPanel';
+import TowerStore from './components/TowerStore';
 import TowerSelectionWindow from './components/TowerSelectionWindow';
 import GameOver from './components/GameOver';
 import EngageButton from './components/EngageButton';
@@ -45,9 +47,47 @@ function useResponsiveScale() {
   return scale;
 }
 
+// Styles for Tower Store screen
+const towerStoreScreenStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '24px',
+  padding: '32px',
+  minHeight: '100vh',
+  backgroundColor: '#0a0a1a',
+};
+
+const towerStoreTitle: React.CSSProperties = {
+  fontFamily: '"Orbitron", "Courier New", monospace',
+  fontSize: '28px',
+  color: '#00d4ff',
+  textTransform: 'uppercase',
+  letterSpacing: '4px',
+  margin: 0,
+};
+
+const startBattleButton: React.CSSProperties = {
+  padding: '16px 48px',
+  fontSize: '18px',
+  fontFamily: '"Orbitron", "Courier New", monospace',
+  fontWeight: 'bold',
+  backgroundColor: '#00d4ff',
+  color: '#0a0a1a',
+  border: 'none',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  textTransform: 'uppercase',
+  letterSpacing: '2px',
+  transition: 'all 0.2s ease',
+};
+
 function App() {
   const { state, actions } = useGameEngine();
+  const { progress, actions: progressActions } = useUserProgress();
   const scale = useResponsiveScale();
+  const [storeSelectedType, setStoreSelectedType] = useState<TowerType | null>(null);
 
   const handleStartGame = () => {
     actions.startGame();
@@ -55,6 +95,17 @@ function App() {
 
   const handlePlayAgain = () => {
     actions.startGame();
+  };
+
+  const handleConfirmTowerSelection = () => {
+    actions.confirmTowerSelection();
+  };
+
+  const handleUnlockTower = (type: TowerType) => {
+    const stats = TOWER_STATS[type];
+    if (progressActions.spendWaveCredits(stats.unlockCost)) {
+      progressActions.unlockTower(type);
+    }
   };
 
   const handleSelectTowerType = (type: TowerType | null) => {
@@ -96,6 +147,31 @@ function App() {
     );
   }
 
+  // Show Tower Store for tower selection before game starts
+  if (state.phase === GamePhase.TOWER_STORE) {
+    return (
+      <div className="app">
+        <div className="tower-store-screen" style={towerStoreScreenStyle}>
+          <h1 style={towerStoreTitle}>Select Your Towers</h1>
+          <TowerStore
+            credits={0}
+            waveCredits={progress.waveCredits}
+            selectedTowerType={storeSelectedType}
+            onSelectTowerType={setStoreSelectedType}
+            unlockedTowers={progress.unlockedTowers}
+            onUnlockTower={handleUnlockTower}
+          />
+          <button
+            style={startBattleButton}
+            onClick={handleConfirmTowerSelection}
+          >
+            Start Battle
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Show game UI for PLANNING, COMBAT, PAUSED, VICTORY, DEFEAT phases
   return (
     <div className="app">
@@ -111,6 +187,7 @@ function App() {
             selectedTower={selectedTowerObj}
             onSelectTowerType={handleSelectTowerType}
             onSellTower={handleSellTower}
+            selectedTowers={progress.unlockedTowers}
           />
           <WavePreview wave={state.wave} phase={state.phase} />
           <EngageButton phase={state.phase} onEngage={actions.engage} />
