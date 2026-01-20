@@ -91,6 +91,10 @@ function isStormTower(type: TowerType): boolean {
   return type === TT.STORM;
 }
 
+function isGatlingTower(type: TowerType): boolean {
+  return type === TT.GATLING;
+}
+
 function towerPositionToPixels(position: Point): Point {
   return {
     x: position.x * GAME_CONFIG.CELL_SIZE + GAME_CONFIG.CELL_SIZE / 2,
@@ -269,6 +273,8 @@ class CombatModuleImpl implements GameModule {
           this.handleSniperFire(towerData, target, currentTime);
         } else if (isStormTower(towerData.type)) {
           this.handleStormFire(towerData, target, currentTime);
+        } else if (isGatlingTower(towerData.type)) {
+          this.handleGatlingFire(towerData, target, currentTime);
         }
       }
     }
@@ -563,6 +569,39 @@ class CombatModuleImpl implements GameModule {
           speed: 0,
           piercing: false,
           aoe: stormRadius,
+        },
+      })
+    );
+  }
+
+  // ==========================================================================
+  // Gatling Tower (rapid-fire hitscan)
+  // ==========================================================================
+
+  private handleGatlingFire(tower: Tower, target: Enemy, currentTime: number): void {
+    // Validate target still exists
+    const validTarget = this.query?.getEnemyById(target.id);
+    if (!validTarget) return;
+
+    // Apply instant damage (hitscan - rapid fire bullets)
+    const damage = calculateDamage(tower.damage, validTarget.armor);
+    this.applyDamage(validTarget, damage, tower.id);
+
+    // Emit projectile fired event (for audio/other systems)
+    // Note: Visual bullet tracers are handled by GatlingTowerSprite.drawFiring
+    eventBus.emit(
+      createEvent('PROJECTILE_FIRED', {
+        projectile: {
+          id: `gatling_${tower.id}_${currentTime}`,
+          sourceId: tower.id,
+          targetId: target.id,
+          towerType: tower.type,
+          position: towerPositionToPixels(tower.position),
+          velocity: { x: 0, y: 0 },
+          damage: tower.damage,
+          speed: 0,
+          piercing: false,
+          aoe: 0,
         },
       })
     );

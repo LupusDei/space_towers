@@ -1732,3 +1732,244 @@ describe('Hitscan effect position when target dies', () => {
     expect(chainEffects[0].targets[0].y).toBe(primaryPosition.y);
   });
 });
+
+describe('Gatling Tower Damage', () => {
+  beforeEach(() => {
+    eventBus.clear();
+    combatModule.destroy();
+  });
+
+  it('should apply instant damage when gatling tower fires', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 130,
+    });
+    const enemy = createMockEnemy({ health: 100, armor: 0 });
+    const query = createMockQuery([tower], [enemy]);
+    const commands = createMockCommands();
+
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(enemy.health).toBe(92); // 100 - 8 damage
+  });
+
+  it('should reduce damage by armor', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 130,
+    });
+    const enemy = createMockEnemy({ health: 100, armor: 3 });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(enemy.health).toBe(95); // 100 - (8 - 3) = 95
+  });
+
+  it('should deal minimum 1 damage even when armor exceeds base damage', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 130,
+    });
+    const enemy = createMockEnemy({ health: 100, armor: 30 });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(enemy.health).toBe(99); // Minimum 1 damage
+  });
+
+  it('should not damage enemy outside range', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 50,
+      position: { x: 0, y: 0 },
+    });
+    const enemy = createMockEnemy({
+      health: 100,
+      position: { x: 500, y: 500 },
+    });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(enemy.health).toBe(100); // No damage
+  });
+
+  it('should kill enemy when damage exceeds health', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 100,
+      range: 130,
+    });
+    const enemy = createMockEnemy({ health: 50, armor: 0 });
+    let removedEnemyId: string | null = null;
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: (id: string) => {
+        removedEnemyId = id;
+      },
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: () => {},
+      addStormEffect: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(removedEnemyId).toBe(enemy.id);
+  });
+
+  it('should award credits when enemy is killed', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 100,
+      range: 130,
+    });
+    const enemy = createMockEnemy({ health: 50, armor: 0, reward: 15 });
+    let addedCredits = 0;
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {
+        enemy.reward = 0; // Simulate pool reset
+      },
+      addCredits: (amount: number) => {
+        addedCredits = amount;
+      },
+      getTime: () => 0,
+      applySlow: () => {},
+      addStormEffect: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(addedCredits).toBe(15);
+  });
+
+  it('should emit PROJECTILE_FIRED event when gatling fires', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 130,
+    });
+    const enemy = createMockEnemy({ health: 100 });
+
+    let eventReceived = false;
+    let eventTowerType: string | null = null;
+    const unsubscribe = eventBus.on('PROJECTILE_FIRED', (event) => {
+      eventReceived = true;
+      eventTowerType = event.payload.projectile.towerType;
+    });
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(eventReceived).toBe(true);
+    expect(eventTowerType).toBe(TowerType.GATLING);
+    unsubscribe();
+  });
+
+  it('should track kills and damage on tower', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 100,
+      range: 130,
+    });
+    const enemy = createMockEnemy({ health: 50, armor: 0 });
+
+    const commands = {
+      addProjectile: () => {},
+      removeEnemy: () => {},
+      addCredits: () => {},
+      getTime: () => 0,
+      applySlow: () => {},
+      addStormEffect: () => {},
+    };
+
+    const query = createMockQuery([tower], [enemy]);
+    combatModule.init(query, commands);
+    combatModule.update(0.1);
+
+    expect(tower.kills).toBe(1);
+    expect(tower.totalDamage).toBeGreaterThan(0);
+  });
+
+  it('should not create hitscan effect (visual handled by sprite)', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 130,
+    });
+    const enemy = createMockEnemy({ health: 100 });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    // Gatling uses sprite-based bullet tracers, not hitscan beam effects
+    const hitscanEffects = combatModule.getHitscanEffects();
+    const gatlingEffects = hitscanEffects.filter(
+      (e) => e.towerId === tower.id
+    );
+    expect(gatlingEffects.length).toBe(0);
+  });
+
+  it('should not fire at target removed after targeting', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 130,
+    });
+    const enemy = createMockEnemy({ health: 100 });
+
+    // Simulate target being removed between targeting and firing
+    const query: QueryInterface = {
+      getTowers: () => [tower],
+      getEnemies: () => [enemy],
+      getProjectiles: () => [],
+      getTowerById: (id: string) => (id === tower.id ? tower : undefined),
+      getEnemyById: () => undefined, // Target removed
+      getEnemiesInRange: () => [enemy],
+      getEnemiesAlongPath: () => [enemy],
+      getPath: () => [],
+      getCell: () => 'empty' as const,
+      getTowerAt: () => undefined,
+      getGameState: () => ({
+        phase: 'combat' as const,
+        wave: 1,
+        lives: 20,
+        credits: 200,
+        score: 0,
+        towers: new Map([[tower.id, tower]]),
+        enemies: new Map([[enemy.id, enemy]]),
+        projectiles: new Map(),
+        grid: [],
+        path: [],
+        selectedTower: null,
+        selectedTowerType: null,
+        isPaused: false,
+      }),
+    };
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    // Enemy health should be unchanged since target validation failed
+    expect(enemy.health).toBe(100);
+  });
+});
