@@ -1054,6 +1054,80 @@ describe('Sniper Tower Level-up Stats', () => {
   });
 });
 
+describe('Gatling Tower Firing', () => {
+  beforeEach(() => {
+    eventBus.clear();
+    combatModule.destroy();
+  });
+
+  it('should deal instant damage (hitscan)', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 130,
+    });
+    const enemy = createMockEnemy({ health: 100, armor: 0 });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(enemy.health).toBe(92); // 100 - 8
+  });
+
+  it('should create hitscan effect with type gatling', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 130,
+    });
+    const enemy = createMockEnemy({ health: 100, armor: 0 });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    const effects = combatModule.getHitscanEffects();
+    expect(effects.length).toBeGreaterThan(0);
+    expect(effects[0].type).toBe('gatling');
+  });
+
+  it('should apply damage reduction from armor', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 130,
+    });
+    const enemy = createMockEnemy({ health: 100, armor: 3 });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+    combatModule.update(0.1);
+
+    expect(enemy.health).toBe(95); // 100 - (8 - 3)
+  });
+
+  it('should fire rapidly due to fast fire rate', () => {
+    const tower = createMockTower({
+      type: TowerType.GATLING,
+      damage: 8,
+      range: 130,
+    });
+    const enemy = createMockEnemy({ health: 100, armor: 0 });
+    const query = createMockQuery([tower], [enemy]);
+
+    combatModule.init(query, createMockCommands());
+
+    // First shot
+    combatModule.update(0.1);
+    expect(enemy.health).toBe(92); // 100 - 8
+
+    // Gatling has 0.2s fire rate, so after 0.2s it should fire again
+    combatModule.update(0.2);
+    expect(enemy.health).toBe(84); // 92 - 8
+  });
+});
+
 describe('Gravity Tower AOE', () => {
   beforeEach(() => {
     eventBus.clear();

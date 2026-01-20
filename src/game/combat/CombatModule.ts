@@ -23,7 +23,7 @@ import { GAME_CONFIG, COMBAT_CONFIG, TOWER_STATS } from '../config';
 // ============================================================================
 
 export interface HitscanEffect {
-  type: 'laser' | 'tesla' | 'sniper';
+  type: 'laser' | 'tesla' | 'sniper' | 'gatling';
   towerId: string;
   towerPosition: Point;
   targetPosition: Point;
@@ -89,6 +89,10 @@ function isSniperTower(type: TowerType): boolean {
 
 function isStormTower(type: TowerType): boolean {
   return type === TT.STORM;
+}
+
+function isGatlingTower(type: TowerType): boolean {
+  return type === TT.GATLING;
 }
 
 function towerPositionToPixels(position: Point): Point {
@@ -269,6 +273,8 @@ class CombatModuleImpl implements GameModule {
           this.handleSniperFire(towerData, target, currentTime);
         } else if (isStormTower(towerData.type)) {
           this.handleStormFire(towerData, target, currentTime);
+        } else if (isGatlingTower(towerData.type)) {
+          this.handleGatlingFire(towerData, target, currentTime);
         }
       }
     }
@@ -497,6 +503,52 @@ class CombatModuleImpl implements GameModule {
       createEvent('PROJECTILE_FIRED', {
         projectile: {
           id: `sniper_${tower.id}_${currentTime}`,
+          sourceId: tower.id,
+          targetId: target.id,
+          towerType: tower.type,
+          position: towerPositionToPixels(tower.position),
+          velocity: { x: 0, y: 0 },
+          damage: tower.damage,
+          speed: 0,
+          piercing: false,
+          aoe: 0,
+        },
+      })
+    );
+  }
+
+  // ==========================================================================
+  // Gatling Tower
+  // ==========================================================================
+
+  private handleGatlingFire(tower: Tower, target: Enemy, currentTime: number): void {
+    // Validate target still exists
+    const validTarget = this.query?.getEnemyById(target.id);
+    if (!validTarget) return;
+
+    // Capture target position BEFORE applying damage, since applyDamage may kill
+    // the enemy and release it to the pool (which resets position to 0,0)
+    const targetPosition = { ...validTarget.position };
+
+    // Apply instant damage (hitscan - rapid fire bullets)
+    const damage = calculateDamage(tower.damage, validTarget.armor);
+    this.applyDamage(validTarget, damage, tower.id);
+
+    // Create visual effect using captured position
+    this.state.hitscanEffects.push({
+      type: 'gatling',
+      towerId: tower.id,
+      towerPosition: { ...tower.position },
+      targetPosition,
+      startTime: currentTime,
+      duration: COMBAT_CONFIG.HITSCAN_EFFECT_DURATION,
+    });
+
+    // Emit projectile fired event (for audio/other systems)
+    eventBus.emit(
+      createEvent('PROJECTILE_FIRED', {
+        projectile: {
+          id: `gatling_${tower.id}_${currentTime}`,
           sourceId: tower.id,
           targetId: target.id,
           towerType: tower.type,
