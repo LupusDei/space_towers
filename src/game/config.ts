@@ -218,6 +218,23 @@ export const TOWER_STATS: Record<TowerType, TowerStats> = {
     rangePerLevel: 8,
     fireRatePerLevel: -0.015, // Modest fire rate gains (diminishing returns on fast tower)
   },
+
+  [TowerType.GATLING]: {
+    type: TowerType.GATLING,
+    name: 'Gatling Tower',
+    description: 'Multi-barrel rotating turret that unleashes a devastating stream of bullets. Highest sustained DPS in the game.',
+    cost: 80,
+    damage: 8,
+    range: 130,
+    fireRate: 0.2, // 5 shots per second (40 base DPS, higher than Cannon)
+    unlockCost: 20,
+    // Leveling: sustained DPS monster
+    maxLevel: 5,
+    upgradeCosts: [100, 150, 225, 340], // Total to max: 895 (endgame ~120 effective)
+    damagePerLevel: 4, // +50% damage per level
+    rangePerLevel: 10,
+    fireRatePerLevel: -0.02, // Gets faster, up to ~7 shots/sec at max
+  },
 };
 
 // ============================================================================
